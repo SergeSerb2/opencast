@@ -24,6 +24,7 @@ import { nonempty } from "./shared";
 import { noteTitle } from "./notes";
 import { validateTheme } from "./themes";
 import { templateArguments } from "./placeholders";
+import { ScheduledBackup } from "./backup";
 import { RpcError } from "../../util/errors";
 
 type ObjectValue = Record<string, unknown>;
@@ -133,6 +134,7 @@ export function mapSnippet(row: ObjectValue): Snippet {
     ...base(row),
     name,
     text: body,
+    icon: text(row.icon) || undefined,
     keyword: text(row.keyword ?? row.alias) || undefined,
     pinned: !!row.pinned,
     tags: tags(row.tags),
@@ -148,6 +150,7 @@ export function mapQuicklink(row: ObjectValue): Quicklink {
     link,
     openWith: text(row.openWith ?? row.applicationID) || undefined,
     tags: tags(row.tags),
+    pinned: !!row.pinned,
     openCount: Number(row.openCount) || 0,
   };
 }
@@ -371,6 +374,12 @@ export function importRaycastPayload(
   return results;
 }
 function validSetting(key: keyof typeof SETTINGS, value: unknown): boolean {
+  if (key === "advanced.backupAutoDelete") return value === "never" || [1, 5, 10].includes(value as number);
+  if (key === "ai.chatFolders") return Array.isArray(value) && value.every(folder => {
+    if (!folder || typeof folder !== "object") return false;
+    const { id, name, createdAt } = folder as { id?: unknown; name?: unknown; createdAt?: unknown };
+    return typeof id === "string" && !!id && typeof name === "string" && !!name.trim() && typeof createdAt === "number" && Number.isFinite(createdAt);
+  }) && new Set(value.map(folder => folder.id)).size === value.length;
   const defaultValue = SETTINGS[key].default;
   const options: Partial<Record<keyof typeof SETTINGS, string[]>> = {
     "general.appearance": ["system", "light", "dark"],
@@ -508,10 +517,58 @@ async function readConfiguration(path: string): Promise<Buffer> {
     );
   return readFile(path);
 }
+export async function exportData(ctx: AppContext, { path, password, categories }: { path: string; password?: string; categories?: string[] }): Promise<{ path: string }> {
+        if (
+          categories &&
+          (!categories.length || categories.some((c) => !COLLECTIONS.has(c)))
+        )
+          throw RpcError.invalidParams("Select valid export categories");
+        const collections = Object.fromEntries(
+          [...(categories ?? COLLECTIONS)].map((collection) => [
+            collection,
+            collection === "settings"
+              ? Object.entries(ctx.settings.getAll()).map(([id, value]) => ({
+                  id,
+                  data: { value },
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                }))
+              : ctx.entities.list(collection).map((r) => ({
+                  id: r.id,
+                  data: r.data,
+                  createdAt: r.createdAt,
+                  updatedAt: r.updatedAt,
+                })),
+          ]),
+        );
+        const bytes = await encodeConfig(
+          { schemaVersion: 1, collections },
+          password,
+        );
+        const part = `${path}.${randomUUID()}.part`;
+        try {
+          await writeFile(part, bytes, { mode: 0o600, flag: "wx" });
+          await rename(part, path);
+        } finally {
+          await unlink(part).catch(() => {});
+        }
+        return { path };
+}
+
 export const dataService: Service = {
   name: "core.data",
   register(ctx) {
+    const backup = new ScheduledBackup(ctx, exportData);
+    ctx.onReady(() => backup.tick());
+    ctx.onShutdown(() => backup.stop());
     ctx.rpc.handleAll({
+      "data.backup.hasPassphrase": () => ctx.secrets.has("data.backup:passphrase"),
+      "data.backup.setPassphrase": async ({ passphrase }) => {
+        if (passphrase !== null && typeof passphrase !== "string")
+          throw RpcError.invalidParams("Invalid backup passphrase");
+        if (passphrase) await ctx.secrets.set("data.backup:passphrase", passphrase);
+        else await ctx.secrets.delete("data.backup:passphrase");
+      },
       "data.importRayconfig": async ({ path, password, categories }) => {
         const decoded = await decodeConfig(
           await readConfiguration(path),
@@ -571,41 +628,7 @@ export const dataService: Service = {
         };
       },
       "data.export": async ({ path, password, categories }) => {
-        if (
-          categories &&
-          (!categories.length || categories.some((c) => !COLLECTIONS.has(c)))
-        )
-          throw RpcError.invalidParams("Select valid export categories");
-        const collections = Object.fromEntries(
-          [...(categories ?? COLLECTIONS)].map((collection) => [
-            collection,
-            collection === "settings"
-              ? Object.entries(ctx.settings.getAll()).map(([id, value]) => ({
-                  id,
-                  data: { value },
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                }))
-              : ctx.entities.list(collection).map((r) => ({
-                  id: r.id,
-                  data: r.data,
-                  createdAt: r.createdAt,
-                  updatedAt: r.updatedAt,
-                })),
-          ]),
-        );
-        const bytes = await encodeConfig(
-          { schemaVersion: 1, collections },
-          password,
-        );
-        const part = `${path}.${randomUUID()}.part`;
-        try {
-          await writeFile(part, bytes, { mode: 0o600, flag: "wx" });
-          await rename(part, path);
-        } finally {
-          await unlink(part).catch(() => {});
-        }
-        return { path };
+        return exportData(ctx, { path, password, categories });
       },
     });
   },

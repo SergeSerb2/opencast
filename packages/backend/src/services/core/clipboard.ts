@@ -161,6 +161,17 @@ export const clipboardService: Service = {
     CREATE VIRTUAL TABLE clipboard_fts USING fts5(id UNINDEXED, title, text);
   `,
     });
+    ctx.db.addMigrations({
+      id: "core-clipboard-002-duplicates",
+      up: `
+        ALTER TABLE clipboard_history RENAME TO clipboard_history_old;
+        CREATE TABLE clipboard_history (id TEXT PRIMARY KEY, content_hash TEXT NOT NULL, kind TEXT NOT NULL, pinned INTEGER NOT NULL, last_copied_at INTEGER NOT NULL, data TEXT NOT NULL);
+        INSERT INTO clipboard_history SELECT * FROM clipboard_history_old;
+        DROP TABLE clipboard_history_old;
+        CREATE INDEX clipboard_recency ON clipboard_history(last_copied_at DESC);
+        CREATE INDEX clipboard_hash ON clipboard_history(content_hash);
+      `,
+    });
     const imageDir = join(ctx.dataDir, "clipboard");
     const get = (id: string) => {
       const row = ctx.db.get<Row>(
@@ -177,7 +188,7 @@ export const clipboardService: Service = {
     const persist = (item: ClipboardItem) => {
       ctx.db.transaction(() => {
         ctx.db.run(
-          "INSERT INTO clipboard_history VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET pinned=excluded.pinned,last_copied_at=excluded.last_copied_at,data=excluded.data",
+          "INSERT INTO clipboard_history VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET content_hash=excluded.content_hash,kind=excluded.kind,pinned=excluded.pinned,last_copied_at=excluded.last_copied_at,data=excluded.data",
           item.id,
           item.contentHash,
           item.kind,
@@ -206,7 +217,8 @@ export const clipboardService: Service = {
         }
       });
       for (const item of items)
-        if (item.imagePath && dirname(item.imagePath) === imageDir)
+        if (item.imagePath && dirname(item.imagePath) === imageDir &&
+          !ctx.db.get<{ n: number }>("SELECT count(*) n FROM clipboard_history WHERE json_extract(data, '$.imagePath') = ?", item.imagePath)!.n)
           await unlink(item.imagePath).catch(() => {});
       if (items.length)
         ctx.events.emit("clipboard.itemsChanged", {
@@ -264,8 +276,9 @@ export const clipboardService: Service = {
         await writeFile(path, bytes, { mode: 0o600 });
       }
       const item = classifyClipboard(snapshot, path, hash)!;
+      if (ctx.settings.get("clipboard.textRecognitionEnabled")) item.ocrText = snapshot.ocrText;
       const existing = ctx.db.get<Row>(
-        "SELECT id,data FROM clipboard_history WHERE content_hash = ?",
+        "SELECT id,data FROM clipboard_history WHERE content_hash = ? ORDER BY last_copied_at DESC LIMIT 1",
         item.contentHash,
       );
       if (existing) {
@@ -290,6 +303,9 @@ export const clipboardService: Service = {
         enabled:
           retentionMs(ctx.settings.get("clipboard.keepHistoryFor")) !== 0,
         ignoredBundleIds: ctx.settings.get("clipboard.disabledApplications"),
+        captureUniversalClipboard: ctx.settings.get("clipboard.captureUniversalClipboard"),
+        textRecognitionEnabled: ctx.settings.get("clipboard.textRecognitionEnabled"),
+        recognitionMode: ctx.settings.get("clipboard.recognitionMode"),
       });
     ctx.onReady(async () => {
       await monitor();
@@ -299,7 +315,8 @@ export const clipboardService: Service = {
       ctx.settings.onChange((key) => {
         if (
           key === "clipboard.disabledApplications" ||
-          key === "clipboard.keepHistoryFor"
+          key === "clipboard.keepHistoryFor" || key === "clipboard.captureUniversalClipboard" ||
+          key === "clipboard.textRecognitionEnabled" || key === "clipboard.recognitionMode"
         )
           background(ctx, monitor(), "Clipboard monitoring");
         if (key === "clipboard.keepHistoryFor")
@@ -361,6 +378,31 @@ export const clipboardService: Service = {
       },
       "clipboard.pin": ({ id, pinned }) => {
         persist({ ...required(id), pinned });
+      },
+      "clipboard.update": ({ id, patch }) => {
+        const old = required(id);
+        if (Object.keys(patch).some(key => !["title", "text"].includes(key)) || Object.values(patch).some((value) => typeof value !== "string"))
+          throw RpcError.invalidParams("Clipboard title and text must be strings");
+        if (patch.title !== undefined && !patch.title.trim())
+          throw RpcError.invalidParams("Entry name is required");
+        const item = { ...old, ...patch };
+        if (patch.text !== undefined) {
+          item.characters = [...patch.text].length;
+          item.words = patch.text.trim() ? patch.text.trim().split(/\s+/u).length : 0;
+          item.byteSize = Buffer.byteLength(patch.text);
+          // Preserve HTML, image and file representations when editing plain text.
+          item.contentHash = createHash("sha256")
+            .update(`${item.kind}:${JSON.stringify([item.text, item.html])}`).digest("hex");
+        }
+        persist(item);
+        return item;
+      },
+      "clipboard.duplicate": ({ id }) => {
+        const now = Date.now();
+        const item = { ...required(id), id: randomUUID(), pinned: false,
+          copyCount: 1, createdAt: now, lastCopiedAt: now };
+        persist(item);
+        return item;
       },
       "clipboard.delete": ({ id }) => remove([id]),
       "clipboard.clear": ({ includePinned = false }) =>

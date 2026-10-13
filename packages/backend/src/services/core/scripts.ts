@@ -103,13 +103,13 @@ export function parseScriptMetadata(
     authorUrl: metadata.authorurl,
     refreshTime: metadata.refreshtime,
     needsConfirmation:
-      mode !== "inline" && metadata.needsconfirmation === "true",
+      metadata.needsconfirmation === "true",
     currentDirectoryPath: metadata.currentdirectorypath,
     arguments: args,
-    language: shebang,
+    language: shebang ?? (extname(path) === ".go" ? "go" : undefined),
   };
 }
-const EXTENSIONS = new Set([
+const EXTENSIONS = new Set([".ts", ".go", ".cs",
   ".sh",
   ".bash",
   ".zsh",
@@ -134,6 +134,7 @@ class Scripts {
   private watchers: FSWatcher[] = [];
   private timers: NodeJS.Timeout[] = [];
   private executions = new Map<string, ChildProcess>();
+  private executionPaths = new Map<string, string>();
   private inlineOutput = new Map<string, string>();
   private scanning?: Promise<void>;
   private stopped = false;
@@ -210,11 +211,10 @@ class Scripts {
             intervalEnabled?: boolean;
           }>("commandPrefs", `script:${command.path}`)?.data;
           if (
+            command.needsConfirmation ||
             prefs?.enabled === false ||
             prefs?.intervalEnabled === false ||
-            [...this.executions.values()].some(
-              (p) => p.spawnfile === command.path,
-            ) ||
+            [...this.executionPaths.values()].includes(command.path) ||
             this.executions.size >= 8
           )
             return;
@@ -327,13 +327,17 @@ class Scripts {
     delete env.LC_ALL;
     const started = Date.now();
     return new Promise((resolve_, reject) => {
-      const child = spawn(command.path, args, {
+      const isGo = extname(command.path) === ".go";
+      const isCSharp = extname(command.path) === ".cs";
+      const child = spawn(isGo ? "go" : isCSharp ? "dotnet" : command.path,
+        isGo ? ["run", command.path, ...args] : isCSharp ? ["run", "--file", command.path, "--", ...args] : args, {
         cwd,
         env,
         shell: false,
         stdio: ["ignore", "pipe", "pipe"],
       });
       this.executions.set(executionId, child);
+      this.executionPaths.set(executionId, command.path);
       let output = "";
       let bytes = 0;
       let settled = false;
@@ -344,6 +348,7 @@ class Scripts {
         settled = true;
         clearTimeout(fallback);
         this.executions.delete(executionId);
+        this.executionPaths.delete(executionId);
         child.stdout?.destroy();
         child.stderr?.destroy();
         const trimmed = output.trim();
@@ -515,15 +520,19 @@ export const scriptsService: Service = {
         language,
         packageName,
         icon,
+        needsConfirmation,
+        refreshTime,
       }) => {
         nonempty(title, "Script title");
-        if (/\r|\n/.test(title + (packageName ?? "") + (icon ?? "")))
+        if (/\r|\n/.test(title + (packageName ?? "") + (icon ?? "") + (refreshTime ?? "")))
           throw RpcError.invalidParams("Metadata cannot contain newlines");
         const dir = expandPath(directory);
         if (
           !ctx.settings.get("scripts.directories").map(expandPath).includes(dir)
         )
           throw RpcError.invalidParams("Choose a configured script directory");
+        if (refreshTime !== undefined && !refreshInterval(refreshTime))
+          throw RpcError.invalidParams("Refresh time must be between 10 seconds and 24 days");
         const templates: Record<string, [string, string, string]> = {
           bash: ["sh", "#!/bin/bash", 'printf "Hello\\n"'],
           python: ["py", "#!/usr/bin/env python3", 'print("Hello")'],
@@ -534,6 +543,11 @@ export const scriptsService: Service = {
             'display notification "Hello"',
           ],
           swift: ["swift", "#!/usr/bin/env swift", 'print("Hello")'],
+          typescript: ["ts", "#!/usr/bin/env -S node --experimental-strip-types", 'console.log("Hello");'],
+          go: ["go", "// Run with go run", `package main
+import "fmt"
+func main() { fmt.Println("Hello") }`],
+          csharp: ["cs", "#!/usr/bin/env dotnet", 'Console.WriteLine("Hello");'],
           ruby: ["rb", "#!/usr/bin/env ruby", 'puts "Hello"'],
         };
         const template = templates[language];
@@ -541,7 +555,7 @@ export const scriptsService: Service = {
           throw RpcError.invalidParams("Unsupported script language");
         const [extension, shebang, body] = template;
         const comment =
-          language === "node" || language === "swift" ? "//" : "#";
+          ["node", "swift", "typescript", "go", "csharp"].includes(language) ? "//" : "#";
         const name =
           title
             .normalize("NFKD")
@@ -555,7 +569,8 @@ export const scriptsService: Service = {
           `${comment} @raycast.schemaVersion 1`,
           `${comment} @raycast.title ${title}`,
           `${comment} @raycast.mode ${mode}`,
-          ...(mode === "inline" ? [`${comment} @raycast.refreshTime 1m`] : []),
+          ...(refreshTime || mode === "inline" ? [`${comment} @raycast.refreshTime ${refreshTime ?? "1m"}`] : []),
+          ...(needsConfirmation ? [`${comment} @raycast.needsConfirmation true`] : []),
           ...(packageName
             ? [`${comment} @raycast.packageName ${packageName}`]
             : []),
@@ -566,6 +581,7 @@ export const scriptsService: Service = {
         ].join("\n");
         await writeFile(path, source, { flag: "wx", mode: 0o755 });
         await chmod(path, 0o755);
+        await scripts.reload();
         await scripts.reload();
         return scripts.find(path);
       },

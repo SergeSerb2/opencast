@@ -44,7 +44,7 @@ describe("script metadata", () => {
       )?.arguments,
     ).toEqual([]);
   });
-  it("requires valid inline refresh and drops inline arguments/confirmation", () => {
+  it("requires valid inline refresh and retains confirmation without inline arguments", () => {
     const inline = source.replace("fullOutput", "inline");
     expect(parseScriptMetadata(inline, "/test.sh")?.mode).toBe("compact");
     expect(
@@ -52,7 +52,7 @@ describe("script metadata", () => {
     ).toMatchObject({
       mode: "inline",
       arguments: [],
-      needsConfirmation: false,
+      needsConfirmation: true,
     });
     expect(refreshInterval("9s")).toBeNull();
     expect(refreshInterval("2m")).toBe(120000);
