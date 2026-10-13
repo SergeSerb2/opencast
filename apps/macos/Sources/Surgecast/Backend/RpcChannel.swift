@@ -141,6 +141,10 @@ import Foundation
     let requests = pending
     pending.removeAll()
     for c in requests.values { c.resume(throwing: RpcError.failure("Backend disconnected")) }
-    onClosed?()
+    let callback = onClosed
+    onReady = nil
+    onClosed = nil
+    handler = nil
+    callback?()
   }
 }
