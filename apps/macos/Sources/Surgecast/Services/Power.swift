@@ -4,10 +4,10 @@ import IOKit.ps
 
 @MainActor final class Power {
   private var assertions: [String: IOPMAssertionID] = [:]
-  static func onBattery() -> Bool {
+  static func onBattery() throws -> Bool {
     guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
       let source = IOPSGetProvidingPowerSourceType(info)?.takeUnretainedValue()
-    else { return false }
+    else { throw RpcError.failure("Cannot determine the power source") }
     return source as String == kIOPSBatteryPowerValue
   }
   func set(_ p: [String: Any]) throws {

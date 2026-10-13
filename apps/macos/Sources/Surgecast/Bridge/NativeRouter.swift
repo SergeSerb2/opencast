@@ -48,9 +48,10 @@ import AppKit
       if settings["ai.preventIdleSleep"] as? Bool != true { power.stop() }
       manager.respectStageManager = settings["windowManagement.respectStageManager"] as? Bool ?? true
       tidyMenuBar.set(settings["advanced.tidyMenuBar"] as? Bool ?? false)
+      hotkeys.hyperEnabled = (settings["keyboard.hyperKey"] as? String ?? "none") != "none"
       hotkeys.hyperIncludeShift = settings["keyboard.hyperKeyIncludeShift"] as? Bool ?? true
       try hyperKey.configure(settings)
-    case "system.onBattery": return Power.onBattery()
+    case "system.onBattery": return try Power.onBattery()
     case "system.setIdleSleepPrevented": try power.set(p)
     case "app.info":
       #if arch(arm64)

@@ -3,6 +3,7 @@ import Carbon
 import SurgecastCore
 
 @MainActor final class Hotkeys {
+  var hyperEnabled = false
   var hyperIncludeShift = true {
     didSet {
       if oldValue != hyperIncludeShift {
@@ -121,10 +122,13 @@ import SurgecastCore
           if f.contains(.control) { modifiers.append("ctrl") }
           if f.contains(.option) { modifiers.append("opt") }
           if f.contains(.shift) { modifiers.append("shift") }
-          result = [
+          var recorded: [String: Any] = [
             "key": KeyMap.name(event.keyCode), "keyCode": Int(event.keyCode),
             "modifiers": modifiers,
           ]
+          if self.hyperEnabled && f.contains([.command, .control, .option])
+            && f.contains(.shift) == self.hyperIncludeShift { recorded["hyper"] = true }
+          result = recorded
         }
         self.finishRecording(result)
         return nil
