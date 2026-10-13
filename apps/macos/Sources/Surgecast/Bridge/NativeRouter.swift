@@ -14,6 +14,7 @@ import AppKit
   var windows: HostWindows!
   var input: Input!
   var snippets: SnippetExpander!
+  private(set) lazy var sequentialPaste = SequentialPaste(board: clipboard, hud: hud)
   private var calendar: CalendarService
   var setMenuBar: ((Bool) -> Void)?
   init(hub: EventHub) {
@@ -82,6 +83,7 @@ import AppKit
       try clipboard.write(content, concealed: p.bool("concealed"), transient: p.bool("transient"))
     case "clipboard.clear": NSPasteboard.general.clearContents()
     case "clipboard.setMonitoring": try clipboard.monitor(p)
+    case "clipboard.setSequentialPaste": try sequentialPaste.set(p)
     case "input.paste", "input.typeText", "input.pressKeys", "input.selectedText",
       "input.selectedFinderItems":
       return try await input.call(method, p)
@@ -133,6 +135,7 @@ import AppKit
     clipboard.stop()
     hotkeys.stop()
     snippets?.stop()
+    sequentialPaste.stop()
     Environment.log("Stopping speech")
     speech.stop()
     Environment.log("Speech stopped")
