@@ -12,6 +12,7 @@ import {
 } from "./native-commands";
 import { DEFAULT_SEARCHES } from "./quicklinks";
 import { RpcError } from "../../util/errors";
+import { BUILTIN_SUGGESTION_PRIORITIES } from "./root-search";
 
 interface Builtin {
   command: CommandInfo;
@@ -68,6 +69,8 @@ function info(
       tile: { glyph, background: COLORS[group] ?? ["#FF6363", "#E5484D"] },
     },
     enabled: true,
+    suggestionPriority:
+      BUILTIN_SUGGESTION_PRIORITIES[`builtin:${group}.${key}`],
     keywords: [group, subtitle, key.replace(/([A-Z])/g, " $1")],
     arguments: args,
   };
@@ -347,7 +350,7 @@ export function builtinCatalog(): Builtin[] {
       }),
       "view",
     );
-  add("ai", "openAiChat", "Open AI Chat", async (ctx) => {
+  add("ai", "openAiChat", "AI Chat", async (ctx) => {
     await ctx.native.call("window.show", { kind: "ai-chat" });
     return done();
   });

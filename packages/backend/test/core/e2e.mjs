@@ -1,12 +1,20 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Run after `pnpm --filter @surgecast/backend build`.
 const directory = await mkdtemp(join(tmpdir(), "surgecast-core-e2e-"));
+// Fixed, fresh rates make the screenshot regression independent of network/live rates.
+await writeFile(
+  join(directory, "currency-rates.json"),
+  JSON.stringify({
+    fetchedAt: Date.now(),
+    rates: { USD: 1, EUR: 0.8936 },
+  }),
+);
 const backend = fileURLToPath(new URL("../../dist/index.mjs", import.meta.url));
 const child = spawn(
   process.execPath,
@@ -76,13 +84,78 @@ try {
     });
   const info = await rpc("app.info");
   assert.ok(info.methods.includes("search.root"));
+  const fresh = await rpc("search.root", { query: "" });
+  assert.equal(fresh.sections[0].id, "suggestions");
+  assert.equal(fresh.sections[0].items.length, 5);
+  assert.equal(fresh.sections[1].id, "commands");
+  assert.ok(
+    fresh.sections[0].items.some(
+      (i) => i.id === "builtin:clipboard.clipboardHistory",
+    ),
+  );
+  const freshIds = fresh.sections.flatMap((s) => s.items.map((i) => i.id));
+  assert.equal(new Set(freshIds).size, freshIds.length);
+  const conversion = await rpc("calc.evaluate", {
+    expression: "2+2*10 usd in eur",
+  });
+  assert.equal(conversion.result, "€19.66");
+  assert.equal(conversion.copyValue, "19.66");
+  assert.equal(conversion.resultLabel, "Euro");
+  assert.equal(conversion.inputLabel, "Expression");
+  assert.equal(conversion.interpreted, "2 + 2 × 10 usd in eur");
+  assert.deepEqual(
+    (await rpc("search.root", { query: "2+2*10 usd in eur" })).calculator,
+    conversion,
+  );
+  assert.equal(
+    (await rpc("calc.evaluate", { expression: "100 usd" })).inputLabel,
+    "US Dollar",
+  );
+  assert.equal(
+    (await rpc("calc.evaluate", { expression: "1234.5 usd" })).result,
+    "$1,234.50",
+  );
+  assert.equal(
+    (await rpc("search.root", { query: "3*4 km in mi" })).calculator.result,
+    "7.45645 Miles",
+  );
+  for (const query of ["clip", "1password", "2fa", "v8", "1", "1234.5"]) {
+    assert.equal(await rpc("calc.evaluate", { expression: query }), null);
+    assert.equal((await rpc("search.root", { query })).calculator, undefined);
+  }
+  await rpc("commands.launch", { id: "builtin:emoji.searchEmoji" });
+  const learned = await rpc("search.root", { query: "" });
+  assert.equal(learned.sections[0].items.length, 5);
+  assert.equal(learned.sections[0].items[0].id, "builtin:emoji.searchEmoji");
+  await rpc("commands.setPrefs", {
+    id: "builtin:emoji.searchEmoji",
+    prefs: { favoriteOrder: 0 },
+  });
+  const favorite = await rpc("search.root", { query: "" });
+  assert.equal(favorite.sections[0].id, "favorites");
+  assert.equal(favorite.sections[0].items[0].id, "builtin:emoji.searchEmoji");
+  assert.ok(
+    favorite.sections
+      .slice(1)
+      .every((s) => s.items.every((i) => i.id !== "builtin:emoji.searchEmoji")),
+  );
+  await rpc("commands.setPrefs", {
+    id: "builtin:emoji.searchEmoji",
+    prefs: {},
+    unset: ["favoriteOrder"],
+  });
+  await rpc("commands.resetRanking");
+  assert.equal(
+    (await rpc("search.root", { query: "" })).sections[0].items.length,
+    5,
+  );
   assert.equal(
     (await rpc("calc.evaluate", { expression: "50 + 10%" })).copyValue,
     "55",
   );
   assert.equal(
     (await rpc("search.root", { query: "2 m in cm" })).calculator.result,
-    "200 cm",
+    "200 Centimeters",
   );
   const root = await rpc("search.root", { query: "clipboard" });
   assert.ok(
@@ -185,15 +258,21 @@ try {
     0,
   );
   assert.ok((await rpc("data.storage")).databaseBytes > 0);
+  const commands = await rpc("commands.list");
   console.log(
     JSON.stringify({
       ok: true,
       rpcCalls: id,
       methods: info.methods.length,
-      commands: (await rpc("commands.list")).length,
+      commands: commands.length,
+      currencyResult: conversion.result,
+      freshSections: fresh.sections.map((s) => s.id),
+      freshSuggestions: fresh.sections[0].items.length,
       verified: [
         "search.root",
+        "fresh seeds/favorites/frecency",
         "calculator",
+        "mixed conversions/formatting/false positives",
         "snippets CRUD",
         "quicklinks CRUD",
         "notes CRUD/FTS",

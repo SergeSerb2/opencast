@@ -11,7 +11,8 @@ import type { AppContext, Service } from "../../context";
 import { builtinCatalog } from "./builtins";
 import { searchFiles } from "./files";
 import { calculator } from "./calculator";
-import { rankCommands, frecency } from "./ranking";
+import { rankCommands } from "./ranking";
+import { appSuggestionPriority, emptyRootItems } from "./root-search";
 import { background, list, observeCollection } from "./shared";
 import { RpcError } from "../../util/errors";
 
@@ -215,6 +216,7 @@ export const commandsService: Service = {
               subtitle: app.path,
               typeLabel: "Application",
               icon: { fileIcon: app.path },
+              suggestionPriority: appSuggestionPriority(app.bundleId, app.name),
               keywords: [app.bundleId ?? "", app.path],
               mode: "no-view",
               enabled: true,
@@ -446,7 +448,11 @@ export const commandsService: Service = {
         }
 
         const all = await ctx.commands.all();
-        const commands = all.filter((c) => c.kind !== "file");
+        const commands = [
+          ...new Map(
+            all.filter((c) => c.kind !== "file").map((c) => [c.id, c]),
+          ).values(),
+        ];
         const visits = new Map(
           ctx.db
             .all<Visit>("SELECT * FROM command_frecency")
@@ -465,27 +471,27 @@ export const commandsService: Service = {
                 (prefs.get(a.id)?.favoriteOrder ?? 1e9) -
                 (prefs.get(b.id)?.favoriteOrder ?? 1e9),
             );
-          const suggestions = ctx.settings.get("launcher.showRecentlyUsed")
-            ? commands
-                .filter((c) => !c.favorite && !c.hotkey && visits.has(c.id))
-                .sort(
-                  (a, b) =>
-                    frecency(
-                      visits.get(b.id)!.count,
-                      visits.get(b.id)!.lastUsed,
-                    ) -
-                    frecency(
-                      visits.get(a.id)!.count,
-                      visits.get(a.id)!.lastUsed,
-                    ),
-                )
-                .slice(0, 5)
-            : [];
+          const root = emptyRootItems(
+            commands,
+            visits,
+            Date.now(),
+            ctx.settings.get("launcher.showRecentlyUsed"),
+          );
           return {
             query,
             sections: [
               { id: "favorites", title: "Favorites", items: favorites },
-              { id: "suggestions", title: "Suggestions", items: suggestions },
+              {
+                id: "suggestions",
+                title: "Suggestions",
+                items: root.suggestions,
+              },
+              { id: "commands", title: "Commands", items: root.commands },
+              {
+                id: "applications",
+                title: "Applications",
+                items: root.applications,
+              },
             ].filter((s) => s.items.length),
             fallbacks: [],
           };
