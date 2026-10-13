@@ -331,10 +331,6 @@ export const commandsService: Service = {
         }
       for (const [id, hotkey] of desired)
         if (hotkeys.get(id) !== JSON.stringify(hotkey)) {
-          if (hotkeys.has(id)) {
-            await ctx.native.call("hotkeys.unregister", { id });
-            hotkeys.delete(id);
-          }
           const result = await ctx.native.call("hotkeys.register", {
             id,
             hotkey,

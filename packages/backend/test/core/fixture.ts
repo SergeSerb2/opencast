@@ -30,7 +30,7 @@ export async function fixture() {
   const events = new EventBus();
   const nativeListeners = new Map<string, ((value: unknown) => void)[]>();
   const served = new Map<string, (p: never) => unknown>();
-  const nativeCall = vi.fn(async (method: string): Promise<unknown> => {
+  const nativeCall = vi.fn(async (method: string, _params?: unknown): Promise<unknown> => {
     if (method === "apps.list")
       return [
         {

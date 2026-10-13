@@ -397,7 +397,7 @@ describe("edge cases and persistence", () => {
         hotkey: { modifiers: ["cmd"], key: "space" },
       }),
     );
-    expect(f.nativeCall).toHaveBeenCalledWith("hotkeys.unregister", {
+    expect(f.nativeCall).not.toHaveBeenCalledWith("hotkeys.unregister", {
       id: "surgecast.toggle",
     });
     f.emit("apps.changed", { reason: "installed" });
