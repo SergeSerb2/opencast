@@ -39,13 +39,13 @@ import SurgecastCore
     let source = NSWorkspace.shared.frontmostApplication
     if ignored.contains(source?.bundleIdentifier ?? "") || ignored.contains(source?.bundleURL?.path ?? "") { return }
     Task {
-      if var snapshot = try? await read() {
+      if var snapshot = try? await read(persistImages: true) {
         snapshot["sourceApp"] = source?.bundleURL.map(Applications.info)
         hub.emit("clipboard.changed", snapshot)
       }
     }
   }
-  func read() async throws -> [String: Any]? {
+  func read(persistImages: Bool = false) async throws -> [String: Any]? {
     let pb = NSPasteboard.general
     let types = (pb.types ?? []).map(\.rawValue)
     guard !types.isEmpty else { return nil }
@@ -73,7 +73,7 @@ import SurgecastCore
       let width = bitmap.pixelsWide
       let height = bitmap.pixelsHigh
       primary = try await Task.detached {
-        try ClipboardImageStore.content(png: png, file: file, width: width, height: height, types: types)
+        try ClipboardImageStore.content(png: png, file: file, width: width, height: height, types: types, persist: persistImages)
       }.value
       if recognizeText && o["concealed"] as? Bool != true && o["transient"] as? Bool != true {
         let accurate = recognitionMode != "fast"
