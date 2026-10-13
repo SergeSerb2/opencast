@@ -6,7 +6,8 @@ on:
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # A newer merge must not cancel the CI run that gates an older merge's release.
+  group: ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -21,6 +22,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Check release script syntax
+        run: bash -n scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

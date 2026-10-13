@@ -1,0 +1,49 @@
+name: Release OpenCast DMG
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Keep a job for every merged commit; the single local runner serializes builds.
+concurrency:
+  group: macos-release-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish on the local Mac
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: [self-hosted, macOS, ARM64, opencast-release]
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck packaged TypeScript with tsc-rs
+        run: |
+          for package in protocol frontend backend raycast-api; do
+            pnpm dlx tsc-rs@0.5.0 --noEmit -p "packages/$package/tsconfig.json"
+          done
+      - name: Build, verify, and publish the DMG
+        run: ./scripts/release-macos.sh

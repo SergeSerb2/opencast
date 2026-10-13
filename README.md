@@ -57,10 +57,16 @@ packages/protocol     Shared TypeScript contracts
 
 Requirements: macOS 14+, Xcode 16+ (Swift 6), Node 22.13+, pnpm 10.
 
+Apple silicon DMGs are available from [the latest release](https://github.com/SergeSerb2/surgecast/releases/latest).
+Node is included. Open the DMG and drag OpenCast.app to Applications. Current releases
+are ad-hoc signed and are not notarized; macOS may require **Open Anyway** in
+**System Settings → Privacy & Security** after the first launch attempt.
+
 ```sh
 pnpm install
 ./scripts/build-app.sh --open          # builds everything into build/OpenCast.app
 ./scripts/build-app.sh --bundle-node   # also embeds the current node binary
+./scripts/build-dmg.sh                 # builds and verifies a DMG, checksum, and source manifest
 ```
 
 Press **⌥Space** to open OpenCast. Grant **Accessibility** permission when asked (needed for
@@ -109,6 +115,7 @@ passphrase. Use the same passphrase on your other Macs.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Cloud Sync](docs/SYNC.md)
 - [Extensions](docs/EXTENSIONS.md) and the [extension UI contract](docs/EXTENSION-UI.md)
+- [macOS releases and the local runner](docs/RELEASES.md)
 
 ## License
 
