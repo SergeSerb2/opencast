@@ -168,6 +168,7 @@ function CommandListContent({ sections, selected, onSelect, isLoading, error, re
     return (
       <EmptyView
         title={error ? "Could Not Load AI Commands" : "No AI Commands Found"}
+        icon={error ? "warning-16" : undefined}
         description={error ? errorMessage(error) : searching ? undefined : "Turn prompts you use often into commands you can run from anywhere."}
         action={primary ? { title: primary.title, onAction: () => view.runAction(primary) } : undefined}
       />

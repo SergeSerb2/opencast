@@ -147,9 +147,12 @@ export function ScriptCommandsView({ props, title, icon }: LauncherViewProps<{ q
   const createAction: ActionModel = { id: "create", title: "Create Script Command", icon: "new-document-16", shortcut: sc("cmd", "n"), onAction: openCreate };
   const addDirectoryAction: ActionModel = { id: "add-directory", title: "Add Script Directory…", icon: "new-folder-16", shortcut: sc("cmd", "shift", "n"), onAction: openAddDirectory };
   const reloadAction: ActionModel = { id: "reload", title: "Reload Script Commands", icon: "arrow-clockwise-16", shortcut: sc("cmd", "r"), onAction: reload };
+  const retryAction: ActionModel = { id: "retry", title: "Try Again", icon: "arrow-clockwise-16", shortcut: sc("cmd", "r"), onAction: refetch };
   const noDirectories = directories.length === 0 && all.length === 0;
 
-  const actions: ActionPanelModel = selected
+  const actions: ActionPanelModel = error && !selected
+    ? { sections: [{ actions: [retryAction, createAction, addDirectoryAction] }] }
+    : selected
     ? {
         title: selected.title,
         sections: [

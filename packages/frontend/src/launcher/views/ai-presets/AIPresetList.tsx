@@ -59,7 +59,7 @@ export function AIPresetList({ navigationTitle, navigationIcon, initialQuery = "
       onSearchTextChange={setQuery}
       searchBarPlaceholder="Search presets…"
       isLoading={isLoading}
-      isShowingDetail
+      isShowingDetail={sections.some((section) => section.items.length > 0)}
       navigationTitle={navigationTitle}
       navigationIcon={navigationIcon}
       actions={emptyActions}
@@ -101,7 +101,7 @@ export function AIPresetList({ navigationTitle, navigationIcon, initialQuery = "
       <List.EmptyView
         title={error ? "Could Not Load Presets" : "No Presets Found"}
         description={error ? errorMessage(error) : query ? undefined : "Save instructions, a model and tools as a preset to start focused chats in one step."}
-        icon={query ? undefined : DEFAULT_AI_ICON}
+        icon={error ? "warning-16" : query ? undefined : DEFAULT_AI_ICON}
         actions={emptyActions}
       />
     </List>
