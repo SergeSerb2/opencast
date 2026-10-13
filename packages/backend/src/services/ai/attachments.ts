@@ -3,6 +3,7 @@ import { extname } from "node:path";
 import { inflateSync } from "node:zlib";
 import type { AIModel, AIProvider } from "@surgecast/protocol";
 import type { AIChatTurn } from "../../context";
+import { httpUrl } from "./common";
 import { readPage } from "./web";
 export type Part =
   | { type: "text"; text: string }
@@ -96,13 +97,38 @@ export async function prepareTurns(
         if (attachment.kind === "image" && attachment.url && !attachment.path) {
           if (!model.capabilities.vision)
             throw new Error(`Model ${model.name} does not support image attachments`);
-          const match = /^data:(image\/(?:png|jpeg|gif|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(attachment.url);
-          if (!match || match[2].length > Math.ceil(10 * 1024 * 1024 / 3) * 4)
-            throw new Error("Image attachments require a PNG, JPEG, GIF or WebP data URL smaller than 10 MiB");
-          const bytes = Buffer.from(match[2], "base64");
-          if (!bytes.length || bytes.length > 10 * 1024 * 1024 || bytes.toString("base64") !== match[2])
-            throw new Error("Invalid image attachment data");
-          parts.push({ type: "image", mimeType: match[1], data: match[2], name: attachment.name });
+          let mimeType: string, data: string;
+          if (attachment.url.startsWith("data:")) {
+            const match = /^data:(image\/(?:png|jpeg|gif|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(attachment.url);
+            if (!match || match[2].length > Math.ceil(10 * 1024 * 1024 / 3) * 4)
+              throw new Error("Image attachments require a PNG, JPEG, GIF or WebP data URL smaller than 10 MiB");
+            const bytes = Buffer.from(match[2], "base64");
+            if (!bytes.length || bytes.length > 10 * 1024 * 1024 || bytes.toString("base64") !== match[2])
+              throw new Error("Invalid image attachment data");
+            mimeType = match[1]; data = match[2];
+          } else {
+            httpUrl(attachment.url);
+            const response = await fetch(attachment.url, { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000), redirect: "error" });
+            mimeType = response.headers.get("content-type")?.split(";")[0] ?? "";
+            if (!response.ok || !/^image\/(?:png|jpeg|gif|webp)$/.test(mimeType) || !response.body || Number(response.headers.get("content-length")) > 10 * 1024 * 1024) {
+              await response.body?.cancel();
+              throw new Error("Remote image must be a PNG, JPEG, GIF or WebP smaller than 10 MiB");
+            }
+            const reader = response.body.getReader(), chunks: Uint8Array[] = [];
+            let size = 0;
+            try {
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                size += value.length;
+                if (size > 10 * 1024 * 1024) throw new Error("Remote image exceeds 10 MiB");
+                chunks.push(value);
+              }
+            } finally { await reader.cancel(); }
+            if (!size) throw new Error("Remote image is empty");
+            data = Buffer.concat(chunks).toString("base64");
+          }
+          parts.push({ type: "image", mimeType, data, name: attachment.name });
           continue;
         }
         if (!attachment.path)

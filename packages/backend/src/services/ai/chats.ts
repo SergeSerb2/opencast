@@ -278,6 +278,9 @@ export class Chats {
       };
       parentId = user.id;
     }
+    if (this.ctx.settings.get("ai.runningSendAction") === "steer")
+      for (const active of this.runs.values()) if (active.chatId === chat.id)
+        active.controller.abort(new Error("Response steered by a follow-up"));
     const now = monotonicNow(),
       assistant: AIMessage = {
         id: randomUUID(),
@@ -373,6 +376,7 @@ export class Chats {
     };
     try {
       run.controller.signal.throwIfAborted();
+      if (ctx.settings.get("ai.preventIdleSleep")) await ctx.native.call("system.setIdleSleepPrevented", { id: run.streamId, prevented: true });
       const chat = this.get(run.chatId),
         preset = chat.presetId
           ? ctx.entities.get<AIPreset>("aiPresets", chat.presetId)?.data
@@ -479,6 +483,9 @@ export class Chats {
           restoreClipboard: true,
         });
       await this.title(run, branch, assistant);
+      if (ctx.settings.get("ai.backgroundNotifications") &&
+        !(await ctx.native.call("window.isVisible", { kind: chat.source === "quick-ai" ? "main" : "ai-chat" }).catch(() => true)))
+        await ctx.native.call("system.notification", { title: "AI response ready", body: chat.title }).catch(() => {});
       emit({
         type: "done",
         usage: result.usage,
@@ -497,6 +504,7 @@ export class Chats {
           status: error instanceof ProviderError ? error.status : undefined,
         });
     } finally {
+      await ctx.native.call("system.setIdleSleepPrevented", { id: run.streamId, prevented: false }).catch(() => {});
       clearTimeout(persistTimer);
       for (const pending of run.confirmations.values()) pending.resolve(false);
       run.confirmations.clear();

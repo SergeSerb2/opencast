@@ -25,7 +25,7 @@ export async function harness() {
     ready: (() => void | Promise<void>)[] = [],
     shutdown: (() => void | Promise<void>)[] = [],
     keys = new Map<string, string>();
-  const nativeCall = vi.fn(async (method: string, p: any) => {
+  const nativeCall = vi.fn(async (method: string, p: any): Promise<unknown> => {
     if (method === "keychain.get") return keys.get(p.account) ?? null;
     if (method === "keychain.set") {
       keys.set(p.account, p.value);

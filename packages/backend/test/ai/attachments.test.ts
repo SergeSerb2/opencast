@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import type { AIModel, AIProvider } from "@surgecast/protocol";
 import {
   prepareTurns,
@@ -11,6 +11,7 @@ let dir: string | undefined;
 afterEach(async () => {
   if (dir) await rm(dir, { recursive: true, force: true });
   dir = undefined;
+  vi.unstubAllGlobals();
 });
 const model: AIModel = {
   id: "test",
@@ -131,4 +132,12 @@ it("accepts bounded inline images and rejects unsupported models and oversized t
   expect((await prepareTurns(turns, provider, model))[0].parts[1]).toMatchObject({ type: "image", mimeType: "image/png" });
   await expect(prepareTurns(turns, provider, { ...model, capabilities: { vision: false } })).rejects.toThrow("does not support image");
   await expect(prepareTurns([{ role: "user", content: "", attachments: [{ id: "large", kind: "file", name: "large.txt", text: "x".repeat(512 * 1024 + 1) }] }], provider, model)).rejects.toThrow("512 KiB");
+});
+
+it("loads remote images with a size bound and rejects credentials in their URLs", async () => {
+  vi.stubGlobal("fetch", async () => new Response("image bytes", { headers: { "content-type": "image/png" } }));
+  const turns = [{ role: "user" as const, content: "", attachments: [{ id: "remote", kind: "image" as const, name: "remote.png", url: "https://example.test/image.png" }] }];
+  expect((await prepareTurns(turns, provider, model))[0].parts[0]).toMatchObject({ type: "image", data: Buffer.from("image bytes").toString("base64") });
+  turns[0].attachments[0].url = "https://name:password@example.test/image.png";
+  await expect(prepareTurns(turns, provider, model)).rejects.toThrow("credentials");
 });
