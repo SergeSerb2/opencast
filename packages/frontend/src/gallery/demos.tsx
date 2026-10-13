@@ -191,6 +191,23 @@ export function FormDemo() {
   );
 }
 
+const LARGE = Array.from({ length: 2000 }, (_, i) => ({ id: `row-${i}`, title: `Item ${i + 1}`, subtitle: `Section ${Math.floor(i / 100) + 1}` }));
+
+/** 2,000 rows in 20 sections: windowing and keyboard performance. */
+export function LargeListDemo() {
+  return (
+    <List searchBarPlaceholder="Filter 2,000 rows…" navigationTitle="Large List">
+      {Array.from({ length: 20 }, (_, s) => (
+        <List.Section key={s} title={`Section ${s + 1}`} subtitle="100">
+          {LARGE.slice(s * 100, s * 100 + 100).map((row) => (
+            <List.Item key={row.id} id={row.id} title={row.title} subtitle={row.subtitle} icon="blank-document-16" accessories={[{ text: "Command" }]} actions={itemActions(row.title)} />
+          ))}
+        </List.Section>
+      ))}
+    </List>
+  );
+}
+
 export function EmptyDemo() {
   return (
     <List navigationTitle="Search Snippets" navigationIcon={tile("snippets-16", "#5AB8FF", "#2D7FF0")} searchBarPlaceholder="Search snippets…">

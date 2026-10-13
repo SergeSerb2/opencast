@@ -13,9 +13,9 @@
  * near the edges of the window's rounded clip.
  */
 .theme-root {
-  --glass-backdrop: blur(var(--blur-2)) saturate(1.4) brightness(1.2);
-  --glass-fill: rgb(255 255 255 / 0.04);
-  --glass-fill-top: rgb(255 255 255 / 0.05);
+  --glass-backdrop: blur(var(--blur-2)) saturate(1.1) brightness(1.25);
+  --glass-fill: rgb(255 255 255 / 0.05);
+  --glass-fill-top: rgb(255 255 255 / 0.065);
   --glass-panel-tint: rgb(72 68 100 / 0.62);
   --glass-rim-light: rgb(255 255 255 / 0.36);
   --glass-rim-mid: rgb(255 255 255 / 0.06);

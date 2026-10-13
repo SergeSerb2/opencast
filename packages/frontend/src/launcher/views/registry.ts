@@ -27,7 +27,3 @@ export function registerView<P>(id: string, component: ComponentType<LauncherVie
 export function getView(id: string): ComponentType<LauncherViewProps<Record<string, unknown>>> | undefined {
   return views.get(id) as ComponentType<LauncherViewProps<Record<string, unknown>>> | undefined;
 }
-
-export function registeredViewIds(): string[] {
-  return [...views.keys()];
-}

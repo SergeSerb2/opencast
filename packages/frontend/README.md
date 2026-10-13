@@ -67,6 +67,8 @@ should render `<FloatingToastHost />` so `showToast` appears as a floating toast
 | `useConnectionState()` | `"connecting" \| "open" \| "reconnecting" \| "closed"`. |
 | `native.call(method, params)` / `native.on(topic, fn)` | Swift host API (`NativeMethods` / `NativeEvents`) through `webkit.messageHandlers.native`. In a browser, `native-mock.ts` resolves sensible defaults (no-op window calls, `navigator.clipboard`, dev HUD) and rejects the rest with `NativeUnavailable`. |
 | `getEnv()` | `{ backendUrl, token, window, macOSMajor, native, mock, dev, … }`. |
+| `usePreviousAppName()` / `pasteTitle()` | The app that was frontmost before the launcher opened ("Paste to Safari"). |
+| `setBackend(client)` | Swap the backend client (tests, previews). |
 | `RpcError`, `isCancelled(e)`, `errorMessage(e)` | Error helpers (`bridge/errors.ts`). |
 
 The mock backend (`bridge/mock/`) implements a realistic subset of `BackendMethods`

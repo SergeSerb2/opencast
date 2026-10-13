@@ -78,8 +78,3 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
     if (!options?.sessionClosed) disposeEntries([entry]);
   },
 }));
-
-export function topEntry(): NavEntry {
-  const { stack } = useNavigationStore.getState();
-  return stack[stack.length - 1];
-}
