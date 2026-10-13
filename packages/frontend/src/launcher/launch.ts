@@ -24,7 +24,7 @@ export function hideLauncher(): void {
 }
 
 /** Apply a `LaunchResult` from the backend to the launcher (push, hide, HUD, toast). */
-export function handleLaunchResult(result: LaunchResult, options: Pick<LaunchOptions, "title" | "icon" | "replace"> & { commandId?: CommandId } = {}): void {
+export function handleLaunchResult(result: LaunchResult, options: Pick<LaunchOptions, "title" | "icon" | "replace" | "arguments"> & { commandId?: CommandId } = {}): void {
   const nav = useNavigationStore.getState();
   const place = options.replace ? nav.replaceTop : nav.push;
   switch (result.kind) {
@@ -40,7 +40,8 @@ export function handleLaunchResult(result: LaunchResult, options: Pick<LaunchOpt
         void native.call("window.show", { kind: "ai-chat", payload: { prompt: result.prompt, presetId: result.presetId, aiCommandId: result.aiCommandId } }).catch(() => undefined);
         hideLauncher();
       } else {
-        place({ kind: "quick-ai", prompt: result.prompt, aiCommandId: result.aiCommandId, presetId: result.presetId, title: options.title ?? "Quick AI", icon: options.icon, commandId: options.commandId });
+        // AI Commands resolve their {argument} placeholders from the values typed in root search.
+        place({ kind: "quick-ai", prompt: result.prompt, aiCommandId: result.aiCommandId, presetId: result.presetId, arguments: result.aiCommandId ? options.arguments : undefined, title: options.title ?? "Quick AI", icon: options.icon, commandId: options.commandId });
       }
       return;
     case "done":

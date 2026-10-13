@@ -7,6 +7,7 @@
  * Keychain via the secrets service.
  */
 
+import type { AIChatFolder } from "./models";
 import type { Hotkey } from "./ui";
 
 export type SyncCategory =
@@ -85,6 +86,8 @@ export const SETTINGS = {
   "ai.alwaysAllowedTools": synced<string[]>([]),
   "ai.deleteChatWarning": synced(true),
   "ai.editMessageWarning": synced(true),
+  /** Folders of the AI Chat sidebar. */
+  "ai.chatFolders": synced<AIChatFolder[]>([]),
   /** Personal context added to every chat (not to AI Commands). */
   "ai.profile": synced(""),
   "ai.memoryEnabled": synced(false),

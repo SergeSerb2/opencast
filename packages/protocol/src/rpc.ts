@@ -152,7 +152,7 @@ export interface BackendMethods {
   "ai.chats.list": { params: { query?: string; includeArchived?: boolean; source?: AIChat["source"] }; result: AIChat[] };
   "ai.chats.get": { params: { id: string }; result: { chat: AIChat; messages: AIMessage[] } | null };
   "ai.chats.create": { params: { presetId?: string; model?: ModelRef; source?: AIChat["source"]; title?: string }; result: AIChat };
-  "ai.chats.update": { params: { id: string; patch: Partial<Pick<AIChat, "title" | "pinned" | "archived" | "model" | "presetId" | "creativity" | "webSearch" | "tools" | "folderId" | "currentLeafId">> }; result: AIChat };
+  "ai.chats.update": { params: { id: string; patch: Partial<Pick<AIChat, "title" | "pinned" | "archived" | "model" | "presetId" | "creativity" | "webSearch" | "tools" | "folderId" | "currentLeafId" | "source" | "reasoningEffort" | "systemInstructions">> }; result: AIChat };
   "ai.chats.delete": { params: { id: string }; result: Void };
   "ai.chats.export": { params: { id: string; format: "markdown" | "json" }; result: { content: string; fileName: string } };
   /**

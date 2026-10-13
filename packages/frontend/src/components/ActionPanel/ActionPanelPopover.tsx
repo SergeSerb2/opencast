@@ -12,6 +12,8 @@ export interface ActionPanelPopoverProps {
   /** Defaults to the window's bottom-right corner, inset 8px (§4). */
   anchor?: PopoverAnchor;
   align?: "start" | "end";
+  /** Open above the anchor (default, footer) or below it (header buttons); the search field faces the anchor. */
+  side?: "top" | "bottom";
 }
 
 interface Level {
@@ -37,7 +39,7 @@ function toMenuSections(sections: ActionSectionModel[]): { menu: MenuSection[]; 
 }
 
 /** The ⌘K panel: 350×≤280 glass card opening upward from the footer's right pill, search at the bottom. */
-export function ActionPanelPopover({ model, open, onClose, onRun, anchor = BOTTOM_RIGHT, align = "end" }: ActionPanelPopoverProps) {
+export function ActionPanelPopover({ model, open, onClose, onRun, anchor = BOTTOM_RIGHT, align = "end", side = "top" }: ActionPanelPopoverProps) {
   const [stack, setStack] = useState<Level[]>([]);
 
   useLayoutEffect(() => {
@@ -59,13 +61,13 @@ export function ActionPanelPopover({ model, open, onClose, onRun, anchor = BOTTO
   };
 
   return (
-    <Popover open={open && Boolean(level)} onClose={onClose} anchor={anchor} side="top" align={align} offset={0} width={350} flip={false} className="sc-action-panel" aria-label="Actions" role="dialog">
+    <Popover open={open && Boolean(level)} onClose={onClose} anchor={anchor} side={side} align={align} offset={side === "top" ? 0 : 8} width={350} flip={false} className="sc-action-panel" aria-label="Actions" role="dialog">
       {level && (
         <Menu
           key={stack.length}
           sections={menu}
           title={level.title}
-          layout="up"
+          layout={side === "top" ? "up" : "down"}
           searchPlaceholder={level.submenu?.searchPlaceholder ?? "Search for actions…"}
           filtering={level.submenu?.filtering ?? true}
           isLoading={level.submenu?.isLoading}

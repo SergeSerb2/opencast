@@ -48,26 +48,56 @@ export function resolveMarkdownImage(src: string): { url: string; width?: number
   return { url, width, height, tintColor };
 }
 
-function CodeBlock({ children, ...rest }: ComponentProps<"pre">) {
+function extractText(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (node && typeof node === "object" && "props" in node) return extractText((node as { props: { children?: ReactNode } }).props.children);
+  return "";
+}
+
+/** Fence language from the `<code class="language-…">` child (rehype-highlight keeps it). */
+function codeLanguage(children: ReactNode): string | undefined {
+  const child = Array.isArray(children) ? children[0] : children;
+  const className = child && typeof child === "object" && "props" in child ? (child as { props: { className?: string } }).props.className : undefined;
+  return className?.match(/(?:^|\s)language-([\w+#.-]+)/)?.[1];
+}
+
+function CodeBlock({ children, variant, node: _node, ...rest }: ComponentProps<"pre"> & { variant: "detail" | "chat"; node?: unknown }) {
   const [copied, setCopied] = useState(false);
-  const extractText = (node: ReactNode): string => {
-    if (typeof node === "string" || typeof node === "number") return String(node);
-    if (Array.isArray(node)) return node.map(extractText).join("");
-    if (node && typeof node === "object" && "props" in node) return extractText((node as { props: { children?: ReactNode } }).props.children);
-    return "";
-  };
+  const [wrap, setWrap] = useState(false);
   const copy = async () => {
     const text = extractText(children).replace(/\n$/, "");
     await native.call("clipboard.write", { content: { kind: "text", text } }).catch(() => navigator.clipboard?.writeText(text));
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
+  const copyButton = (className: string) => (
+    <button type="button" className={className} aria-label="Copy code" title="Copy Code" onMouseDown={(e) => e.preventDefault()} onClick={() => void copy()}>
+      <Icon name={copied ? "checkmark-16" : "copy-clipboard-16"} size={14} />
+    </button>
+  );
+  if (variant === "chat") {
+    // Chat: a sticky pill with the fence language, line wrapping and copy (§6.6).
+    const language = codeLanguage(children);
+    return (
+      <div className="sc-md-code" data-wrap={wrap || undefined}>
+        <div className="sc-md-code__bar">
+          <div className="sc-md-code__toolbar">
+            {language && <span className="sc-md-code__language">{language}</span>}
+            <button type="button" className="sc-md-code__tool" aria-label="Wrap lines" aria-pressed={wrap} title={wrap ? "Don’t Wrap Lines" : "Wrap Lines"} onMouseDown={(e) => e.preventDefault()} onClick={() => setWrap((w) => !w)}>
+              <Icon name="text-16" size={14} />
+            </button>
+            {copyButton("sc-md-code__tool")}
+          </div>
+        </div>
+        <pre {...rest}>{children}</pre>
+      </div>
+    );
+  }
   return (
     <div className="sc-md-code">
       <pre {...rest}>{children}</pre>
-      <button type="button" className="sc-md-code__copy" aria-label="Copy code" onMouseDown={(e) => e.preventDefault()} onClick={() => void copy()}>
-        <Icon name={copied ? "checkmark-16" : "copy-clipboard-16"} size={14} />
-      </button>
+      {copyButton("sc-md-code__copy")}
     </div>
   );
 }
@@ -97,7 +127,7 @@ export const Markdown = memo(function Markdown({ children, variant = "detail", c
       const { url, width, height } = resolveMarkdownImage(src);
       return <img src={url} alt={alt ?? ""} width={width} height={height} loading="lazy" draggable={false} />;
     },
-    pre: (props) => <CodeBlock {...props} />,
+    pre: (props) => <CodeBlock {...props} variant={variant} />,
     input: ({ type, checked }) => (type === "checkbox" ? <span className="sc-md-task" data-checked={checked || undefined} aria-checked={checked} role="checkbox" /> : null),
     table: ({ children: content }) => (
       <div className="sc-md-table">

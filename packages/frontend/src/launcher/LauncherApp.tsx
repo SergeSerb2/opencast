@@ -33,7 +33,7 @@ function renderEntry(entry: NavEntry): ReactNode {
     }
     case "quick-ai": {
       const View = getView("quick-ai");
-      const view = { id: "quick-ai", title: entry.title, props: { prompt: entry.prompt, aiCommandId: entry.aiCommandId, presetId: entry.presetId } };
+      const view = { id: "quick-ai", title: entry.title, props: { prompt: entry.prompt, aiCommandId: entry.aiCommandId, presetId: entry.presetId, arguments: entry.arguments } };
       return View ? <View props={view.props} title={entry.title} icon={entry.icon} commandId={entry.commandId} view={view} /> : <UnavailableView id="quick-ai" title={entry.title} />;
     }
   }

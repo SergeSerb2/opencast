@@ -15,7 +15,7 @@ export type NavEntry =
   | (EntryBase & { kind: "builtin"; view: BuiltinView })
   | (EntryBase & { kind: "element"; element: ReactNode })
   | (EntryBase & { kind: "extension"; sessionId: string })
-  | (EntryBase & { kind: "quick-ai"; prompt?: string; aiCommandId?: string; presetId?: string });
+  | (EntryBase & { kind: "quick-ai"; prompt?: string; aiCommandId?: string; presetId?: string; arguments?: Record<string, string> });
 
 export type NewEntry = NavEntry extends infer E ? (E extends NavEntry ? Omit<E, "key"> : never) : never;
 

@@ -238,7 +238,7 @@ export interface ClipboardItem {
 // ---------------------------------------------------------------------------
 
 /** How Surgecast talks to a provider. */
-export type AIProviderApi = "openai" | "anthropic" | "google" | "ollama";
+export type AIProviderApi = "openai" | "openai-responses" | "anthropic" | "google" | "ollama";
 
 /** (entity: aiProviders) API keys are in the Keychain at "ai.provider:<id>:apiKey". */
 export interface AIProvider {
@@ -343,11 +343,14 @@ export interface AIMessage {
 export interface AIChat {
   id: string;
   title: string;
+  titleSource?: "automatic" | "user";
   /** Leaf message id of the visible branch. */
   currentLeafId?: string;
   presetId?: string;
   model?: ModelRef;
   creativity?: Creativity;
+  reasoningEffort?: "none" | "low" | "medium" | "high";
+  systemInstructions?: string;
   webSearch?: boolean;
   /** Enabled tool sets for this chat ("web", "ext:<name>", "mcp:<serverId>"). */
   tools?: string[];
@@ -357,6 +360,13 @@ export interface AIChat {
   source: "chat" | "quick-ai" | "ai-command";
   createdAt: number;
   updatedAt: number;
+}
+
+/** A folder in the AI Chat sidebar (setting "ai.chatFolders"); chats reference it with `folderId`. */
+export interface AIChatFolder {
+  id: string;
+  name: string;
+  createdAt: number;
 }
 
 /** A Raycast "Preset" / "Agent": reusable chat setup. (entity: aiPresets) */

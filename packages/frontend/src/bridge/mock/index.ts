@@ -2,7 +2,6 @@ import {
   defaultSettings,
   isSettingsKey,
   RpcErrorCode,
-  type AIChat,
   type BackendEvents,
   type BackendMethod,
   type BackendParams,
@@ -18,7 +17,8 @@ import type { BackendClient, CallArgs, CallOptions } from "../backend";
 import type { Emitter } from "../emitter";
 import { cancelledError, RpcError } from "../errors";
 import { ALL_COMMANDS, QUICKLINKS } from "./fixtures/commands";
-import { CHATS, CLIPBOARD, EXTENSIONS, MESSAGES, NOTES, PROVIDERS, SNIPPETS } from "./fixtures/content";
+import { createAiMockHandlers } from "./ai";
+import { CLIPBOARD, EXTENSIONS, NOTES, PROVIDERS, SNIPPETS } from "./fixtures/content";
 import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
 
@@ -55,7 +55,6 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
   const clipboard: ClipboardItem[] = CLIPBOARD.map((c) => ({ ...c }));
   const snippets: Snippet[] = SNIPPETS.map((s) => ({ ...s }));
   const notes: Note[] = NOTES.map((n) => ({ ...n }));
-  const chats: AIChat[] = CHATS.map((c) => ({ ...c }));
   const sessions = new Map<string, MockSession>();
   const extensionPrefs = new Map<string, Record<string, unknown>>();
   let sessionCounter = 0;
@@ -198,15 +197,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "notes.recent": () => notes[0] ?? null,
 
     "ai.providers.list": () => PROVIDERS,
-    "ai.models.list": () =>
-      PROVIDERS.flatMap((p) => p.models.filter((m) => m.enabled).map((m) => ({ ref: `${p.id}/${m.id}`, providerId: p.id, providerName: p.name, modelId: m.id, name: m.name, capabilities: m.capabilities, contextWindow: m.contextWindow }))),
-    "ai.chats.list": () => chats,
-    "ai.chats.get": ({ id }) => {
-      const chat = chats.find((c) => c.id === id);
-      return chat ? { chat, messages: MESSAGES.filter((m) => m.chatId === id) } : null;
-    },
-    "ai.commands.list": () => [],
-    "ai.presets.list": () => [],
+    ...createAiMockHandlers(events, settings),
 
     "extensions.list": () => EXTENSIONS,
     "extensions.getPreferences": ({ name, command }) => {

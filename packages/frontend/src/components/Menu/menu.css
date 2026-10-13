@@ -112,6 +112,11 @@
 .sc-menu__accessory-text {
   color: var(--color-text-secondary);
 }
+.sc-menu__badge {
+  display: inline-flex;
+  margin-right: calc(-1 * var(--space-4));
+  color: var(--color-text-tertiary);
+}
 .sc-menu__check,
 .sc-menu__chevron {
   color: var(--color-text-secondary);

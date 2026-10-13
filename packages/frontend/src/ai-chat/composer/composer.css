@@ -1,0 +1,247 @@
+/* Chat composer capsule (§6.5): 36px compact, radius 18, media-controls glass. */
+.sc-ai-composer {
+  display: flex;
+  flex-direction: column;
+  min-height: round(calc(36 * var(--spx)), 1px);
+  border-radius: round(calc(18 * var(--spx)), 1px);
+  pointer-events: auto;
+}
+.theme-root[light] .sc-ai-composer {
+  box-shadow:
+    0 1px 8px -8px #0000001a,
+    0 4px 12px #0000000d,
+    0 -8px 64px 8px #0000000d;
+}
+.sc-ai-composer[data-variant="quick-ai"] {
+  --glass-fill: rgb(255 255 255 / 0.1);
+  --glass-fill-top: rgb(255 255 255 / 0.12);
+}
+.theme-root[light] .sc-ai-composer[data-variant="quick-ai"] {
+  --glass-fill: rgb(255 255 255 / 0.55);
+  --glass-fill-top: rgb(255 255 255 / 0.6);
+}
+.sc-ai-composer[data-disabled] {
+  opacity: 0.6;
+}
+
+.sc-ai-composer__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: round(calc(36 * var(--spx)), 1px);
+}
+.sc-ai-composer[data-expanded] .sc-ai-composer__row {
+  align-items: end;
+}
+.sc-ai-composer__leading {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  height: round(calc(36 * var(--spx)), 1px);
+  padding-left: var(--space-4);
+}
+.sc-ai-composer__trailing {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  height: round(calc(36 * var(--spx)), 1px);
+  padding-right: var(--space-4);
+}
+.sc-ai-composer__trailing:empty {
+  padding-right: 0;
+}
+
+.sc-ai-composer__editor {
+  grid-column: 2;
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+}
+.sc-ai-composer__field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sc-ai-composer__input,
+.sc-ai-composer__mirror {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: var(--space-8) var(--space-16) var(--space-8) var(--space-4);
+  font-size: var(--font-size-13);
+  line-height: round(calc(20 * var(--spx)), 1px);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  letter-spacing: inherit;
+}
+.sc-ai-composer[data-variant="quick-ai"] :is(.sc-ai-composer__input, .sc-ai-composer__mirror) {
+  padding-left: var(--space-16);
+}
+.sc-ai-composer__input {
+  position: relative;
+  resize: none;
+  overflow-y: auto;
+  scrollbar-width: none;
+  color: var(--color-text-primary);
+}
+.sc-ai-composer__input::-webkit-scrollbar {
+  display: none;
+}
+.sc-ai-composer__input::placeholder {
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sc-ai-composer__mirror {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: transparent;
+  pointer-events: none;
+}
+.sc-ai-composer__mirror mark {
+  color: transparent;
+  border-radius: 0.4em;
+  background: var(--color-surface-token);
+  box-shadow: 0 0 0 2px var(--color-surface-token);
+}
+
+.sc-ai-composer__button {
+  display: inline-grid;
+  place-items: center;
+  width: round(calc(28 * var(--spx)), 1px);
+  height: round(calc(28 * var(--spx)), 1px);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  background: var(--color-surface-control);
+  animation: sc-ai-appear 0.15s ease-out;
+}
+.sc-ai-composer__button:hover {
+  background: var(--fg-15);
+}
+.sc-ai-composer__button[data-kind="stop"] .sc-icon {
+  fill: currentColor;
+}
+
+/* Attachment chips (§6.4 Attachments). */
+.sc-ai-composer__attachments {
+  display: flex;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-8) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sc-ai-chip {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  border-radius: var(--radius-12);
+  background: var(--fg-5);
+  box-shadow: inset 0 0 0 1px var(--fg-10);
+  font-size: var(--font-size-12);
+}
+.sc-ai-chip[data-kind="image"] {
+  min-width: 56px;
+  max-width: round(calc(100 * var(--spx)), 1px);
+  overflow: visible;
+}
+.sc-ai-chip[data-kind="image"] img {
+  height: 56px;
+  max-width: inherit;
+  min-width: 56px;
+  border-radius: inherit;
+  object-fit: cover;
+}
+.sc-ai-chip[data-kind="document"] {
+  gap: var(--space-12);
+  max-width: round(calc(168 * var(--spx)), 1px);
+  padding: 0 var(--space-12) 0 var(--space-8);
+}
+.sc-ai-chip__name {
+  min-width: 0;
+}
+.sc-ai-chip[data-kind="text"] {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--space-4);
+  width: round(calc(148 * var(--spx)), 1px);
+  padding: var(--space-8);
+}
+.sc-ai-chip__label {
+  font-size: var(--font-size-11);
+  color: var(--color-text-secondary);
+}
+.sc-ai-chip__quote {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+.sc-ai-chip__remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  background: color-mix(in oklab, var(--bg), var(--fg) 22%);
+  box-shadow: inset 0 0 0 1px var(--fg-5);
+  opacity: 0;
+}
+.sc-ai-chip:hover .sc-ai-chip__remove,
+.sc-ai-chip__remove:focus-visible {
+  opacity: 1;
+}
+
+.sc-ai-command-pill {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  max-width: 50%;
+  height: 22px;
+  margin: 7px 0 0 var(--space-4);
+  padding: 0 round(calc(7 * var(--spx)), 1px) 0 round(calc(5 * var(--spx)), 1px);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-control);
+  font-size: var(--font-size-12);
+}
+.sc-ai-command-pill button {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+}
+.sc-ai-command-pill button:hover {
+  color: var(--color-text-primary);
+  background: var(--fg-10);
+}
+
+.sc-ai-trigger-menu__list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: var(--space-8) 0;
+  scrollbar-width: none;
+}
+.sc-ai-trigger-menu__list .sc-menu__item,
+.sc-ai-trigger-menu__list .sc-menu__empty {
+  height: var(--list-row-small);
+}
+.sc-ai-trigger-menu__list .sc-menu__header {
+  height: 20px;
+}
+.sc-ai-trigger-menu__list .sc-menu__header[data-first] {
+  height: 24px;
+}
+.sc-ai-trigger-menu__list .sc-menu__separator {
+  height: 17px;
+}

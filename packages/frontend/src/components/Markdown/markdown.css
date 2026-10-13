@@ -386,3 +386,54 @@ li:has(> .sc-md-task[data-checked]) {
 .sc-markdown .hljs-strong {
   font-weight: 600;
 }
+
+/* ---- chat code block toolbar: sticky pill, shown on hover (§6.6) ---- */
+.sc-md-code__bar {
+  position: sticky;
+  top: var(--window-header-height, 0px);
+  z-index: 1;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.sc-md-code__toolbar {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 2px;
+  margin: 8px 8px 0 0;
+  border-radius: var(--radius-8);
+  background: color-mix(in oklab, var(--bg), var(--color-fg-max) 35%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.theme-root[light] .sc-md-code__toolbar {
+  background: var(--bg);
+}
+.sc-md-code:hover .sc-md-code__toolbar,
+.sc-md-code__toolbar:focus-within {
+  opacity: 1;
+}
+.sc-md-code__language {
+  padding: 0 var(--space-8);
+  font-size: var(--font-size-11);
+  color: var(--color-text-secondary);
+  letter-spacing: 0;
+}
+.sc-md-code__tool {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-6);
+  color: var(--color-text-secondary);
+}
+.sc-md-code__tool:hover,
+.sc-md-code__tool[aria-pressed="true"] {
+  color: var(--color-text-primary);
+  background: var(--fg-5);
+}
+.sc-markdown[data-variant="chat"] .sc-md-code[data-wrap] pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
