@@ -27,7 +27,7 @@ describe("native receiver", () => {
     const { installNativeReceiver, native } = await import("../bridge/native");
     installNativeReceiver();
     const route = { kind: "settings", route: "cloud-sync" } as const;
-    window.__surgecastNative?.emit("window.route", route);
+    (window.__surgecastNative as NativeReceiver | undefined)?.emit("window.route", route);
 
     const onRoute = vi.fn();
     native.on("window.route", onRoute);
