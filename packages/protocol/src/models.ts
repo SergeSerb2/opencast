@@ -237,7 +237,7 @@ export interface ClipboardItem {
 // ---------------------------------------------------------------------------
 
 /** How Surgecast talks to a provider. */
-export type AIProviderApi = "openai" | "anthropic" | "google" | "ollama";
+export type AIProviderApi = "openai" | "openai-responses" | "anthropic" | "google" | "ollama";
 
 /** (entity: aiProviders) API keys are in the Keychain at "ai.provider:<id>:apiKey". */
 export interface AIProvider {

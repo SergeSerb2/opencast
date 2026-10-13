@@ -76,7 +76,7 @@ export function temperature(
   if (
     model?.capabilities.temperature === false ||
     (model?.capabilities.temperature !== true &&
-      provider?.api === "openai" &&
+      (provider?.api === "openai" || provider?.api === "openai-responses") &&
       /(^|\/)(o[134](?:-|$)|gpt-[5-9])/.test(model?.id ?? ""))
   )
     return undefined;

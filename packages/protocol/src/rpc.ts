@@ -144,7 +144,7 @@ export interface BackendMethods {
 
   // ---- AI: providers & models -------------------------------------------------------------------
   "ai.providers.list": { params: Void; result: (AIProvider & { hasApiKey: boolean })[] };
-  "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
+  "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; supportedApis?: AIProvider["api"][]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
   "ai.providers.upsert": { params: { provider: Partial<AIProvider> & { name: string; template: string; api: AIProvider["api"]; baseUrl: string }; apiKey?: string | null }; result: AIProvider };
   "ai.providers.delete": { params: { id: string }; result: Void };
   "ai.providers.test": { params: { id: string }; result: { ok: boolean; message: string; latencyMs?: number } };

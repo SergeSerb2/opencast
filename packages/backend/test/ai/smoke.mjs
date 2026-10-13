@@ -1,5 +1,6 @@
 /** Run after `pnpm --filter @surgecast/backend build`. All AI traffic stays on loopback. */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -10,13 +11,35 @@ import { once } from "node:events";
 import WebSocket from "ws";
 const dir = await mkdtemp(join(tmpdir(), "surgecast-ai-smoke-"));
 const requests = [];
+const responsesMode = process.argv.includes("--responses");
+const wireTool = `sc_${createHash("sha256").update("datetime.now").digest("hex").slice(0, 24)}`;
+const reasoningItem = {
+  type: "reasoning",
+  id: "rs_smoke",
+  summary: [{ type: "summary_text", text: "Check the clock" }],
+  encrypted_content: "mock-encrypted-reasoning",
+};
+const callItem = {
+  type: "function_call",
+  id: "fc_smoke",
+  call_id: "call_smoke",
+  name: wireTool,
+  arguments: "{}",
+};
 const mock = createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/v1/models") {
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ data: [{ id: "mock-model" }] }));
+    res.end(
+      JSON.stringify({
+        data: [{ id: responsesMode ? "gpt-6-astra" : "mock-model" }],
+      }),
+    );
     return;
   }
-  if (req.method !== "POST" || req.url !== "/v1/chat/completions") {
+  if (
+    req.method !== "POST" ||
+    req.url !== (responsesMode ? "/v1/responses" : "/v1/chat/completions")
+  ) {
     res.writeHead(404).end();
     return;
   }
@@ -24,11 +47,91 @@ const mock = createServer(async (req, res) => {
   for await (const chunk of req) body += chunk;
   const input = JSON.parse(body);
   requests.push(input);
-  const title = input.messages[0]?.content?.includes("Name this conversation");
+  const title = responsesMode
+    ? input.instructions?.includes("Name this conversation")
+    : input.messages[0]?.content?.includes("Name this conversation");
   const answer = title
     ? "Local Provider Smoke Test"
     : "Hello from your local provider";
   res.writeHead(200, { "Content-Type": "text/event-stream" });
+  if (responsesMode) {
+    const event = (data) =>
+      res.write(`event: ${data.type}\r\ndata: ${JSON.stringify(data)}\r\n\r\n`);
+    if (
+      !title &&
+      input.tools?.length &&
+      !input.input.some((item) => item.type === "function_call_output")
+    ) {
+      event({
+        type: "response.output_item.added",
+        output_index: 0,
+        item: { ...reasoningItem, summary: [] },
+      });
+      event({
+        type: "response.reasoning_summary_text.delta",
+        output_index: 0,
+        delta: "Check the clock",
+      });
+      event({
+        type: "response.output_item.done",
+        output_index: 0,
+        item: reasoningItem,
+      });
+      event({
+        type: "response.output_item.added",
+        output_index: 1,
+        item: { ...callItem, arguments: "" },
+      });
+      event({
+        type: "response.function_call_arguments.delta",
+        output_index: 1,
+        item_id: callItem.id,
+        delta: "{}",
+      });
+      event({
+        type: "response.function_call_arguments.done",
+        output_index: 1,
+        item_id: callItem.id,
+        arguments: "{}",
+      });
+      event({
+        type: "response.output_item.done",
+        output_index: 1,
+        item: callItem,
+      });
+      event({
+        type: "response.completed",
+        response: {
+          status: "completed",
+          output: [reasoningItem, callItem],
+          usage: {
+            input_tokens: 9,
+            output_tokens: 7,
+            output_tokens_details: { reasoning_tokens: 4 },
+          },
+        },
+      });
+    } else {
+      for (const delta of [answer.slice(0, 6), answer.slice(6)])
+        event({ type: "response.output_text.delta", output_index: 0, delta });
+      event({
+        type: "response.completed",
+        response: {
+          status: "completed",
+          output: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [{ type: "output_text", text: answer }],
+            },
+          ],
+          usage: { input_tokens: 9, output_tokens: 7 },
+        },
+      });
+    }
+    res.end();
+    return;
+  }
   res.write(": keep-alive\r\n\r\n");
   for (const text of [answer.slice(0, 6), answer.slice(6)]) {
     res.write(
@@ -131,11 +234,36 @@ try {
       autoFetchModels: true,
     },
   });
+  if (responsesMode) {
+    const templates = await rpc("ai.providers.templates");
+    assert.equal(
+      templates.find((t) => t.id === "openai").api,
+      "openai-responses",
+    );
+    assert.ok(
+      templates
+        .find((t) => t.id === "cliproxyapi")
+        .supportedApis.includes("openai-responses"),
+    );
+    assert.equal(provider.models[0].capabilities.tools, false);
+    const switched = await rpc("ai.providers.upsert", {
+      provider: { ...provider, api: "openai-responses" },
+    });
+    assert.equal(switched.models[0].capabilities.tools, true);
+  }
   const refreshed = await rpc("ai.providers.refreshModels", {
     id: provider.id,
   });
-  assert.equal(refreshed.models[0].id, "mock-model");
+  assert.equal(
+    refreshed.models[0].id,
+    responsesMode ? "gpt-6-astra" : "mock-model",
+  );
   const chat = await rpc("ai.chats.create");
+  if (responsesMode)
+    await rpc("ai.chats.update", {
+      id: chat.id,
+      patch: { tools: ["builtin"] },
+    });
   const first = await rpc("ai.chats.send", {
     chatId: chat.id,
     content: "Say hello",
@@ -152,6 +280,33 @@ try {
     stored.messages.find((m) => m.id === first.assistantMessageId).status,
     "complete",
   );
+  if (responsesMode) {
+    const assistant = stored.messages.find(
+      (m) => m.id === first.assistantMessageId,
+    );
+    assert.equal(assistant.toolCalls[0].name, "datetime.now");
+    assert.equal(assistant.toolCalls[0].status, "done");
+    assert.ok(assistant.toolCalls[0].result.iso);
+    assert.deepEqual(
+      assistant.completedTurns.map((t) => t.role),
+      ["assistant", "tool", "assistant"],
+    );
+    assert.deepEqual(assistant.usage, {
+      inputTokens: 18,
+      outputTokens: 14,
+      reasoningTokens: 4,
+    });
+    const continuation = requests.find((r) =>
+      r.input.some((item) => item.type === "function_call_output"),
+    );
+    assert.deepEqual(continuation.input[1], reasoningItem);
+    assert.deepEqual(continuation.input[2], callItem);
+    assert.equal(continuation.input[3].call_id, "call_smoke");
+    assert.ok(JSON.parse(continuation.input[3].output).iso);
+    assert.ok(
+      requests.every((r) => r.store === false && !r.previous_response_id),
+    );
+  }
   assert.equal(stored.chat.title, "Local Provider Smoke Test");
   assert.equal(
     events
@@ -171,7 +326,9 @@ try {
   });
   await terminal(second.streamId);
   assert.equal(
-    requests.at(-1).messages.filter((m) => m.role === "user").length,
+    (responsesMode ? requests.at(-1).input : requests.at(-1).messages).filter(
+      (m) => m.role === "user",
+    ).length,
     2,
   );
   const markdown = await rpc("ai.chats.export", {
@@ -194,6 +351,7 @@ try {
   console.log(
     JSON.stringify({
       result: "passed",
+      api: responsesMode ? "openai-responses" : "openai",
       streamedText: stored.messages.find(
         (m) => m.id === first.assistantMessageId,
       ).content,

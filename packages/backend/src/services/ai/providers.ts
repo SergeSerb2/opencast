@@ -49,10 +49,14 @@ export function inferModel(id: string, api: AIProvider["api"]): AIModel {
         /gpt-|(^|\/)o[134]|claude|gemini|llama-?3|qwen|mistral|grok|deepseek/.test(
           name,
         ),
-      pdf: api === "anthropic" || api === "google",
+      pdf:
+        api === "anthropic" ||
+        api === "google" ||
+        (api === "openai-responses" && vision),
       system: true,
       temperature: !(
-        /(^|\/)(o[134](-|$)|gpt-[5-9])/.test(name) && api === "openai"
+        /(^|\/)(o[134](-|$)|gpt-[5-9])/.test(name) &&
+        (api === "openai" || api === "openai-responses")
       ),
     },
   };
@@ -122,7 +126,9 @@ export class Providers {
   }: BackendMethods["ai.providers.upsert"]["params"]): Promise<AIProvider> {
     if (
       !input.name?.trim() ||
-      !["openai", "anthropic", "google", "ollama"].includes(input.api)
+      !["openai", "openai-responses", "anthropic", "google", "ollama"].includes(
+        input.api,
+      )
     )
       throw new Error("Provider needs a name and a supported API adapter");
     providerUrl(input.baseUrl);
@@ -168,14 +174,22 @@ export class Providers {
       baseUrl: input.baseUrl,
       enabled: input.enabled ?? old?.enabled ?? true,
       autoFetchModels: input.autoFetchModels ?? old?.autoFetchModels ?? true,
-      models: models.map((m) => ({
-        ...inferModel(m.id, input.api),
-        ...m,
-        capabilities: {
-          ...inferModel(m.id, input.api).capabilities,
-          ...m.capabilities,
-        },
-      })),
+      models: models.map((m) => {
+        const inferred = inferModel(m.id, input.api);
+        const capabilities = { ...m.capabilities };
+        // Stored models include inferred flags. Rebase those defaults when switching
+        // adapters; preserve capability edits that differ from the previous defaults.
+        if (old && old.api !== input.api) {
+          const previous = inferModel(m.id, old.api).capabilities;
+          for (const key of ["tools", "pdf", "temperature"] as const)
+            if (capabilities[key] === previous[key]) delete capabilities[key];
+        }
+        return {
+          ...inferred,
+          ...m,
+          capabilities: { ...inferred.capabilities, ...capabilities },
+        };
+      }),
       headers,
       secretHeaders: [...secretHeaders],
       createdAt: old?.createdAt ?? now,

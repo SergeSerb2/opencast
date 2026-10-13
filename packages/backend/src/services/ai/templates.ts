@@ -5,13 +5,25 @@ const openai = (
   name: string,
   baseUrl: string,
   needsApiKey = true,
-): Template => ({ id, name, baseUrl, api: "openai", needsApiKey });
+  responses = false,
+): Template => ({
+  id,
+  name,
+  baseUrl,
+  api: "openai",
+  needsApiKey,
+  supportedApis: responses ? ["openai", "openai-responses"] : ["openai"],
+});
 export const PROVIDER_TEMPLATES: Template[] = [
-  openai("openai", "OpenAI", "https://api.openai.com/v1"),
+  {
+    ...openai("openai", "OpenAI", "https://api.openai.com/v1", true, true),
+    api: "openai-responses",
+  },
   {
     id: "anthropic",
     name: "Anthropic",
     api: "anthropic",
+    supportedApis: ["anthropic"],
     baseUrl: "https://api.anthropic.com",
     needsApiKey: true,
   },
@@ -19,6 +31,7 @@ export const PROVIDER_TEMPLATES: Template[] = [
     id: "google",
     name: "Google Gemini",
     api: "google",
+    supportedApis: ["google"],
     baseUrl: "https://generativelanguage.googleapis.com",
     needsApiKey: true,
   },
@@ -34,13 +47,14 @@ export const PROVIDER_TEMPLATES: Template[] = [
   {
     id: "ollama",
     name: "Ollama",
-    api: "ollama",
+    api: "openai",
+    supportedApis: ["openai", "ollama"],
     baseUrl: "http://127.0.0.1:11434/v1",
     needsApiKey: false,
   },
-  openai("lmstudio", "LM Studio", "http://127.0.0.1:1234/v1", false),
-  openai("cliproxyapi", "CLIProxyAPI", "http://127.0.0.1:8317/v1", false),
-  openai("litellm", "LiteLLM", "http://127.0.0.1:4000/v1", false),
+  openai("lmstudio", "LM Studio", "http://127.0.0.1:1234/v1", false, true),
+  openai("cliproxyapi", "CLIProxyAPI", "http://127.0.0.1:8317/v1", false, true),
+  openai("litellm", "LiteLLM", "http://127.0.0.1:4000/v1", false, true),
   openai(
     "azure",
     "Azure OpenAI",
@@ -51,5 +65,6 @@ export const PROVIDER_TEMPLATES: Template[] = [
     "Custom OpenAI-compatible",
     "http://127.0.0.1:8080/v1",
     false,
+    true,
   ),
 ];
