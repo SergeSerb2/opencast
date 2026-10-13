@@ -67,7 +67,7 @@ function AppearanceSection() {
     setAppearance(theme.appearance);
   };
 
-  const openThemeStudio = () => native.call("window.show", { kind: "theme-studio" }).catch((error: unknown) => showFailureToast("Could not open Theme Studio", error));
+  const openThemeStudio = () => native.call("window.show", { kind: "main", route: "command:builtin:core.showThemeStudio" }).catch((error: unknown) => showFailureToast("Could not open Theme Studio", error));
 
   return (
     <Section title="Appearance">
