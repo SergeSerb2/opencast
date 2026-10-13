@@ -1,0 +1,166 @@
+.sc-form-view {
+  position: absolute;
+  inset: 0;
+}
+
+/* Three columns: flexible label column, 360px fields, flexible error column (§5.3). */
+.sc-form {
+  display: grid;
+  grid-template-columns: 1fr round(calc(360 * var(--spx)), 1px) 1fr;
+  row-gap: var(--space-8);
+  width: 100%;
+  padding: calc(var(--window-header-height) + var(--space-8)) 0 calc(var(--window-footer-height) + var(--space-16));
+}
+
+.sc-form-row {
+  display: contents;
+}
+.sc-form-row__label {
+  grid-column: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+  margin-top: 10px;
+  padding: var(--space-8) var(--space-24) 0 var(--space-16);
+  font-size: var(--font-size-11);
+  line-height: 13px;
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+.sc-form-row__info {
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+.sc-form-row__field {
+  grid-column: 2;
+  min-width: 0;
+  margin-block: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.sc-form-row[data-skip-label] .sc-form-row__field {
+  grid-column: 2;
+}
+.sc-form-row__error {
+  grid-column: 3;
+  min-width: 0;
+  margin-block: var(--space-8);
+  padding: 0 var(--space-16) 0 var(--space-12);
+  display: flex;
+  align-items: flex-start;
+}
+.sc-form-row__error-content {
+  height: var(--space-32);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-11);
+  color: var(--red);
+}
+.sc-form-row[data-compact] .sc-form-row__label {
+  margin-top: 0;
+  padding-top: 0;
+  align-items: center;
+}
+.sc-form-row[data-compact] .sc-form-row__field,
+.sc-form-row[data-compact] .sc-form-row__error {
+  margin-block: 0;
+}
+.sc-form-row[data-compact] .sc-form-row__label,
+.sc-form-row[data-compact] .sc-form-row__field {
+  min-height: 20px;
+}
+
+.sc-form-separator {
+  grid-column: 1 / -1;
+  height: var(--half-pixel);
+  margin-block: var(--space-8);
+  background: var(--color-border-separator);
+  -webkit-mask-image: linear-gradient(90deg, #0000 0%, #000 10% 90%, #0000 100%);
+  mask-image: linear-gradient(90deg, #0000 0%, #000 10% 90%, #0000 100%);
+}
+
+.sc-form-description {
+  padding-top: var(--space-8);
+  min-height: 20px;
+  font-size: var(--font-size-13);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+.sc-form-link-accessory {
+  font-size: var(--font-size-13);
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-decoration-color: rgb(from currentColor r g b / 50%);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.sc-form-link-accessory:hover {
+  color: var(--color-text-primary);
+}
+
+.sc-file-picker {
+  width: 100%;
+  height: var(--field-height);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: 0 var(--space-16) 0 var(--space-12);
+  border-radius: var(--radius-12);
+  font-size: var(--font-size-13);
+  background: var(--color-surface-control);
+  color: var(--color-text-primary);
+  transition:
+    background-color 0.15s ease-out,
+    opacity 0.15s ease-out;
+}
+.sc-file-picker:hover {
+  background: var(--fg-15);
+  transition: none;
+}
+.sc-file-picker:active {
+  opacity: 0.8;
+}
+.sc-file-picker__list {
+  list-style: none;
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+.sc-file-picker__file {
+  height: var(--field-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 0 var(--space-4) 0 var(--space-12);
+  border-radius: var(--radius-12);
+  box-shadow: inset 0 0 0 1px var(--color-border-secondary);
+  font-size: var(--font-size-11);
+  min-width: 0;
+}
+.sc-file-picker__file > .sc-truncate {
+  flex: 1;
+}
+.sc-file-picker__remove {
+  width: 16px;
+  height: 16px;
+  margin-right: var(--space-4);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+  opacity: 0;
+}
+.sc-file-picker__file:hover .sc-file-picker__remove,
+.sc-file-picker__remove:focus-visible {
+  opacity: 1;
+}

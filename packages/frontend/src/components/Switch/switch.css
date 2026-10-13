@@ -1,0 +1,53 @@
+.sc-switch {
+  --track-w: 36px;
+  --track-h: 16px;
+  --pad: 1.5px;
+  --knob-w: 21px;
+  position: relative;
+  flex-shrink: 0;
+  width: var(--track-w);
+  height: var(--track-h);
+  padding: var(--pad);
+  border-radius: var(--radius-full);
+  background: var(--fg-20);
+  transition: background-color 216ms ease-out;
+}
+.sc-switch[data-size="large"] {
+  --track-w: 54px;
+  --track-h: 24px;
+  --pad: 2px;
+  --knob-w: 32px;
+}
+.sc-switch__knob {
+  display: block;
+  width: var(--knob-w);
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: #ffffffe6;
+  box-shadow: 0 0.5px 1.5px rgb(0 0 0 / 0.25);
+  transition: transform 366ms var(--ease-switch-knob);
+}
+.sc-switch[data-checked] {
+  background: var(--accent);
+}
+.sc-switch[data-checked] .sc-switch__knob {
+  background: #fffffff2;
+  transform: translateX(calc(var(--track-w) - var(--knob-w) - 2 * var(--pad)));
+}
+.sc-switch:active:enabled {
+  background: var(--fg-30);
+  transition: none;
+}
+.sc-switch[data-checked]:active:enabled {
+  background: color-mix(in srgb, var(--accent), white 10%);
+}
+.theme-root[window-blurred] .sc-switch[data-checked] {
+  background: var(--fg-30);
+  transition: none;
+}
+.sc-switch:disabled {
+  opacity: 0.4;
+}
+.sc-switch:focus-visible {
+  outline-offset: 2px;
+}

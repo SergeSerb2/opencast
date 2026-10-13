@@ -1,0 +1,129 @@
+/*
+ * Liquid Glass materials.
+ *
+ * Inside the Swift host on macOS 26+, WebKit draws the real system glass via
+ * `-apple-visual-effect`. Everywhere else (browser dev, older WebKit) a CSS
+ * approximation is used: a brightened, slightly saturated backdrop blur, a faint
+ * white fill, and a rim that is bright along the top and bottom edges and dark
+ * along the sides — the way the system material catches light.
+ */
+
+/*
+ * The fallback blur stays at 12px: larger radii make Chromium skip the filter
+ * near the edges of the window's rounded clip.
+ */
+.theme-root {
+  --glass-backdrop: blur(var(--blur-2)) saturate(1.4) brightness(1.2);
+  --glass-fill: rgb(255 255 255 / 0.04);
+  --glass-fill-top: rgb(255 255 255 / 0.05);
+  --glass-panel-tint: rgb(72 68 100 / 0.62);
+  --glass-rim-light: rgb(255 255 255 / 0.36);
+  --glass-rim-mid: rgb(255 255 255 / 0.06);
+  --glass-rim-dark: rgb(0 0 0 / 0.62);
+  --glass-panel-shadow: var(--shadow-panel), 0 18px 48px -12px rgb(0 0 0 / 0.35);
+}
+
+.theme-root[light] {
+  --glass-backdrop: blur(var(--blur-2)) saturate(1.4) brightness(1.08);
+  --glass-panel-tint: rgb(246 245 250 / 0.6);
+  --glass-fill: rgb(255 255 255 / 0.42);
+  --glass-fill-top: rgb(255 255 255 / 0.5);
+  --glass-rim-light: rgb(255 255 255 / 0.9);
+  --glass-rim-mid: rgb(255 255 255 / 0.25);
+  --glass-rim-dark: rgb(0 0 0 / 0.16);
+  --glass-panel-shadow: var(--shadow-panel), 0 18px 48px -12px rgb(0 0 0 / 0.18);
+}
+
+/* Footer pills, glass buttons and button groups. */
+.sc-glass-control,
+.sc-glass-panel {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(to bottom, var(--glass-fill-top), var(--glass-fill) 45%);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+}
+
+.sc-glass-control::after,
+.sc-glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--glass-rim-light) 0%,
+    var(--glass-rim-mid) 12%,
+    var(--glass-rim-dark) 32%,
+    var(--glass-rim-dark) 68%,
+    var(--glass-rim-mid) 88%,
+    var(--glass-rim-light) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+/* Panels are taller than pills: keep the bright rim to a thin band at the ends. */
+.sc-glass-panel::after {
+  background: linear-gradient(
+    to bottom,
+    var(--glass-rim-light) 0,
+    var(--glass-rim-mid) 6px,
+    var(--glass-rim-dark) 18px,
+    var(--glass-rim-dark) calc(100% - 18px),
+    var(--glass-rim-mid) calc(100% - 6px),
+    var(--glass-rim-light) 100%
+  );
+}
+
+.sc-glass-panel {
+  background: linear-gradient(to bottom, var(--glass-fill-top), var(--glass-fill) 45%), var(--glass-panel-tint);
+  box-shadow: var(--glass-panel-shadow);
+}
+
+@supports (-apple-visual-effect: -apple-system-glass-material) {
+  .theme-root[native] .sc-glass-control {
+    -apple-visual-effect: -apple-system-glass-material-media-controls;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .theme-root[native] .sc-glass-panel {
+    -apple-visual-effect: -apple-system-glass-material;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .theme-root[native] .sc-glass-control::after,
+  .theme-root[native] .sc-glass-panel::after {
+    display: none;
+  }
+  .theme-root[native][macos="27"][window-blurred] .sc-glass-control {
+    -apple-visual-effect: -apple-system-glass-material-subdued;
+  }
+}
+
+/* macOS 26 turns glass off while the window is inactive. */
+.theme-root[macos="26"][window-blurred] :is(.sc-glass-control, .sc-glass-panel) {
+  background: var(--tahoe-dimmed-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.theme-root[window-blurred] .sc-glass-control > * {
+  opacity: 0.4;
+}
+
+/* macOS 27 glass press feedback. */
+.theme-root[macos="27"] .sc-glass-press {
+  transition: var(--glass-press-transition);
+}
+.theme-root[macos="27"] .sc-glass-press:active {
+  transform: scale(var(--glass-press-scale, 1.02));
+}

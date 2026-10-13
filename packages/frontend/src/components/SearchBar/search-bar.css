@@ -1,0 +1,203 @@
+.sc-search-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--window-header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding-inline: var(--space-16);
+}
+
+/*
+ * No z-index on the header, footer or overlay root: a stacking context there
+ * would cut the list out of the glass/blur backdrops. Paint order follows DOM order.
+ */
+.sc-search-bar > :not(.sc-progressive-blur, .sc-loading-bar) {
+  position: relative;
+}
+.sc-progressive-blur {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.sc-progressive-blur[data-edge="top"] {
+  top: 0;
+}
+.sc-progressive-blur[data-edge="bottom"] {
+  bottom: 0;
+}
+.sc-progressive-blur > div {
+  position: absolute;
+  inset: 0;
+}
+
+.sc-search-bar__leading {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: var(--icon-22);
+  height: var(--icon-22);
+  align-items: center;
+  justify-content: center;
+}
+.sc-search-bar__logo {
+  color: var(--color-text-tertiary);
+}
+.sc-search-bar__back {
+  position: relative;
+  left: -1px;
+  display: inline-flex;
+  width: var(--icon-22);
+  height: var(--icon-22);
+  color: var(--color-text-secondary);
+}
+.sc-search-bar__back:hover {
+  color: var(--color-text-primary);
+}
+
+.sc-search-bar__field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--space-32);
+  display: flex;
+}
+.sc-search-bar__spacer {
+  flex: 1 1 auto;
+}
+.sc-search-bar[data-has-args] .sc-search-bar__field {
+  flex: 0 1 auto;
+}
+.sc-search-bar__sizer {
+  visibility: hidden;
+  white-space: pre;
+  padding-right: 2px;
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-search);
+  letter-spacing: -0.1px;
+  line-height: var(--space-32);
+}
+.sc-search-bar__input {
+  width: 100%;
+  height: var(--space-32);
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-search);
+  letter-spacing: -0.1px;
+  line-height: var(--space-32);
+  color: var(--color-text-primary);
+}
+.sc-search-bar[data-has-args] .sc-search-bar__input {
+  position: absolute;
+  inset: 0;
+}
+
+.sc-search-bar__accessory {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-shrink: 0;
+  max-width: 50%;
+}
+
+.sc-quick-ai-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-8);
+  border-radius: var(--radius-10);
+  font-size: var(--font-size-13);
+  color: var(--color-text-tertiary);
+}
+.sc-quick-ai-hint:hover,
+.sc-quick-ai-hint:focus-visible {
+  background: var(--fg-5);
+}
+
+/* ---- inline arguments ---- */
+.sc-arguments {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-shrink: 0;
+  min-width: 0;
+}
+.sc-argument-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.sc-argument {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--space-24);
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-8);
+  background: var(--color-surface-token);
+  box-shadow: inset 0 0 0 1px transparent;
+  font-size: var(--font-size-13);
+  color: var(--color-text-primary);
+}
+.sc-argument:focus-within,
+.sc-argument--dropdown:focus-visible {
+  outline: 1px solid var(--color-border-focus-ring);
+  outline-offset: 0;
+}
+.sc-argument[data-invalid] {
+  background: var(--red-10);
+  box-shadow: inset 0 0 0 1px var(--red-40);
+  --color-border-focus-ring: var(--red-60);
+}
+.sc-argument__sizer {
+  visibility: hidden;
+  white-space: pre;
+  max-width: 134px;
+  overflow: hidden;
+}
+.sc-argument__input {
+  position: absolute;
+  left: var(--space-8);
+  top: 0;
+  height: 100%;
+  width: calc(100% - var(--space-8));
+  max-width: 134px;
+  font-size: var(--font-size-13);
+}
+.sc-argument--dropdown {
+  padding-right: var(--space-4);
+  gap: 2px;
+}
+.sc-argument--dropdown[data-placeholder] .sc-argument__value {
+  color: var(--color-text-tertiary);
+}
+.sc-argument__value {
+  max-width: 134px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-argument__chevron {
+  color: var(--color-text-secondary);
+  transition: transform 250ms ease;
+}
+.sc-argument--dropdown[data-state="open"] .sc-argument__chevron {
+  transform: rotate(180deg);
+}
+.sc-argument__optional {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-bg-max);
+  background: color-mix(in oklab, var(--fg) 70%, var(--bg));
+}

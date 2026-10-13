@@ -1,0 +1,405 @@
+/*
+ * Surgecast design tokens. Values follow the Surgecast design spec (§1–§2, §9, §12):
+ * a re-statement of the measured Raycast 2.7.3 metrics in our own stylesheet.
+ *
+ * The root element carries:  class="theme-root"  dark | light  macos="26|27"
+ *   [native]           running inside the Swift host (native glass behind the page)
+ *   .transitions-ready  set two frames after boot; CSS transitions are off before that
+ */
+
+.theme-root {
+  /* ---- scale ---------------------------------------------------------- */
+  --zoom: 1;
+  --spx: calc(1px * var(--zoom));
+  --space-2: round(calc(2 * var(--spx)), 1px);
+  --space-3: round(calc(3 * var(--spx)), 1px);
+  --space-4: round(calc(4 * var(--spx)), 1px);
+  --space-6: round(calc(6 * var(--spx)), 1px);
+  --space-8: round(calc(8 * var(--spx)), 1px);
+  --space-10: round(calc(10 * var(--spx)), 1px);
+  --space-12: round(calc(12 * var(--spx)), 1px);
+  --space-16: round(calc(16 * var(--spx)), 1px);
+  --space-20: round(calc(20 * var(--spx)), 1px);
+  --space-24: round(calc(24 * var(--spx)), 1px);
+  --space-32: round(calc(32 * var(--spx)), 1px);
+  --space-40: round(calc(40 * var(--spx)), 1px);
+  --space-48: round(calc(48 * var(--spx)), 1px);
+  --space-56: round(calc(56 * var(--spx)), 1px);
+  --font-size-8: round(calc(8 * var(--spx)), 1px);
+  --font-size-10: round(calc(10 * var(--spx)), 1px);
+  --font-size-11: round(calc(11 * var(--spx)), 1px);
+  --font-size-12: round(calc(12 * var(--spx)), 1px);
+  --font-size-13: round(calc(13 * var(--spx)), 1px);
+  --font-size-14: round(calc(14 * var(--spx)), 1px);
+  --font-size-16: round(calc(16 * var(--spx)), 1px);
+  --font-size-18: round(calc(18 * var(--spx)), 1px);
+  --font-size-24: round(calc(24 * var(--spx)), 1px);
+  --icon-12: round(calc(12 * var(--spx)), 1px);
+  --icon-14: round(calc(14 * var(--spx)), 1px);
+  --icon-16: round(calc(16 * var(--spx)), 1px);
+  --icon-18: round(calc(18 * var(--spx)), 1px);
+  --icon-22: round(calc(22 * var(--spx)), 1px);
+  --icon-32: round(calc(32 * var(--spx)), 1px);
+  --half-pixel: 1px;
+
+  /* ---- radii (not scaled) --------------------------------------------- */
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-5: 5px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-18: 18px;
+  --radius-20: 20px;
+  --radius-26: 26px;
+  --radius-full: 9999px;
+  --radius-window: 26px;
+  --radius-main-window: 26px;
+  --radius-row-small: 10px;
+  --radius-row-large: 12px;
+  --radius-kbd: 6px;
+  --radius-popover: 18px;
+  --radius-field: 12px;
+
+  /* ---- blur / motion --------------------------------------------------- */
+  --blur-1: 6px;
+  --blur-2: 12px;
+  --blur-3: 24px;
+  --blur-4: 36px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-popover-open: cubic-bezier(0.3, 0.7, 0, 1.26);
+  --ease-loader: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-switch-knob: cubic-bezier(0.16, -0.12, 0.29, 1.31);
+  --dur-hover-out: 70ms;
+  --dur-hint: 0.15s;
+  --delay-hint: 0.4s;
+  --dur-popover-open: 0.25s;
+  --dur-popover-close: 0.15s;
+  --dur-toast-fade: 0.2s;
+  --glass-press-transition: transform 0.36s var(--ease-out-back);
+
+  /* ---- chrome ---------------------------------------------------------- */
+  --window-border-offset: 0px;
+  --main-window-width: round(calc(750 * var(--spx)), 1px);
+  --main-window-height: round(calc(475 * var(--spx)), 1px);
+  --main-window-header-height: round(calc(64 * var(--spx)), 1px);
+  --main-window-footer-height: round(calc(44 * var(--spx)), 1px);
+  --default-window-header-height: round(calc(52 * var(--spx)), 1px);
+  --default-window-footer-height: round(calc(44 * var(--spx)), 1px);
+  --window-header-height: var(--default-window-header-height);
+  --window-footer-height: var(--default-window-footer-height);
+  --footer-pill-height: round(calc(36 * var(--spx)), 1px);
+  --action-button-height: round(calc(28 * var(--spx)), 1px);
+  --list-row-small: round(calc(36 * var(--spx)), 1px);
+  --list-row-large: round(calc(38 * var(--spx)), 1px);
+  --list-row-multiline: round(calc(58 * var(--spx)), 1px);
+  --list-padding-x: var(--space-8);
+  --list-item-padding-x: var(--space-8);
+  --kbd-small: round(calc(18 * var(--spx)), 1px);
+  --kbd-medium: round(calc(20 * var(--spx)), 1px);
+  --token-small: round(calc(20 * var(--spx)), 1px);
+  --token-medium: var(--space-24);
+  --field-height: var(--space-32);
+  --field-height-small: var(--space-24);
+  --action-panel-width: round(calc(350 * var(--spx)), 1px);
+  --action-panel-max-height: round(calc(280 * var(--spx)), 1px);
+  --menu-search-height: var(--space-40);
+  --detail-width-small: round(calc(263 * var(--spx)), 1px);
+  --detail-width-large: round(calc(465 * var(--spx)), 1px);
+
+  /* ---- focus / shadow --------------------------------------------------- */
+  --focus-ring-width: 2px;
+  --focus-ring: var(--focus-ring-width) solid var(--color-border-focus-ring);
+  --shadow-panel:
+    0 1px 1px -1px #0000000d, 0 4px 2px -3px #0000000d, 0 8px 4px -6px #0000000d,
+    0 12px 40px -12px #0000001a, 0 24px 64px -24px #00000033;
+
+  /* ---- typography ------------------------------------------------------- */
+  --font-ui: "Inter Variable", InterVariable, Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", JetBrainsMono, ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --font-features: "liga" 1, "calt" 1, "kern" 1, "ss03" 1;
+  --font-features-list: "liga" 1, "calt" 0, "kern" 1, "ss03" 1;
+  --font-weight-search: 350;
+}
+
+@media (resolution >= 2x) {
+  .theme-root {
+    --half-pixel: 0.5px;
+  }
+}
+
+/* macOS 27 secondary windows use a 20px window radius; the launcher keeps 26px. */
+.theme-root[macos="27"] {
+  --radius-window: 20px;
+}
+
+/* ---- default palettes (Surgecast Dark / Light); themes override via JS ---- */
+.theme-root[dark] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-secondary: #000000;
+  --fg: #ffffff;
+  --theme-accent: #4fa3f8;
+  --selection: #ffffff;
+  --loader: #ffffff;
+  --red: #ff6363;
+  --orange: #ff9217;
+  --yellow: #ffc531;
+  --green: #59d499;
+  --blue: #56c2ff;
+  --purple: #a485ff;
+  --magenta: #cf2f98;
+  --red-contrast: #ff6363;
+  --orange-contrast: #ff9217;
+  --yellow-contrast: #ffc531;
+  --green-contrast: #59d499;
+  --blue-contrast: #56c2ff;
+  --purple-contrast: #a485ff;
+  --magenta-contrast: #cf2f98;
+  --red-on-tint-10: #ff6363;
+  --orange-on-tint-10: #ff9217;
+  --yellow-on-tint-10: #ffc531;
+  --green-on-tint-10: #59d499;
+  --blue-on-tint-10: #56c2ff;
+  --purple-on-tint-10: #a485ff;
+  --magenta-on-tint-10: #cf2f98;
+  --red-on-tint-20: #ff6363;
+  --orange-on-tint-20: #ff9217;
+  --yellow-on-tint-20: #ffc531;
+  --green-on-tint-20: #59d499;
+  --blue-on-tint-20: #56c2ff;
+  --purple-on-tint-20: #a485ff;
+  --magenta-on-tint-20: #d1329a;
+  --color-token-primary: #ffffff;
+  --color-token-secondary: rgb(255 255 255 / 0.8);
+  --color-token-tertiary: rgb(255 255 255 / 0.6);
+  --color-token-string: #ff6363;
+  --color-token-highlight: #ff9217;
+  --color-window-base: #262626;
+  --color-panel-backdrop: #333333;
+  --tahoe-dimmed-bg: #262626;
+  --color-fg-max: #ffffff;
+  --color-bg-max: #000000;
+  --window-border-offset: 1px;
+}
+
+.theme-root[light] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-secondary: #ffffff;
+  --fg: #000000;
+  --theme-accent: #138af2;
+  --selection: #000000;
+  --loader: #000000;
+  --red: #b12424;
+  --orange: #c75d07;
+  --yellow: #f8a300;
+  --green: #006b4f;
+  --blue: #138af2;
+  --purple: #6a3dec;
+  --magenta: #9a1b6e;
+  --red-contrast: #b12424;
+  --orange-contrast: #c75d07;
+  --yellow-contrast: #bb7b00;
+  --green-contrast: #006b4f;
+  --blue-contrast: #138af2;
+  --purple-contrast: #6a3dec;
+  --magenta-contrast: #9a1b6e;
+  --red-on-tint-10: #b12424;
+  --orange-on-tint-10: #c75d07;
+  --yellow-on-tint-10: #b67800;
+  --green-on-tint-10: #006b4f;
+  --blue-on-tint-10: #0d82e9;
+  --purple-on-tint-10: #6a3dec;
+  --magenta-on-tint-10: #9a1b6e;
+  --red-on-tint-20: #b12424;
+  --orange-on-tint-20: #c25b07;
+  --yellow-on-tint-20: #b27500;
+  --green-on-tint-20: #006b4f;
+  --blue-on-tint-20: #0c7bdc;
+  --purple-on-tint-20: #6a3dec;
+  --magenta-on-tint-20: #9a1b6e;
+  --color-token-primary: #000000;
+  --color-token-secondary: rgb(0 0 0 / 0.8);
+  --color-token-tertiary: rgb(0 0 0 / 0.6);
+  --color-token-string: #0c79d9;
+  --color-token-highlight: #6a3dec;
+  --color-window-base: #ffffff;
+  --color-panel-backdrop: #e6e6e6;
+  --tahoe-dimmed-bg: #f2f2f2;
+  --color-fg-max: #000000;
+  --color-bg-max: #ffffff;
+}
+
+/* ---- derived ramps and semantic tokens (shared by every theme) ------------ */
+.theme-root {
+  --accent: var(--system-accent, var(--theme-accent));
+  --bg-0: rgb(from var(--bg) r g b / 0%);
+  --bg-5: rgb(from var(--bg) r g b / 5%);
+  --bg-10: rgb(from var(--bg) r g b / 10%);
+  --bg-15: rgb(from var(--bg) r g b / 15%);
+  --bg-20: rgb(from var(--bg) r g b / 20%);
+  --bg-30: rgb(from var(--bg) r g b / 30%);
+  --bg-40: rgb(from var(--bg) r g b / 40%);
+  --bg-60: rgb(from var(--bg) r g b / 60%);
+  --bg-80: rgb(from var(--bg) r g b / 80%);
+  --bg-secondary-0: rgb(from var(--bg-secondary) r g b / 0%);
+  --bg-secondary-5: rgb(from var(--bg-secondary) r g b / 5%);
+  --bg-secondary-10: rgb(from var(--bg-secondary) r g b / 10%);
+  --bg-secondary-15: rgb(from var(--bg-secondary) r g b / 15%);
+  --bg-secondary-20: rgb(from var(--bg-secondary) r g b / 20%);
+  --bg-secondary-30: rgb(from var(--bg-secondary) r g b / 30%);
+  --bg-secondary-40: rgb(from var(--bg-secondary) r g b / 40%);
+  --bg-secondary-60: rgb(from var(--bg-secondary) r g b / 60%);
+  --bg-secondary-80: rgb(from var(--bg-secondary) r g b / 80%);
+  --fg-0: rgb(from var(--fg) r g b / 0%);
+  --fg-5: rgb(from var(--fg) r g b / 5%);
+  --fg-10: rgb(from var(--fg) r g b / 10%);
+  --fg-15: rgb(from var(--fg) r g b / 15%);
+  --fg-20: rgb(from var(--fg) r g b / 20%);
+  --fg-30: rgb(from var(--fg) r g b / 30%);
+  --fg-40: rgb(from var(--fg) r g b / 40%);
+  --fg-60: rgb(from var(--fg) r g b / 60%);
+  --fg-80: rgb(from var(--fg) r g b / 80%);
+  --accent-0: rgb(from var(--accent) r g b / 0%);
+  --accent-5: rgb(from var(--accent) r g b / 5%);
+  --accent-10: rgb(from var(--accent) r g b / 10%);
+  --accent-15: rgb(from var(--accent) r g b / 15%);
+  --accent-20: rgb(from var(--accent) r g b / 20%);
+  --accent-30: rgb(from var(--accent) r g b / 30%);
+  --accent-40: rgb(from var(--accent) r g b / 40%);
+  --accent-60: rgb(from var(--accent) r g b / 60%);
+  --accent-80: rgb(from var(--accent) r g b / 80%);
+  --selection-0: rgb(from var(--selection) r g b / 0%);
+  --selection-5: rgb(from var(--selection) r g b / 5%);
+  --selection-10: rgb(from var(--selection) r g b / 10%);
+  --selection-15: rgb(from var(--selection) r g b / 15%);
+  --selection-20: rgb(from var(--selection) r g b / 20%);
+  --selection-30: rgb(from var(--selection) r g b / 30%);
+  --selection-40: rgb(from var(--selection) r g b / 40%);
+  --selection-60: rgb(from var(--selection) r g b / 60%);
+  --selection-80: rgb(from var(--selection) r g b / 80%);
+  --loader-0: rgb(from var(--loader) r g b / 0%);
+  --loader-5: rgb(from var(--loader) r g b / 5%);
+  --loader-10: rgb(from var(--loader) r g b / 10%);
+  --loader-15: rgb(from var(--loader) r g b / 15%);
+  --loader-20: rgb(from var(--loader) r g b / 20%);
+  --loader-30: rgb(from var(--loader) r g b / 30%);
+  --loader-40: rgb(from var(--loader) r g b / 40%);
+  --loader-60: rgb(from var(--loader) r g b / 60%);
+  --loader-80: rgb(from var(--loader) r g b / 80%);
+  --red-0: rgb(from var(--red) r g b / 0%);
+  --red-5: rgb(from var(--red) r g b / 5%);
+  --red-10: rgb(from var(--red) r g b / 10%);
+  --red-15: rgb(from var(--red) r g b / 15%);
+  --red-20: rgb(from var(--red) r g b / 20%);
+  --red-30: rgb(from var(--red) r g b / 30%);
+  --red-40: rgb(from var(--red) r g b / 40%);
+  --red-60: rgb(from var(--red) r g b / 60%);
+  --red-80: rgb(from var(--red) r g b / 80%);
+  --orange-0: rgb(from var(--orange) r g b / 0%);
+  --orange-5: rgb(from var(--orange) r g b / 5%);
+  --orange-10: rgb(from var(--orange) r g b / 10%);
+  --orange-15: rgb(from var(--orange) r g b / 15%);
+  --orange-20: rgb(from var(--orange) r g b / 20%);
+  --orange-30: rgb(from var(--orange) r g b / 30%);
+  --orange-40: rgb(from var(--orange) r g b / 40%);
+  --orange-60: rgb(from var(--orange) r g b / 60%);
+  --orange-80: rgb(from var(--orange) r g b / 80%);
+  --yellow-0: rgb(from var(--yellow) r g b / 0%);
+  --yellow-5: rgb(from var(--yellow) r g b / 5%);
+  --yellow-10: rgb(from var(--yellow) r g b / 10%);
+  --yellow-15: rgb(from var(--yellow) r g b / 15%);
+  --yellow-20: rgb(from var(--yellow) r g b / 20%);
+  --yellow-30: rgb(from var(--yellow) r g b / 30%);
+  --yellow-40: rgb(from var(--yellow) r g b / 40%);
+  --yellow-60: rgb(from var(--yellow) r g b / 60%);
+  --yellow-80: rgb(from var(--yellow) r g b / 80%);
+  --green-0: rgb(from var(--green) r g b / 0%);
+  --green-5: rgb(from var(--green) r g b / 5%);
+  --green-10: rgb(from var(--green) r g b / 10%);
+  --green-15: rgb(from var(--green) r g b / 15%);
+  --green-20: rgb(from var(--green) r g b / 20%);
+  --green-30: rgb(from var(--green) r g b / 30%);
+  --green-40: rgb(from var(--green) r g b / 40%);
+  --green-60: rgb(from var(--green) r g b / 60%);
+  --green-80: rgb(from var(--green) r g b / 80%);
+  --blue-0: rgb(from var(--blue) r g b / 0%);
+  --blue-5: rgb(from var(--blue) r g b / 5%);
+  --blue-10: rgb(from var(--blue) r g b / 10%);
+  --blue-15: rgb(from var(--blue) r g b / 15%);
+  --blue-20: rgb(from var(--blue) r g b / 20%);
+  --blue-30: rgb(from var(--blue) r g b / 30%);
+  --blue-40: rgb(from var(--blue) r g b / 40%);
+  --blue-60: rgb(from var(--blue) r g b / 60%);
+  --blue-80: rgb(from var(--blue) r g b / 80%);
+  --purple-0: rgb(from var(--purple) r g b / 0%);
+  --purple-5: rgb(from var(--purple) r g b / 5%);
+  --purple-10: rgb(from var(--purple) r g b / 10%);
+  --purple-15: rgb(from var(--purple) r g b / 15%);
+  --purple-20: rgb(from var(--purple) r g b / 20%);
+  --purple-30: rgb(from var(--purple) r g b / 30%);
+  --purple-40: rgb(from var(--purple) r g b / 40%);
+  --purple-60: rgb(from var(--purple) r g b / 60%);
+  --purple-80: rgb(from var(--purple) r g b / 80%);
+  --magenta-0: rgb(from var(--magenta) r g b / 0%);
+  --magenta-5: rgb(from var(--magenta) r g b / 5%);
+  --magenta-10: rgb(from var(--magenta) r g b / 10%);
+  --magenta-15: rgb(from var(--magenta) r g b / 15%);
+  --magenta-20: rgb(from var(--magenta) r g b / 20%);
+  --magenta-30: rgb(from var(--magenta) r g b / 30%);
+  --magenta-40: rgb(from var(--magenta) r g b / 40%);
+  --magenta-60: rgb(from var(--magenta) r g b / 60%);
+  --magenta-80: rgb(from var(--magenta) r g b / 80%);
+  --accent-transparent: var(--accent-10);
+  --red-transparent: var(--red-10);
+  --orange-transparent: var(--orange-10);
+  --yellow-transparent: var(--yellow-10);
+  --green-transparent: var(--green-10);
+  --blue-transparent: var(--blue-10);
+  --purple-transparent: var(--purple-10);
+  --magenta-transparent: var(--magenta-10);
+
+  --color-text-primary: var(--fg);
+  --color-text-secondary: var(--fg-60);
+  --color-text-tertiary: var(--fg-40);
+  --color-text-quaternary: var(--fg-20);
+  --color-text-disabled: var(--fg-40);
+  --color-text-placeholder: var(--fg-40);
+  --color-text-selection: var(--fg-20);
+  --color-text-link: var(--accent);
+  --color-border-primary: var(--fg);
+  --color-border-secondary: var(--fg-20);
+  --color-border-tertiary: var(--fg-5);
+  --color-border-separator: var(--fg-10);
+  --color-border-token: var(--fg-20);
+  --color-border-token-selected: var(--fg-40);
+  --color-border-field: var(--fg-20);
+  --color-border-focus-ring: var(--fg-30);
+  --color-surface-token: var(--fg-10);
+  --color-surface-list-hover: var(--selection-5);
+  --color-surface-list-selection: var(--selection-10);
+  --color-surface-control: var(--fg-10);
+  --color-surface-inner-panel: #ffffff1a;
+  --color-surface-input-field: #ffffff0d;
+  --color-surface-action-bar: #ffffff0d;
+  --color-window-bg: var(--bg-40);
+  --color-window-bg-secondary: var(--bg-secondary-40);
+  --color-panel-background: var(--color-window-bg-secondary);
+  --color-panel-overlay: #ffffff1a;
+  --color-brand: #7c5cff;
+  --color-icon-knockout: var(--color-bg-max);
+
+  color: var(--color-text-primary);
+}
+
+/* The launcher maps the generic window chrome heights to its own (§1.5). */
+.theme-root[data-window="main"],
+.sc-launcher-scope {
+  --window-header-height: var(--main-window-header-height);
+  --window-footer-height: var(--main-window-footer-height);
+}

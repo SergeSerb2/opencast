@@ -1,0 +1,17 @@
+.sc-text-area {
+  align-items: stretch;
+}
+.sc-text-area__input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  padding: var(--space-8) var(--space-12);
+  font-size: var(--font-size-13);
+  line-height: 1.45;
+  color: inherit;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.sc-text-area__input::-webkit-scrollbar {
+  display: none;
+}
