@@ -49,6 +49,8 @@ export function replayMessage(message: AIMessage): AIChatTurn[] {
       {
         role: message.role,
         content: message.content,
+        reasoning: message.reasoning,
+        reasoningModel: message.model,
         attachments: message.attachments,
         toolCalls: calls.length ? calls : undefined,
       },
@@ -76,6 +78,13 @@ export function replayMessage(message: AIMessage): AIChatTurn[] {
     .filter((t) => t.role === "assistant")
     .map((t) => t.content)
     .join("");
+  const recordedCalls = new Set(turns.flatMap(t => t.toolCalls ?? []).map(c => c.id));
+  const laterCalls = (message.toolCalls ?? []).filter(c => !recordedCalls.has(c.id));
+  if (laterCalls.length) turns.push({
+    role: "assistant",
+    content: message.content.startsWith(recordedText) ? message.content.slice(recordedText.length) : "",
+    toolCalls: laterCalls,
+  });
   // A cancelled run may have advertised a tool before its result was available.
   const results = new Set(
     turns.filter((t) => t.role === "tool").map((t) => t.toolCallId),
@@ -100,7 +109,7 @@ export function replayMessage(message: AIMessage): AIChatTurn[] {
       );
   }
   if (
-    message.content.startsWith(recordedText) &&
+    !laterCalls.length && message.content.startsWith(recordedText) &&
     message.content.length > recordedText.length
   )
     turns.push({
@@ -449,11 +458,11 @@ export class Chats {
               if (index < 0) list.push(event.call);
               else list[index] = event.call;
             }
-            if (event.type === "tool-result" && event.completedTurns)
+            if ((event.type === "tool-call" || event.type === "tool-result") && event.completedTurns)
               assistant.completedTurns = event.completedTurns;
             emit(event);
           }
-          if (Date.now() - lastPersist >= 100) persist();
+          if (event.type === "tool-call" || Date.now() - lastPersist >= 100) persist();
           else
             persistTimer ??= setTimeout(
               persist,

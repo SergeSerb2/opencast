@@ -349,7 +349,7 @@ export interface AIMessage {
   toolCalls?: AIToolCall[];
   model?: ModelRef;
   /** Provider-neutral assistant/tool turns for faithful tool-loop replay. */
-  completedTurns?: { role: "assistant" | "tool"; content: string; toolCalls?: AIToolCall[]; toolCallId?: string; name?: string }[];
+  completedTurns?: { role: "assistant" | "tool"; content: string; reasoning?: string; reasoningModel?: ModelRef; toolCalls?: AIToolCall[]; toolCallId?: string; name?: string }[];
   status: "complete" | "streaming" | "error" | "stopped";
   error?: string;
   usage?: { inputTokens?: number; outputTokens?: number; reasoningTokens?: number };
@@ -463,7 +463,7 @@ export type AIStreamEvent =
   | { type: "start"; streamId: string; chatId?: string; messageId?: string; model: ModelRef }
   | { type: "text"; streamId: string; delta: string }
   | { type: "reasoning"; streamId: string; delta: string }
-  | { type: "tool-call"; streamId: string; call: AIToolCall }
+  | { type: "tool-call"; streamId: string; call: AIToolCall; completedTurns?: AIMessage["completedTurns"] }
   | { type: "tool-result"; streamId: string; call: AIToolCall; completedTurns?: AIMessage["completedTurns"] }
   | { type: "title"; streamId: string; chatId: string; title: string }
   | { type: "done"; streamId: string; usage?: AIMessage["usage"]; finishReason?: string }

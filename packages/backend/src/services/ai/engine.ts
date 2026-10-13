@@ -131,6 +131,8 @@ export class CompletionEngine implements AIEngine {
       const assistant: AIChatTurn = {
         role: "assistant",
         content: result.text,
+        reasoning: result.reasoning,
+        reasoningModel: option.ref,
         toolCalls: result.toolCalls.length ? result.toolCalls : undefined,
       };
       prepared.push({
@@ -171,7 +173,8 @@ export class CompletionEngine implements AIEngine {
           tool.requiresConfirmation && !always && mode !== "always-allow";
         if (requiresConfirmation && call.status !== "error") {
           call.status = "awaiting-confirmation";
-          onEvent?.({ type: "tool-call", call: structuredClone(call) });
+          onEvent?.({ type: "tool-call", call: structuredClone(call),
+            completedTurns: structuredClone(generated) as NonNullable<Extract<CompletionEvent, { type: "tool-call" }>["completedTurns"]> });
           const approved = request.confirmTool
             ? await abortable(request.confirmTool(call), request.signal)
             : false;
@@ -182,7 +185,8 @@ export class CompletionEngine implements AIEngine {
         }
         if (call.status !== "rejected" && call.status !== "error") {
           call.status = "running";
-          onEvent?.({ type: "tool-call", call: structuredClone(call) });
+          onEvent?.({ type: "tool-call", call: structuredClone(call),
+            completedTurns: structuredClone(generated) as NonNullable<Extract<CompletionEvent, { type: "tool-call" }>["completedTurns"]> });
           try {
             const output = await abortable(
               this.ctx.tools.call(call.name, call.arguments, {

@@ -338,6 +338,8 @@ export function mapRequest(input: AdapterRequest): {
     messages.push({
       role: turn.role,
       content,
+      ...(turn.role === "assistant" && turn.reasoning !== undefined &&
+        turn.reasoningModel === `${provider.id}/${model.id}` ? { reasoning_content: turn.reasoning } : {}),
       tool_call_id: turn.toolCallId,
       tool_calls: turn.toolCalls?.map(wireCall),
     });

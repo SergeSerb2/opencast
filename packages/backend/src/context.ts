@@ -92,6 +92,9 @@ export interface CommandRegistry {
 }
 
 export interface AIChatTurn {
+  reasoning?: string;
+  /** Only replay provider reasoning to the model that produced it. */
+  reasoningModel?: ModelRef;
   role: "system" | "user" | "assistant" | "tool";
   content: string;
   attachments?: AIAttachment[];
