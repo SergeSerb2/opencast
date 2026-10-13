@@ -63,7 +63,7 @@ import WebKit
       previous = app
     }
     collectionBehavior = activationBehavior == "switch-space"
-      ? [.fullScreenAuxiliary, .ignoresCycle] : [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+      ? [.fullScreenAuxiliary, .ignoresCycle] : [.moveToActiveSpace, .fullScreenAuxiliary, .ignoresCycle]
     let screen: NSScreen?
     if presentationMode == "primary-screen" { screen = NSScreen.screens.first }
     else if presentationMode == "active-window-screen", let pid = previous?.processIdentifier,
