@@ -4,6 +4,7 @@ import { backend } from "../bridge/backend";
 import { errorMessage, isCancelled } from "../bridge/errors";
 import { onReconnect, useEvent } from "../bridge/hooks";
 import { List } from "../components/List/List";
+import { UIControlContext, createUIControls } from "../components/View/UIControlContext";
 import { NavigationContext, type NavigationApi } from "../components/View/contexts";
 import { showToast } from "../components/feedback/toast-store";
 import { renderExtensionRoot } from "./ExtensionViews";
@@ -38,6 +39,10 @@ export function nextLayers(layers: Layer[], state: ExtensionSessionState): Layer
 export function ExtensionSessionView({ sessionId, title, icon }: ExtensionSessionViewProps) {
   const [layers, setLayers] = useState<Layer[]>([]);
   const parent = useContext(NavigationContext);
+  const controls = useMemo(createUIControls, [sessionId]);
+  useEvent("ext.ui.control", (control) => {
+    if (control.sessionId === sessionId) controls.emit(control);
+  });
 
   const apply = useCallback(
     (state: ExtensionSessionState) => {
@@ -88,18 +93,20 @@ export function ExtensionSessionView({ sessionId, title, icon }: ExtensionSessio
   return (
     <>
       {layers.map((layer) => (
-        <SessionLayer key={layer.depth} layer={layer} active={layer === top} parent={parent} title={title} icon={icon} dispatch={dispatch} />
+        <SessionLayer key={layer.depth} layer={layer} controls={controls} active={layer === top} parent={parent} title={title} icon={icon} dispatch={dispatch} />
       ))}
     </>
   );
 }
 
-function SessionLayer({ layer, active, parent, title, icon, dispatch }: { layer: Layer; active: boolean; parent: NavigationApi | null; title?: string; icon?: ImageLike; dispatch: (h: HandlerRef, a?: unknown[]) => void }) {
+function SessionLayer({ layer, controls, active, parent, title, icon, dispatch }: { layer: Layer; controls: ReturnType<typeof createUIControls>; active: boolean; parent: NavigationApi | null; title?: string; icon?: ImageLike; dispatch: (h: HandlerRef, a?: unknown[]) => void }) {
   const navigation = useMemo<NavigationApi | null>(() => (parent ? { ...parent, isActive: parent.isActive && active } : null), [parent, active]);
   const content = renderExtensionRoot(layer.root, { dispatch, isLoading: layer.isLoading, navigationTitle: layer.navigationTitle ?? title, navigationIcon: icon });
   return (
     <div className="sc-extension-layer" data-active={active || undefined}>
-      {navigation ? <NavigationContext.Provider value={navigation}>{content}</NavigationContext.Provider> : content}
+      <UIControlContext.Provider value={active && (parent?.isActive ?? true) ? controls : null}>
+        {navigation ? <NavigationContext.Provider value={navigation}>{content}</NavigationContext.Provider> : content}
+      </UIControlContext.Provider>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useUIControl } from "../View/UIControlContext";
 import { FormValuesContext } from "./form-context";
 
 interface FormState {
@@ -99,5 +100,8 @@ export function useFormField<T>(id: string, options: { value?: T; defaultValue?:
     },
     [form, id, value, onChange],
   );
+  useUIControl((control) => {
+    if (control.action === "reset" && control.itemId === id) setValue(initial.current);
+  });
   return { value: current, setValue, autoFocus: form?.firstFieldId === id };
 }

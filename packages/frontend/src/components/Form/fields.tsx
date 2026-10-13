@@ -14,6 +14,7 @@ import { TextArea as TextAreaControl } from "../TextArea/TextArea";
 import { TextField as TextFieldControl } from "../TextField/TextField";
 import { Tooltip } from "../Tooltip/Tooltip";
 import { showFailureToast } from "../feedback/toast-store";
+import { useUIControl } from "../View/UIControlContext";
 import { useFormField } from "./FormContext";
 
 type FocusEventHandler = (event: { target: { id: string; value: unknown }; type: "focus" | "blur" }) => void;
@@ -34,9 +35,17 @@ interface FieldBase<T> {
 }
 
 /** One form row: right-aligned label column, 360px field column, error column (§5.3). */
-export function FormRow({ title, info, error, htmlFor, children, compact }: { title?: string; info?: string; error?: string; htmlFor?: string; children: ReactNode; compact?: boolean }) {
+export function FormRow({ title, info, error, htmlFor, fieldId, children, compact }: { title?: string; info?: string; error?: string; htmlFor?: string; fieldId?: string; children: ReactNode; compact?: boolean }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  useUIControl((control) => {
+    if (fieldId && control.action === "focus" && control.itemId === fieldId) {
+      const input = rowRef.current?.querySelector<HTMLElement>("input:not(:disabled), textarea:not(:disabled)")
+        ?? rowRef.current?.querySelector<HTMLElement>("button:not(:disabled)");
+      input?.focus({ preventScroll: true });
+    }
+  });
   return (
-    <div className="sc-form-row" data-compact={compact || undefined} data-skip-label={!title && !info ? "" : undefined}>
+    <div ref={rowRef} className="sc-form-row" data-compact={compact || undefined} data-skip-label={!title && !info ? "" : undefined}>
       {(title || info) && (
         <label className="sc-form-row__label" htmlFor={htmlFor}>
           <span className="sc-truncate">{title}</span>
@@ -94,7 +103,7 @@ export function TextField({ id, title, info, error, value, defaultValue, onChang
   const field = useFormField<string>(id, { value, defaultValue: storedDefault(id, storeValue, defaultValue), fallback: "", onChange });
   const inputId = useId();
   return (
-    <FormRow title={title} info={info} error={error} htmlFor={inputId}>
+    <FormRow fieldId={id} title={title} info={info} error={error} htmlFor={inputId}>
       <TextFieldControl
         id={inputId}
         value={field.value}
@@ -115,7 +124,7 @@ export function PasswordField(props: TextFieldProps) {
   const field = useFormField<string>(props.id, { value: props.value, defaultValue: props.defaultValue, fallback: "", onChange: props.onChange });
   const inputId = useId();
   return (
-    <FormRow title={props.title} info={props.info} error={props.error} htmlFor={inputId}>
+    <FormRow fieldId={props.id} title={props.title} info={props.info} error={props.error} htmlFor={inputId}>
       <TextFieldControl
         id={inputId}
         type="password"
@@ -139,7 +148,7 @@ export function TextArea({ id, title, info, error, value, defaultValue, onChange
   const field = useFormField<string>(id, { value, defaultValue: storedDefault(id, storeValue, defaultValue), fallback: "", onChange });
   const inputId = useId();
   return (
-    <FormRow title={title} info={info} error={error} htmlFor={inputId}>
+    <FormRow fieldId={id} title={title} info={info} error={error} htmlFor={inputId}>
       <TextAreaControl
         id={inputId}
         value={field.value}
@@ -163,7 +172,7 @@ export interface CheckboxProps extends FieldBase<boolean> {
 export function Checkbox({ id, title, info, error, value, defaultValue, onChange, onFocus, onBlur, label, storeValue }: CheckboxProps) {
   const field = useFormField<boolean>(id, { value, defaultValue: storedDefault(id, storeValue, defaultValue), fallback: false, onChange });
   return (
-    <FormRow title={title} info={info} error={error} compact>
+    <FormRow fieldId={id} title={title} info={info} error={error} compact>
       <CheckboxControl
         {...focusHandlers(id, field.value, onFocus, onBlur)}
         checked={field.value}
@@ -220,7 +229,7 @@ export function Dropdown({ id, title, info, error, value, defaultValue, onChange
   const first = sections[0]?.items[0]?.value;
   const field = useFormField<string>(id, { value, defaultValue: storedDefault(id, storeValue, defaultValue ?? first), fallback: "", onChange });
   return (
-    <FormRow title={title} info={info} error={error}>
+    <FormRow fieldId={id} title={title} info={info} error={error}>
       <DropdownControl
         {...focusHandlers(id, field.value, onFocus, onBlur)}
         value={field.value}
@@ -262,7 +271,7 @@ export function TagPicker({ id, title, info, error, value, defaultValue, onChang
     .map((c) => c.props as TagPickerItemProps);
   const field = useFormField<string[]>(id, { value, defaultValue, fallback: [], onChange });
   return (
-    <FormRow title={title} info={info} error={error}>
+    <FormRow fieldId={id} title={title} info={info} error={error}>
       <TagInput {...focusHandlers(id, field.value, onFocus, onBlur)} value={field.value} onChange={field.setValue} options={options} placeholder={placeholder} aria-label={title} />
     </FormRow>
   );
@@ -298,7 +307,7 @@ export function DatePicker({ id, title, info, error, value, defaultValue, onChan
     setQuery("");
   };
   return (
-    <FormRow title={title} info={info} error={error}>
+    <FormRow fieldId={id} title={title} info={info} error={error}>
       <button
         ref={triggerRef}
         type="button"
@@ -353,7 +362,7 @@ export function FilePicker({ id, title, info, error, value, defaultValue, onChan
   };
   const label = canChooseDirectories && !canChooseFiles ? (allowMultipleSelection ? "Select Folders" : "Select Folder") : allowMultipleSelection ? "Select Files" : "Select File";
   return (
-    <FormRow title={title} info={info} error={error}>
+    <FormRow fieldId={id} title={title} info={info} error={error}>
       <button type="button" className="sc-file-picker" onMouseDown={(e) => e.preventDefault()} onClick={() => void pick()} {...focusHandlers(id, field.value, onFocus, onBlur)}>
         <Icon name="plus-16" size={16} />
         <span>{label}</span>

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { ImageLike, UINode } from "@surgecast/protocol";
+import { useUIControl } from "../components/View/UIControlContext";
 import { Detail } from "../components/Detail/Detail";
 import { Form } from "../components/Form/Form";
 import { FormValuesContext } from "../components/Form/form-context";
@@ -45,7 +46,14 @@ function useSearchText(node: UINode, dispatch: Dispatch): [string | undefined, (
     if (throttle) timer.current = setTimeout(() => dispatch(handler, [text]), THROTTLE_MS);
     else dispatch(handler, [text]);
   };
-  return [controlled !== undefined || isHandler(handler) ? local : undefined, onChange];
+  useUIControl((control) => {
+    if (control.action !== "clearSearchBar") return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    setLocal("");
+    if (isHandler(handler)) dispatch(handler, [""]);
+  });
+  return [local, onChange];
 }
 
 function accessoryFor(node: unknown, dispatch: Dispatch): ReactNode {
@@ -59,7 +67,7 @@ function accessoryFor(node: unknown, dispatch: Dispatch): ReactNode {
         value={str(p.value)}
         defaultValue={str(p.defaultValue)}
         placeholder={str(p.placeholder)}
-        storeValue={bool(p.storeValue)}
+        storeValue={false}
         filtering={typeof p.filtering === "boolean" ? p.filtering : undefined}
         isLoading={bool(p.isLoading)}
         onChange={callback<[string]>(p.onChange, dispatch)}
@@ -189,7 +197,8 @@ function fieldProps(node: UINode, dispatch: Dispatch) {
     info: str(p.info),
     error: str(p.error),
     autoFocus: bool(p.autoFocus),
-    storeValue: bool(p.storeValue),
+    // The runtime restores and persists values in its extension/command cache.
+    storeValue: false,
     onFocus: focus("focus", p.onFocus),
     onBlur: focus("blur", p.onBlur),
   };
