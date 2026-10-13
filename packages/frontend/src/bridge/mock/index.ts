@@ -2,7 +2,7 @@ import {
   defaultSettings,
   isSettingsKey,
   RpcErrorCode,
-  type AIChat,
+  type AICommand,
   type BackendEvents,
   type BackendMethod,
   type BackendParams,
@@ -17,11 +17,13 @@ import type { BackendClient, CallArgs, CallOptions } from "../backend";
 import type { Emitter } from "../emitter";
 import { cancelledError, RpcError } from "../errors";
 import { ALL_COMMANDS } from "./fixtures/commands";
-import { CHATS, EXTENSIONS, MESSAGES, NOTES, PROVIDERS } from "./fixtures/content";
+import { EXTENSIONS, NOTES, PROVIDERS } from "./fixtures/content";
 import { createLibraryHandlers, LIBRARY_COMMANDS, libraryView } from "./library";
+import { createAiMockHandlers } from "./ai";
 import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
 import { createTeamBMock } from "./team-b";
+import { isTranslationPrompt } from "./team-b/translator";
 
 type Handlers = { [M in BackendMethod]?: (params: BackendParams<M>) => BackendResult<M> | Promise<BackendResult<M>> };
 
@@ -74,9 +76,11 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
   const settings: SettingsValues = { ...defaultSettings(), ...settingsFromUrl(typeof location === "undefined" ? "" : location.search) } as SettingsValues;
   const commands: CommandInfo[] = [];
   const teamB = createTeamBMock({ events, commands });
+  // Team B adds AI Commands and Presets to root search from its editable store.
   commands.push(...[...ALL_COMMANDS, ...LIBRARY_COMMANDS, ...teamB.commands].map((c) => ({ ...c })));
-  const chats: AIChat[] = CHATS.map((c) => ({ ...c }));
   const notes: Note[] = NOTES.map((n) => ({ ...n }));
+  const aiCommands = () => teamB.handlers["ai.commands.list"]!({} as never) as AICommand[];
+  const ai = createAiMockHandlers(events, settings, aiCommands);
   let noteCounter = 0;
   const changedNote = (id: string, deleted?: boolean) => {
     events.emit("notes.changed", { id, ...(deleted ? { deleted } : {}) });
@@ -105,6 +109,11 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
       setTimeout(() => created.start(), 0);
       return { kind: "extension", sessionId, mode: "view" };
     }
+    if (command.kind === "ai-command") {
+      const aiCommand = aiCommands().find((c) => `ai-command:${c.id}` === command.id) ?? notFound(`AI command ${command.id}`);
+      return { kind: "ai", target: aiCommand.output === "window" ? "chat" : "quick-ai", aiCommandId: aiCommand.id };
+    }
+    if (command.kind === "ai-preset") return { kind: "ai", target: "chat", presetId: command.id.slice("ai-preset:".length) };
     if (command.kind === "app") return { kind: "done", closeWindow: true };
     if (command.kind === "quicklink") return { kind: "done", closeWindow: true };
     if (command.kind === "script") return { kind: "view", view: { id: "script-output", title: command.title, props: { title: command.title, output: "up 3 days, 4:12, 2 users, load averages: 1.92 1.88 1.75\n", exitCode: 0 } } };
@@ -175,15 +184,6 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "calc.evaluate": ({ expression }) => mockCalculate(expression) ?? null,
 
     "ai.providers.list": () => PROVIDERS,
-    "ai.models.list": () =>
-      PROVIDERS.flatMap((p) => p.models.filter((m) => m.enabled).map((m) => ({ ref: `${p.id}/${m.id}`, providerId: p.id, providerName: p.name, modelId: m.id, name: m.name, capabilities: m.capabilities, contextWindow: m.contextWindow }))),
-    "ai.chats.list": () => chats,
-    "ai.chats.get": ({ id }) => {
-      const chat = chats.find((c) => c.id === id);
-      return chat ? { chat, messages: MESSAGES.filter((m) => m.chatId === id) } : null;
-    },
-    "ai.commands.list": () => [],
-    "ai.presets.list": () => [],
 
     "extensions.list": () => EXTENSIONS,
     "extensions.getPreferences": ({ name, command }) => {
@@ -217,6 +217,15 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "hud.show": () => undefined,
     ...createLibraryHandlers(events),
     ...teamB.handlers,
+    // AI Chat owns chats, streaming and tools; Team B keeps the AI Commands/Presets store and
+    // answers translation prompts.
+    ...ai,
+    "ai.presets.list": teamB.handlers["ai.presets.list"],
+    "ai.ask": (params) => (isTranslationPrompt(params) ? teamB.handlers["ai.ask"]! : ai["ai.ask"]!)(params),
+    "ai.stop": (params) => {
+      void teamB.handlers["ai.stop"]?.(params);
+      return ai["ai.stop"]!(params);
+    },
     // Notes window behavior (caret, last opened, sync events) overrides the library store.
     "notes.list": ({ query }) => {
       const words = query?.toLowerCase().split(/\s+/).filter(Boolean) ?? [];

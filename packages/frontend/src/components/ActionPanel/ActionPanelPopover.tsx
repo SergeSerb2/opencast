@@ -18,7 +18,7 @@ export interface ActionPanelPopoverProps {
   align?: "start" | "end";
   /** Show the ↵ / ⌘↵ keycaps the frame binds to the first two actions ("cmd-enter": forms, ⌘↵ only). */
   primaryShortcut?: "enter" | "cmd-enter" | null;
-  /** Open upward from a footer (default; search field at the bottom) or downward from a header (search on top). */
+  /** Open above the anchor (default, footer) or below it (header buttons); the search field faces the anchor. */
   side?: "top" | "bottom";
 }
 
@@ -98,7 +98,7 @@ export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, a
   };
 
   return (
-    <Popover open={open && Boolean(level)} onClose={onClose} anchor={anchor} side={side} align={align} offset={0} width={350} flip={false} className="sc-action-panel" aria-label="Actions" role="dialog">
+    <Popover open={open && Boolean(level)} onClose={onClose} anchor={anchor} side={side} align={align} offset={side === "top" ? 0 : 8} width={350} flip={false} className="sc-action-panel" aria-label="Actions" role="dialog">
       {level && (
         <Menu
           key={levels.length}

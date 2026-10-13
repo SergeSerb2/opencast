@@ -24,6 +24,8 @@ export interface MenuItem {
   checked?: boolean;
   /** Shows a chevron; activating opens a submenu. */
   hasSubmenu?: boolean;
+  /** Small tertiary glyphs before the accessory text (e.g. model capabilities). */
+  badges?: { icon: ImageLike; label: string }[];
 }
 
 export interface MenuSection {
@@ -250,6 +252,11 @@ export function Menu({
               <HighlightedText text={item.title} ranges={row.ranges} />
             </span>
             <span className="sc-menu__accessories">
+              {item.badges?.map((badge) => (
+                <span key={badge.label} className="sc-menu__badge" title={badge.label} aria-label={badge.label}>
+                  <Image source={badge.icon} size={14} />
+                </span>
+              ))}
               {item.accessoryText && <span className="sc-menu__accessory-text sc-truncate">{item.accessoryText}</span>}
               {item.shortcut && <Shortcut shortcut={item.shortcut} />}
               {item.checked && <Icon name="checkmark-16" size={16} className="sc-menu__check" />}

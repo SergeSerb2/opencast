@@ -1,0 +1,318 @@
+/* AI Chat window shell (§6.1, §6.3, §13.3). */
+.sc-ai-window {
+  --ai-header-height: var(--default-window-header-height);
+  --ai-top-clearance: calc(var(--ai-header-height) + var(--space-16));
+  --window-header-height: var(--ai-header-height);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.theme-root[macos="26"] .sc-ai-window {
+  --ai-header-height: round(calc(44 * var(--spx)), 1px);
+}
+
+.sc-ai-main {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--ai-sidebar-offset);
+  right: var(--ai-settings-offset);
+  min-width: 0;
+}
+.transitions-ready .sc-ai-main {
+  transition:
+    left 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    right 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.sc-ai-main__content {
+  position: absolute;
+  inset: 0;
+}
+.sc-ai-main > .sc-progressive-blur {
+  top: 0;
+}
+
+/* ---- header ---- */
+.sc-ai-header-drag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--ai-header-height);
+}
+.sc-ai-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-16);
+  height: 100%;
+  padding: var(--space-8) var(--space-8) 0 var(--space-16);
+  pointer-events: none;
+}
+.sc-ai-header > * {
+  pointer-events: auto;
+}
+.sc-ai-window:not([data-sidebar="inline"]) .sc-ai-header {
+  padding-left: calc(176px * var(--zoom) + var(--space-16));
+}
+.transitions-ready .sc-ai-header {
+  transition: padding-left 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.sc-ai-header__titles {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: round(calc(36 * var(--spx)), 1px);
+  display: grid;
+  grid-template-rows: var(--space-16) var(--space-16);
+  align-content: center;
+  justify-items: start;
+  row-gap: 0;
+}
+.sc-ai-header__title {
+  max-width: 100%;
+  font-size: var(--font-size-13);
+  line-height: var(--space-16);
+  color: var(--color-text-primary);
+}
+.sc-ai-header__title[data-new] {
+  color: var(--color-text-secondary);
+}
+.theme-root[window-blurred] .sc-ai-header__title {
+  color: var(--color-text-tertiary);
+}
+.sc-ai-header__title-input {
+  width: 100%;
+  font-size: var(--font-size-13);
+  line-height: var(--space-16);
+}
+.sc-ai-header__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 100%;
+  min-width: 0;
+}
+.sc-ai-header__meta-button,
+.sc-ai-header__preset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  font-size: var(--font-size-11);
+  line-height: var(--space-16);
+  color: var(--color-text-secondary);
+}
+.sc-ai-header__meta-button:hover {
+  color: var(--color-text-primary);
+}
+.sc-ai-header__preset {
+  color: var(--color-text-tertiary);
+}
+.theme-root[window-blurred] .sc-ai-header__meta-button {
+  color: var(--color-text-quaternary);
+}
+
+.sc-ai-glass-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: round(calc(36 * var(--spx)), 1px);
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+}
+.sc-ai-glass-group .sc-icon-button {
+  color: var(--color-text-primary);
+}
+
+/* Window controls: traffic lights, sidebar toggle, new folder / new chat (§6.3 Left controls). */
+.sc-ai-window-controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: var(--ai-header-height);
+}
+.sc-ai-sidebar-toggle {
+  position: absolute;
+  top: var(--space-8);
+  left: calc(96px * var(--zoom));
+}
+.sc-ai-new-group {
+  position: absolute;
+  top: var(--space-8);
+  left: calc(140px * var(--zoom));
+}
+.sc-ai-new-group[data-sidebar] {
+  left: auto;
+  right: calc(-1 * var(--ai-sidebar-width) + var(--space-8));
+}
+/* macOS 26: with the sidebar open its controls sit inside the glass panel as plain 28px buttons. */
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] :is(.sc-ai-sidebar-toggle, .sc-ai-new-group) {
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  -apple-visual-effect: none;
+}
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] :is(.sc-ai-sidebar-toggle, .sc-ai-new-group)::after {
+  display: none;
+}
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] .sc-ai-sidebar-toggle:hover {
+  background: var(--fg-5);
+}
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] .sc-ai-new-group[data-sidebar] {
+  right: calc(-1 * var(--ai-sidebar-width) + var(--space-12));
+}
+
+.sc-ai-traffic-lights {
+  position: absolute;
+  top: calc(var(--ai-header-height) / 2 - 7px);
+  left: 19px;
+  display: flex;
+  gap: 9px;
+}
+.sc-ai-traffic-lights > span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.2);
+}
+.sc-ai-traffic-lights [data-color="close"] {
+  background: #ff5f57;
+}
+.sc-ai-traffic-lights [data-color="minimize"] {
+  background: #febc2e;
+}
+.sc-ai-traffic-lights [data-color="zoom"] {
+  background: #28c840;
+}
+.theme-root[window-blurred] .sc-ai-traffic-lights > span {
+  background: var(--fg-20);
+}
+
+/* Narrow windows: the sidebar floats over the conversation. */
+.sc-ai-window[data-sidebar="overlay"] .sc-ai-sidebar {
+  background: var(--glass-panel-tint);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--glass-panel-shadow);
+}
+
+/* ---- composer footer ---- */
+.sc-ai-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 var(--space-8) var(--space-8);
+  pointer-events: none;
+}
+.sc-ai-footer__inner {
+  max-width: 100ch;
+  margin-inline: auto;
+  font-size: var(--font-size-14);
+}
+.sc-ai-footer__inner > * {
+  font-size: var(--font-size-13);
+}
+.sc-ai-archived {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  height: round(calc(36 * var(--spx)), 1px);
+  padding: 0 var(--space-4) 0 var(--space-16);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  pointer-events: auto;
+}
+.sc-ai-archived button {
+  height: 28px;
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-control);
+  color: var(--color-text-primary);
+}
+
+/* ---- empty states ---- */
+.sc-ai-watermark {
+  color: var(--fg);
+  opacity: 0.1;
+  pointer-events: none;
+}
+/* ---- chat settings pane (300px) ---- */
+.sc-ai-settings {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: round(calc(300 * var(--spx)), 1px);
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--ai-header-height);
+}
+.theme-root[macos="26"] .sc-ai-settings:not([data-overlay]) {
+  border-left: 1px solid var(--color-border-separator);
+}
+.sc-ai-settings[data-overlay] {
+  top: calc(var(--ai-header-height) + var(--space-4));
+  right: var(--space-8);
+  bottom: calc(var(--ai-bottom-clearance) - var(--space-16));
+  padding-top: 0;
+  border-radius: var(--radius-popover);
+  animation: sc-ai-appear 0.15s ease-out;
+}
+.sc-ai-settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 var(--space-12) 0 var(--space-16);
+  font-size: var(--font-size-13);
+  font-weight: 600;
+}
+.sc-ai-settings__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-4) var(--space-16) var(--space-16);
+}
+.sc-ai-settings__field,
+.sc-ai-settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.sc-ai-settings__label {
+  font-size: var(--font-size-11);
+  color: var(--color-text-secondary);
+}
+.sc-ai-settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-height: 32px;
+}
+.sc-ai-settings__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sc-ai-settings__row-title {
+  display: block;
+  font-size: var(--font-size-13);
+}
+.sc-ai-settings__row-subtitle {
+  display: block;
+  font-size: var(--font-size-11);
+  color: var(--color-text-tertiary);
+}
+.sc-ai-settings__tool {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}

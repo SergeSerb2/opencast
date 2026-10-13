@@ -1,4 +1,4 @@
-import type { AIChat, AIMessage, AIProvider, ClipboardItem, InstalledExtension, Note, Snippet } from "@surgecast/protocol";
+import type { AIProvider, ClipboardItem, InstalledExtension, Note, Snippet } from "@surgecast/protocol";
 
 const now = Date.now();
 const min = 60_000;
@@ -109,29 +109,6 @@ export const PROVIDERS: (AIProvider & { hasApiKey: boolean })[] = [
     createdAt: now - 20 * day,
     updatedAt: now - 20 * day,
   },
-];
-
-export const CHATS: AIChat[] = [
-  { id: "chat1", title: "Debounce vs throttle", model: "anthropic/claude-sonnet-5-5", source: "chat", pinned: true, createdAt: now - 2 * hour, updatedAt: now - 90 * min, currentLeafId: "m2" },
-  { id: "chat2", title: "Rename files with a shell loop", model: "openai/gpt-5.1", source: "quick-ai", createdAt: now - 1 * day, updatedAt: now - 1 * day, currentLeafId: "m4" },
-];
-
-export const MESSAGES: AIMessage[] = [
-  { id: "m1", chatId: "chat1", role: "user", content: "What's the difference between debounce and throttle?", status: "complete", createdAt: now - 2 * hour, updatedAt: now - 2 * hour },
-  {
-    id: "m2",
-    chatId: "chat1",
-    parentId: "m1",
-    role: "assistant",
-    model: "anthropic/claude-sonnet-5-5",
-    status: "complete",
-    content:
-      "Both limit how often a function runs:\n\n| | Debounce | Throttle |\n|---|---|---|\n| Fires | after input **stops** | at most once per interval |\n| Good for | search fields | scroll handlers |\n\n```ts\nfunction debounce<T extends unknown[]>(fn: (...args: T) => void, ms: number) {\n  let timer: ReturnType<typeof setTimeout> | undefined;\n  return (...args: T) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), ms);\n  };\n}\n```\n\n> Rule of thumb: debounce *intent*, throttle *motion*.",
-    createdAt: now - 2 * hour + 5000,
-    updatedAt: now - 2 * hour + 9000,
-  },
-  { id: "m3", chatId: "chat2", role: "user", content: "Rename all .jpeg files to .jpg in this folder", status: "complete", createdAt: now - day, updatedAt: now - day },
-  { id: "m4", chatId: "chat2", parentId: "m3", role: "assistant", model: "openai/gpt-5.1", status: "complete", content: "```bash\nfor f in *.jpeg; do\n  mv -- \"$f\" \"${f%.jpeg}.jpg\"\ndone\n```", createdAt: now - day + 3000, updatedAt: now - day + 4000 },
 ];
 
 export const EXTENSIONS: InstalledExtension[] = [

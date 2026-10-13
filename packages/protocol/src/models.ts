@@ -318,6 +318,7 @@ export interface AIAttachment {
   path?: string;
   /** Inline text content (selection, small text files, fetched URL text). */
   text?: string;
+  /** Remote URL, or an inline data:image/{png,jpeg,gif,webp};base64 URL for path-less images. */
   url?: string;
   size?: number;
 }
@@ -377,6 +378,13 @@ export interface AIChat {
   source: "chat" | "quick-ai" | "ai-command";
   createdAt: number;
   updatedAt: number;
+}
+
+/** A folder in the AI Chat sidebar (setting "ai.chatFolders"); chats reference it with `folderId`. */
+export interface AIChatFolder {
+  id: string;
+  name: string;
+  createdAt: number;
 }
 
 /** A Raycast "Preset" / "Agent": reusable chat setup. (entity: aiPresets) */

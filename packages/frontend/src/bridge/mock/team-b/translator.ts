@@ -62,8 +62,14 @@ function findPhrase(text: string): { row: Record<string, string>; language: stri
   return null;
 }
 
+const TRANSLATION_PROMPT = /^Translate the following text(?: from (.+?))? to (.+?)\.\n\n<text>\n([\s\S]*)\n<\/text>$/;
+
+export function isTranslationPrompt({ prompt }: BackendParams<"ai.ask">): boolean {
+  return TRANSLATION_PROMPT.test(prompt);
+}
+
 function translationReply({ prompt, system }: BackendParams<"ai.ask">): string | null {
-  const match = /^Translate the following text(?: from (.+?))? to (.+?)\.\n\n<text>\n([\s\S]*)\n<\/text>$/.exec(prompt);
+  const match = TRANSLATION_PROMPT.exec(prompt);
   if (!match) return null;
   const [, , targetName, text] = match;
   const target = CODES[targetName.toLowerCase()] ?? targetName.slice(0, 2).toLowerCase();

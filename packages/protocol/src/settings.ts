@@ -7,6 +7,7 @@
  * Keychain via the secrets service.
  */
 
+import type { AIChatFolder } from "./models";
 import type { Hotkey } from "./ui";
 
 export type SyncCategory =
@@ -87,6 +88,8 @@ export const SETTINGS = {
   "ai.editMessageWarning": synced(true),
   /** Show saved agents in root search (Raycast Search Agents). */
   "ai.searchAgents": synced(false),
+  /** Folders of the AI Chat sidebar. */
+  "ai.chatFolders": synced<AIChatFolder[]>([]),
   /** Personal context added to every chat (not to AI Commands). */
   "ai.profile": synced(""),
   "ai.memoryEnabled": synced(false),
