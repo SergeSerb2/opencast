@@ -5,6 +5,7 @@ import ApplicationServices
   private var tap: CFMachPort?
   private var source: CFRunLoopSource?
   private var observer: NSObjectProtocol?
+  private var configuration: NSDictionary?
   private var keywords: [(id: String, keyword: String)] = []
   private var expandWithinWords = true
   private var mode = "immediately"
@@ -29,6 +30,9 @@ import ApplicationServices
     }
   }
   func set(_ p: [String: Any]) throws {
+    let next = p as NSDictionary
+    if configuration?.isEqual(to: p) == true && (tap != nil || (p["enabled"] as? Bool) == false) { return }
+    configuration = nil
     stopTap()
     keywords = []
     buffer = ""
@@ -39,7 +43,7 @@ import ApplicationServices
     responseDelay = ["instant": 0, "quick": 20_000_000, "default": 50_000_000, "delayed": 150_000_000, "extended": 300_000_000][p["responseTime"] as? String ?? "default"] ?? 50_000_000
     sound = p["completionSound"] as? String ?? ""
     ignored = Set(p["ignoredBundleIds"] as? [String] ?? [])
-    guard try p.boolean("enabled") else { return }
+    guard try p.boolean("enabled") else { configuration = next; return }
     try Permissions.requireAX()
     guard let items = p["keywords"] as? [[String: Any]] else {
       throw RpcError.invalid("Missing keywords")
@@ -66,6 +70,7 @@ import ApplicationServices
     source = CFMachPortCreateRunLoopSource(nil, tap, 0)
     CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
     CGEvent.tapEnable(tap: tap, enable: true)
+    configuration = next
   }
   private func event(_ type: CGEventType, _ event: CGEvent) {
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {

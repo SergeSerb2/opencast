@@ -95,12 +95,13 @@ function validateSnippet(value: Snippet): void {
 export const snippetsService: Service = {
   name: "core.snippets",
   register(ctx) {
+    let configuration: string | undefined;
     const keywords = async () => {
       const items = list<Snippet>(ctx, "snippets")
         .filter((s) => !!s.keyword)
-        .map((s) => ({ id: s.id, keyword: s.keyword! }));
-      try {
-        await ctx.native.call("snippets.setKeywords", {
+        .map((s) => ({ id: s.id, keyword: s.keyword! }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const params = {
           // No keywords → no keyboard monitoring (and no Accessibility prompt).
           enabled: ctx.settings.get("snippets.autoExpansionEnabled") && items.length > 0,
           ignoredBundleIds: ctx.settings.get("snippets.disabledApplications"),
@@ -111,8 +112,14 @@ export const snippetsService: Service = {
           responseTime: ctx.settings.get("snippets.responseTime"),
           completionSound: ctx.settings.get("snippets.completionSound"),
           overrideSystemSnippets: ctx.settings.get("snippets.overrideSystemSnippets"),
-        });
+      };
+      const next = JSON.stringify(params);
+      if (configuration === next) return;
+      configuration = next;
+      try {
+        await ctx.native.call("snippets.setKeywords", params);
       } catch (error) {
+        if (configuration === next) configuration = undefined;
         if (error instanceof RpcError && error.code === RpcErrorCode.PermissionDenied) {
           ctx.log.info("Snippet expansion is waiting for the Accessibility permission");
           return;

@@ -71,3 +71,13 @@ it.each([false, true])("quicklink usage preserves concurrent edits/deletion (%s)
   release(); await open;
   expect(f.ctx.entities.get("quicklinks", link.id)?.data ?? null).toEqual(deleted ? null : expect.objectContaining({ link: "https://edited.example", openCount: 1 }));
 });
+
+it("usage does not republish unchanged native snippet keywords", async () => {
+  f = await fixture();
+  const snippet = await f.call("snippets.create", { name: "Keyword", text: "hello", keyword: ";hi" });
+  f.nativeCall.mockClear();
+  await f.nativeInvoke("snippets.resolve", { id: snippet.id });
+  expect(f.nativeCall.mock.calls.filter(([method]) => method === "snippets.setKeywords")).toHaveLength(0);
+  await f.call("snippets.update", { id: snippet.id, patch: { keyword: ";new" } });
+  expect(f.nativeCall).toHaveBeenCalledWith("snippets.setKeywords", expect.objectContaining({ keywords: [{ id: snippet.id, keyword: ";new" }] }));
+});
