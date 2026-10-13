@@ -1,0 +1,99 @@
+/* Text and its highlight mirror must share every metric that affects layout. */
+.sc-template-editor {
+  --tpl-padding-y: 7px;
+  --tpl-padding-x: var(--space-12);
+  --tpl-line-height: 18px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+}
+.sc-template-editor:not([data-multiline]) {
+  flex-direction: row;
+  align-items: center;
+  height: var(--field-height);
+  --tpl-padding-y: 0px;
+}
+.sc-template-editor__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.sc-template-editor:not([data-multiline]) .sc-template-editor__body {
+  height: var(--tpl-line-height);
+}
+.sc-template-editor__layer {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  padding: var(--tpl-padding-y) var(--tpl-padding-x);
+  font: inherit;
+  font-size: var(--font-size-13);
+  line-height: var(--tpl-line-height);
+  letter-spacing: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 4;
+  overflow: hidden;
+}
+.sc-template-editor:not([data-multiline]) .sc-template-editor__layer {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.sc-template-editor__input {
+  resize: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.sc-template-editor__input::-webkit-scrollbar {
+  display: none;
+}
+.sc-template-editor__input::placeholder {
+  color: var(--color-text-placeholder);
+}
+.sc-template-editor__mirror,
+.sc-template-editor__measure {
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}
+.sc-template-editor__measure {
+  visibility: hidden;
+}
+.sc-template-editor__chip {
+  border-radius: 4px;
+  background: var(--red-20);
+  box-shadow: 0 0 0 1px var(--red-30);
+}
+.sc-template-editor__chip[data-known] {
+  background: var(--accent-20);
+  box-shadow: 0 0 0 1px var(--accent-30);
+}
+
+/* `{` menu: same rows as the shared Menu (36px, inset 8, radius 10). */
+.sc-template-editor__menu {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: var(--space-8) 0;
+  scrollbar-width: none;
+}
+.sc-template-editor__item {
+  height: 36px;
+  cursor: default;
+}
+.sc-template-editor__header {
+  padding: var(--space-12) calc(var(--list-padding-x) + var(--list-item-padding-x)) var(--space-8);
+  font-size: var(--font-size-11);
+  line-height: 12px;
+  color: var(--color-text-secondary);
+}
+.sc-template-editor__separator {
+  height: var(--half-pixel);
+  margin: var(--space-8) var(--space-8) 0;
+  background: var(--color-border-separator);
+}

@@ -1,0 +1,64 @@
+.sc-empty-view {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--space-32);
+}
+.sc-empty-view__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-24);
+  min-width: 0;
+}
+.sc-empty-view__illustration {
+  color: var(--fg);
+  flex-shrink: 0;
+  overflow: visible;
+  margin-top: -5px;
+  margin-bottom: 5px;
+}
+.sc-empty-view__icon {
+  color: var(--color-text-tertiary);
+}
+.sc-empty-view__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+  text-align: center;
+}
+.sc-empty-view__info:empty {
+  display: none;
+}
+.sc-empty-view__title {
+  max-width: 360px;
+  font-size: var(--font-size-13);
+  line-height: 16px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-empty-view__description {
+  max-width: 470px;
+  font-size: var(--font-size-13);
+  line-height: 16px;
+  color: var(--color-text-tertiary);
+  white-space: pre-wrap;
+}
+/* The empty state's call to action carries the default focus ring (outside its fill). */
+.sc-empty-view__action {
+  height: var(--space-32);
+  margin: 2px;
+  padding: 0 calc(var(--space-16) + 0.5px);
+  border-radius: var(--radius-10);
+  font-size: var(--font-size-13);
+  color: var(--color-text-primary);
+  background: var(--fg-10);
+  outline: 2px solid var(--color-border-focus-ring);
+  outline-offset: 0;
+}
+.sc-empty-view__action:hover {
+  background: var(--fg-15);
+}

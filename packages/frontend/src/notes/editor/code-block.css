@@ -1,0 +1,97 @@
+/* Code blocks (§7.4): fg-5 card, JetBrains Mono 13/19.5, language menu and copy button. */
+
+.sc-notes-code-block {
+  position: relative;
+  margin: var(--space-12) 0;
+  border-radius: var(--radius-12);
+  background: var(--fg-5);
+  color: var(--color-token-secondary);
+  white-space: normal;
+}
+.sc-notes-code-block__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: var(--space-4) var(--space-8) 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sc-notes-code-block__language {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 160px;
+  height: var(--space-24);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-6);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-12);
+  color: var(--color-text-tertiary);
+}
+button.sc-notes-code-block__language:hover,
+button.sc-notes-code-block__language[data-state="open"] {
+  background: var(--fg-5);
+  color: var(--color-text-secondary);
+}
+.sc-notes-code-block__copy {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--space-24);
+  height: var(--space-24);
+  border-radius: var(--radius-6);
+  color: var(--color-text-secondary);
+}
+.sc-notes-code-block__copy:hover {
+  background: var(--fg-5);
+}
+.sc-notes-code-block__copy[data-copied] {
+  pointer-events: none;
+}
+.sc-notes-code-block__copy-icon {
+  position: absolute;
+  opacity: 0;
+  scale: 0.5;
+  transition:
+    opacity 0.25s ease,
+    scale 0.25s ease;
+}
+.sc-notes-code-block__copy-icon.is-visible {
+  opacity: 1;
+  scale: 1;
+}
+.sc-notes-code-block__pre {
+  margin: 0;
+  padding: var(--space-8) var(--space-12) var(--space-12);
+  overflow-x: auto;
+}
+.sc-notes-code-block__code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  font-family: var(--font-mono);
+  font-size: calc(13 * var(--spx));
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre !important;
+  overflow-wrap: normal !important;
+  word-wrap: normal !important;
+}
+
+/* Syntax colors (§7.4). */
+.sc-notes-code-block :is(.hljs-built_in, .hljs-type, .hljs-literal, .hljs-number, .hljs-title, .hljs-tag, .hljs-name, .hljs-attr, .hljs-quote, .hljs-template-tag, .hljs-template-variable) {
+  color: var(--color-token-primary);
+}
+.sc-notes-code-block :is(.hljs-bullet, .hljs-code) {
+  color: var(--color-token-secondary);
+}
+.sc-notes-code-block .hljs-comment {
+  color: var(--color-token-tertiary);
+}
+.sc-notes-code-block :is(.hljs-regexp, .hljs-string, .hljs-symbol, .hljs-variable, .hljs-link, .hljs-deletion) {
+  color: var(--color-token-string);
+}
+.sc-notes-code-block :is(.hljs-keyword, .hljs-meta, .hljs-selector-tag, .hljs-selector-class, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-addition) {
+  color: var(--color-token-highlight);
+}

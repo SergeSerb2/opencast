@@ -1,0 +1,131 @@
+/* Dev-only gallery layout. */
+html:has(.gallery),
+html:has(.gallery) body {
+  overflow: auto;
+  height: auto;
+}
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+.gallery ~ .sc-overlay-root {
+  position: fixed;
+}
+.gallery-column {
+  padding: 24px 28px 64px;
+  color: var(--color-text-primary);
+}
+.gallery-column[dark] {
+  background: linear-gradient(180deg, #423f54, #453f63);
+}
+.gallery-column[light] {
+  background: linear-gradient(180deg, #efedf5, #e7e3f3);
+}
+.gallery-column__title {
+  font-size: var(--font-size-18);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.gallery-section {
+  margin-bottom: 28px;
+}
+.gallery-section__title {
+  font-size: var(--font-size-11);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.gallery-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gallery-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.gallery-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 360px;
+}
+.gallery-accessory {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  color: var(--color-text-primary);
+}
+.gallery-accessory:hover {
+  background: var(--fg-5);
+}
+.gallery-loading-bar {
+  position: relative;
+  width: 200px;
+  height: 12px;
+}
+.gallery-icons {
+  display: grid;
+  grid-template-columns: repeat(16, 24px);
+  gap: 6px;
+  color: var(--color-text-primary);
+}
+.gallery-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+}
+.gallery-logo {
+  color: var(--color-text-tertiary);
+}
+.gallery-list {
+  width: 520px;
+  display: flex;
+  flex-direction: column;
+}
+.gallery-menu {
+  width: 350px;
+  border-radius: var(--radius-popover);
+  overflow: hidden;
+}
+.gallery-footer {
+  display: flex;
+  justify-content: space-between;
+  width: 520px;
+}
+.gallery-toasts {
+  align-items: flex-start;
+  max-width: none;
+}
+.gallery-toasts .sc-inline-toast {
+  position: relative;
+}
+.gallery-empty {
+  position: relative;
+  height: 280px;
+  max-width: 520px;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px var(--fg-10);
+}
+.gallery-metadata {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 24px;
+  max-width: 560px;
+}
+.gallery-markdown {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.gallery-demo {
+  position: absolute;
+  inset: 0;
+}

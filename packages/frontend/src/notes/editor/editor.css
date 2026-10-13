@@ -1,0 +1,269 @@
+/*
+ * Notes editor content (§7.3–§7.5). The editor is its own zoom scope: spacing
+ * and type scale with `--notes-zoom` on top of the interface zoom.
+ */
+
+.sc-notes-editor {
+  --notes-accent: var(--accent);
+  --spx: calc(1px * var(--zoom) * var(--notes-zoom, 1));
+  --space-2: round(calc(2 * var(--spx)), 1px);
+  --space-4: round(calc(4 * var(--spx)), 1px);
+  --space-6: round(calc(6 * var(--spx)), 1px);
+  --space-8: round(calc(8 * var(--spx)), 1px);
+  --space-12: round(calc(12 * var(--spx)), 1px);
+  --space-16: round(calc(16 * var(--spx)), 1px);
+  --space-24: round(calc(24 * var(--spx)), 1px);
+  --notes-indent: round(calc(22 * var(--spx)), 1px);
+  position: relative;
+}
+
+.sc-notes-editor .tiptap {
+  padding: var(--space-4) var(--space-24);
+  font-size: calc(14 * var(--spx));
+  font-feature-settings:
+    var(--font-features),
+    "tnum" 1,
+    "ss01" 1;
+  color: var(--color-text-primary);
+  outline: none;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+  caret-color: var(--notes-accent);
+}
+.sc-notes-editor .tiptap.ProseMirror-hideselection,
+.sc-notes-editor .tiptap.ProseMirror-hideselection * {
+  caret-color: transparent;
+}
+.sc-notes-editor .tiptap ::selection,
+.sc-notes-editor .tiptap::selection {
+  background: transparent;
+}
+.sc-notes-editor .ProseMirror-selectednode {
+  outline: none;
+}
+.sc-notes-editor .sc-notes-virtual-selection,
+.sc-notes-editor .sc-notes-virtual-block-selection {
+  background: var(--accent-40);
+}
+
+/* ---- paragraphs and headings ------------------------------------------------ */
+
+.sc-notes-editor p {
+  font-size: calc(14 * var(--spx));
+  font-weight: 400;
+  line-height: 145%;
+  margin: 0;
+}
+.sc-notes-editor .tiptap > p {
+  margin-top: var(--space-8);
+}
+.sc-notes-editor strong {
+  font-weight: 600;
+}
+.sc-notes-editor :is(h1, h2, h3) {
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+.sc-notes-editor h1 {
+  font-size: calc(22 * var(--spx));
+  font-weight: 600;
+  margin: var(--space-8) 0;
+}
+.sc-notes-editor h2 {
+  font-size: calc(18 * var(--spx));
+  font-weight: 600;
+  margin: var(--space-6) 0;
+}
+.sc-notes-editor h3 {
+  font-size: calc(16 * var(--spx));
+  font-weight: 500;
+  margin: var(--space-4) 0;
+}
+.sc-notes-editor :not(hr) + h1 {
+  margin: round(calc(30 * var(--spx)), 1px) 0 var(--space-8);
+}
+.sc-notes-editor :not(hr) + h2 {
+  margin: round(calc(18 * var(--spx)), 1px) 0 var(--space-6);
+}
+.sc-notes-editor :not(hr) + h3 {
+  margin: round(calc(18 * var(--spx)), 1px) 0 var(--space-4);
+}
+
+.sc-notes-editor .is-empty[data-placeholder]::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+/* ---- inline content ---------------------------------------------------------- */
+
+.sc-notes-editor a {
+  color: var(--notes-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--notes-accent) 55%, transparent);
+}
+.sc-notes-editor code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: 0.835em;
+  line-height: inherit;
+  padding: 0 0.4em;
+  border-radius: 0.5em;
+  background: var(--fg-10);
+  color: var(--color-token-tertiary);
+}
+
+/* ---- lists ------------------------------------------------------------------- */
+
+.sc-notes-editor :is(ul, ol) {
+  margin: 0;
+  padding: 0;
+}
+.sc-notes-editor li {
+  position: relative;
+  margin: var(--space-8) 0 0 var(--notes-indent);
+}
+.sc-notes-editor ul:not([data-type="taskList"]) {
+  list-style: none;
+}
+.sc-notes-editor ul:not([data-type="taskList"]) > li::before {
+  content: "•";
+  position: absolute;
+  right: 100%;
+  top: 1px;
+  margin-right: round(calc(11 * var(--spx)), 1px);
+  font-size: calc(14 * var(--spx));
+  line-height: 145%;
+  color: var(--notes-accent);
+}
+.sc-notes-editor ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) > li::before {
+  content: "◦";
+}
+.sc-notes-editor ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) ul:not([data-type="taskList"]) > li::before {
+  content: "▪";
+}
+.sc-notes-editor ol {
+  list-style: decimal outside;
+}
+.sc-notes-editor ol > li::marker {
+  color: var(--notes-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-notes-editor ul[data-type="taskList"] {
+  list-style: none;
+}
+.sc-notes-editor ul[data-type="taskList"] > li > label {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  width: var(--notes-indent);
+  height: calc(14 * var(--spx) * 1.45);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sc-notes-editor ul[data-type="taskList"] > li input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: grid;
+  place-content: center;
+  flex: none;
+  width: round(calc(14 * var(--spx)), 1px);
+  height: round(calc(14 * var(--spx)), 1px);
+  margin: 0 var(--space-8) 0 0;
+  border: calc(1.5 * var(--spx)) solid var(--notes-accent);
+  border-radius: round(calc(5 * var(--spx)), 1px);
+  cursor: pointer;
+}
+.sc-notes-editor ul[data-type="taskList"] > li input[type="checkbox"]::before {
+  content: "";
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: calc(2.5 * var(--spx));
+  background: var(--notes-accent);
+  transform: scale(0);
+}
+.sc-notes-editor ul[data-type="taskList"] > li input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+.sc-notes-editor ul[data-type="taskList"] > li[data-checked="true"] > div > p {
+  color: rgb(from var(--fg) r g b / 70%);
+}
+.sc-notes-editor ul[data-type="taskList"] > li[data-checked="true"] > div > p a {
+  color: rgb(from var(--notes-accent) r g b / 70%);
+}
+.sc-notes-editor ul[data-type="taskList"] > li[data-checked="true"] > div > p code {
+  background: var(--fg-5);
+  color: rgb(from var(--color-token-tertiary) r g b / 50%);
+}
+.sc-notes-editor ul[data-type="taskList"] > li[data-checked="true"] > label input {
+  opacity: 0.7;
+}
+
+/* ---- blocks ------------------------------------------------------------------ */
+
+.sc-notes-editor blockquote {
+  position: relative;
+  margin: var(--space-8) 0 0;
+  padding-left: var(--space-12);
+}
+.sc-notes-editor blockquote blockquote {
+  margin-top: 0;
+}
+.sc-notes-editor blockquote::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--notes-accent);
+}
+
+.sc-notes-editor hr {
+  width: 100%;
+  height: 2px;
+  margin: var(--space-16) 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-border-secondary);
+}
+.sc-notes-editor hr.ProseMirror-selectednode {
+  background: var(--notes-accent);
+}
+
+.sc-notes-editor .ProseMirror-gapcursor::after {
+  border-top-color: var(--notes-accent);
+}
+.sc-notes-drop-cursor {
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+/* ---- find matches (§7.5) ----------------------------------------------------- */
+
+.sc-notes-editor .sc-notes-find-match {
+  border-radius: 4px;
+  background: var(--yellow-40);
+  color: var(--fg-80);
+}
+.theme-root[light] .sc-notes-editor .sc-notes-find-match {
+  color: var(--fg-60);
+}
+.sc-notes-editor .sc-notes-find-match--active {
+  background: var(--yellow);
+  color: #000;
+  scroll-margin: var(--space-16) 0 round(calc(100 * var(--spx)), 1px);
+}
+.theme-root[light] .sc-notes-editor .sc-notes-find-match--active {
+  color: #000;
+}

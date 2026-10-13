@@ -1,0 +1,10 @@
+.sc-note-preview {
+  padding: 0 var(--space-4);
+}
+.sc-note-preview__plain {
+  margin: 0;
+  padding: var(--space-16);
+  font-size: var(--font-size-13);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}

@@ -1,0 +1,37 @@
+/* Placeholder tokens in the prompt editor and preview (color and fill only, so editor metrics stay exact). */
+.sc-ai-placeholder {
+  color: var(--blue);
+  background: var(--blue-10);
+  border-radius: var(--radius-4);
+  box-shadow: 0 0 0 1px var(--blue-10);
+}
+.sc-ai-placeholder--invalid {
+  color: var(--red);
+  background: var(--red-10);
+  box-shadow: 0 0 0 1px var(--red-10);
+}
+
+.sc-ai-prompt {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sc-ai-prompt__caret {
+  position: absolute;
+  width: 1px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Prompt preview at the top of the detail pane. */
+.sc-ai-prompt-preview {
+  padding: var(--space-8) var(--space-16) 0;
+  font-size: var(--font-size-13);
+  line-height: 1.55;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  user-select: text;
+}

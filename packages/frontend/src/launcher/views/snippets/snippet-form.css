@@ -1,0 +1,87 @@
+/* Create/Edit Snippet: two equal columns, 24px gap, 56px side padding. */
+.sc-snippet-form {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--space-24);
+  align-items: start;
+  padding: var(--window-header-height) var(--space-56) calc(var(--window-footer-height) + var(--space-16));
+  overflow: hidden;
+}
+.sc-snippet-form__column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sc-snippet-form__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+  height: 16px;
+  margin-bottom: var(--space-8);
+  font-size: var(--font-size-11);
+  line-height: 16px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.sc-snippet-form__label[data-spaced] {
+  margin-top: var(--space-24);
+}
+.sc-snippet-form__error {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-11);
+  color: var(--red);
+}
+
+.sc-snippet-form .sc-template-editor {
+  height: 274px;
+  --tpl-padding-y: var(--space-8);
+}
+.sc-snippet-form__toolbar {
+  flex-shrink: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--space-12);
+}
+.sc-snippet-form__tool {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-6);
+  color: var(--color-text-secondary);
+}
+.sc-snippet-form__tool:hover {
+  background: var(--fg-10);
+  color: var(--color-text-primary);
+}
+
+.sc-snippet-form__help {
+  margin: var(--space-8) 0 0;
+  font-size: var(--font-size-11);
+  line-height: 14px;
+  color: var(--color-text-secondary);
+}
+.sc-snippet-form__help a {
+  color: var(--color-text-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sc-snippet-form__help a:hover {
+  text-decoration: underline;
+}
+.sc-snippet-rendered-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  font: inherit;
+}
+.sc-snippet-preview-view {
+  padding: 0 var(--space-16);
+}

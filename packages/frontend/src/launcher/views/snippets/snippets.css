@@ -1,0 +1,12 @@
+.sc-snippet-preview {
+  margin: 0;
+  padding: var(--space-16);
+  font: inherit;
+  font-size: var(--font-size-13);
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}

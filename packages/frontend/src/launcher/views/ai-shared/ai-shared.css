@@ -1,0 +1,178 @@
+/* Two-column AI editors (Raycast's AI command / snippet form layout). */
+.sc-ai-editor {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+}
+.sc-ai-editor__layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-24);
+  min-height: 100%;
+  padding: var(--window-header-height) var(--space-56) calc(var(--window-footer-height) + var(--space-12));
+}
+.sc-ai-editor__layout > * {
+  min-width: 0;
+}
+/* The editor column keeps its place while the fields scroll. */
+.sc-ai-editor__main {
+  position: sticky;
+  top: var(--window-header-height);
+  align-self: start;
+  height: calc(100cqh - var(--window-header-height) - var(--window-footer-height) - var(--space-8));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+.sc-ai-editor__fields {
+  display: flex;
+  flex-direction: column;
+}
+.sc-ai-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+.sc-ai-editor__field + .sc-ai-editor__field {
+  margin-top: var(--space-24);
+}
+.sc-ai-editor__descriptive {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--space-16);
+}
+.sc-ai-editor__label {
+  font-size: var(--font-size-11);
+  line-height: var(--space-16);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.sc-ai-editor__error {
+  min-width: 0;
+  font-size: var(--font-size-11);
+  line-height: var(--space-16);
+  color: var(--red);
+  text-align: right;
+}
+.sc-ai-editor__help {
+  font-size: var(--font-size-11);
+  line-height: var(--space-16);
+  color: var(--color-text-secondary);
+}
+.sc-ai-editor__help-accent,
+.sc-ai-editor__help-link {
+  color: var(--blue);
+}
+.sc-ai-editor__help-link {
+  font: inherit;
+  cursor: pointer;
+}
+.sc-ai-editor__help-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.sc-ai-editor__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-height: var(--space-20);
+}
+.sc-ai-editor__option:first-of-type {
+  margin-top: var(--space-4);
+}
+.sc-ai-editor__info {
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+}
+
+/* Large text field filling the editor column; optional highlight backdrop behind a transparent textarea. */
+.sc-ai-text-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: round(calc(284 * var(--spx)), 1px);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+.sc-ai-text-editor__surface {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+.sc-ai-text-editor__input,
+.sc-ai-text-editor__backdrop {
+  padding: var(--space-8) var(--space-12);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-13);
+  line-height: 1.5;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  tab-size: 4;
+}
+.sc-ai-text-editor__input {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  resize: none;
+  color: var(--color-text-primary);
+  background: transparent;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.sc-ai-text-editor__input::-webkit-scrollbar {
+  display: none;
+}
+.sc-ai-text-editor__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+.sc-ai-text-editor[data-highlighted] .sc-ai-text-editor__input {
+  color: transparent;
+  caret-color: var(--color-text-primary);
+}
+.sc-ai-text-editor__backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  pointer-events: none;
+}
+.sc-ai-text-editor__backdrop mark:not([class]) {
+  color: inherit;
+  background: none;
+}
+.sc-ai-text-editor__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+/* Icon button inside the name field's accessory slot. */
+.sc-ai-icon-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 100%;
+  padding: 0 var(--space-4) 0 var(--space-8);
+  color: var(--color-text-primary);
+}
+.sc-ai-icon-picker:hover,
+.sc-ai-icon-picker[data-state="open"] {
+  background: var(--fg-5);
+}
+.sc-ai-icon-picker__chevron {
+  color: var(--color-text-secondary);
+  transition: transform 250ms ease;
+}
+.sc-ai-icon-picker[data-state="open"] .sc-ai-icon-picker__chevron {
+  transform: rotate(180deg);
+}

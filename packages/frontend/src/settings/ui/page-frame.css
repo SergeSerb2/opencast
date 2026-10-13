@@ -1,0 +1,118 @@
+/* Settings main pane: overlay header + scrolling content (§8.1, §8.2). */
+
+.sc-s-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.sc-s-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: var(--default-window-header-height);
+  padding: 0 var(--space-16);
+}
+/* macOS 27 toolbar: a hairline under the header; the material appears once content scrolls beneath. */
+.theme-root[macos="27"] .sc-s-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--color-border-separator);
+  pointer-events: none;
+}
+.sc-s-header[data-scrolled] {
+  -webkit-backdrop-filter: blur(var(--blur-3)) saturate(1.35);
+  backdrop-filter: blur(var(--blur-3)) saturate(1.35);
+  background: color-mix(in srgb, var(--color-window-base) 72%, transparent);
+}
+.theme-root[native][macos="27"] .sc-s-header[data-scrolled] {
+  -apple-visual-effect: -apple-system-glass-material-subdued;
+  background: none;
+}
+
+.sc-s-history {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: calc(-1 * var(--space-8));
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+}
+.sc-s-history__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+}
+.sc-s-history__button:hover:enabled {
+  background: var(--fg-10);
+}
+.sc-s-history__button:disabled {
+  color: var(--color-text-tertiary);
+}
+.sc-s-history__separator {
+  width: 1px;
+  height: round(calc(20 * var(--spx)), 1px);
+  border-radius: 0.5px;
+  background: var(--fg-20);
+}
+.sc-s-history:has(.sc-s-history__button:hover:enabled) .sc-s-history__separator {
+  visibility: hidden;
+}
+
+.sc-s-header__title {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: var(--font-size-16);
+  color: var(--color-text-primary);
+  opacity: 0;
+  transform: translateY(6px);
+  filter: blur(2px);
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out,
+    filter 200ms ease-out;
+  pointer-events: none;
+}
+.sc-s-header__title[data-visible] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition-duration: 250ms;
+}
+
+.sc-s-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: auto;
+  margin-right: calc(-1 * var(--space-8));
+  min-width: 0;
+}
+
+.sc-s-page__scroll {
+  flex: 1;
+}
+
+.sc-s-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: calc(var(--default-window-header-height) + var(--space-16)) var(--space-16) var(--space-16);
+}
+.theme-root[macos="27"] .sc-s-page__content {
+  padding-top: calc(var(--default-window-header-height) + var(--space-12) + var(--space-4));
+}

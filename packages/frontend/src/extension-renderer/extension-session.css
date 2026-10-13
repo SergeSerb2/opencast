@@ -1,0 +1,8 @@
+.sc-extension-layer {
+  position: absolute;
+  inset: 0;
+}
+.sc-extension-layer:not([data-active]) {
+  visibility: hidden;
+  pointer-events: none;
+}

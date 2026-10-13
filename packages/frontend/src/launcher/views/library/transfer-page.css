@@ -1,0 +1,38 @@
+.sc-transfer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-12);
+  padding: var(--window-header-height) var(--space-32) var(--window-footer-height);
+  text-align: center;
+}
+.sc-transfer__icon {
+  margin-bottom: var(--space-8);
+}
+.sc-transfer__title {
+  margin: 0;
+  font-size: var(--font-size-18);
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.sc-transfer__lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.sc-transfer__line {
+  margin: 0;
+  font-size: var(--font-size-13);
+  line-height: 18px;
+  color: var(--color-text-secondary);
+}
+.sc-transfer__line[data-tone="success"] {
+  color: var(--green-contrast);
+}
+.sc-transfer__line[data-tone="warning"] {
+  color: var(--orange-contrast);
+}

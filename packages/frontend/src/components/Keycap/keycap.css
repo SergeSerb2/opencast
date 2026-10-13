@@ -1,0 +1,46 @@
+.sc-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.sc-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: var(--kbd-small);
+  min-width: var(--kbd-small);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-kbd);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-10);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: slashed-zero;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  box-shadow: inset 0 0 0 1px var(--color-border-token);
+}
+.sc-kbd[data-size="medium"] {
+  height: var(--kbd-medium);
+  min-width: var(--kbd-medium);
+  font-size: var(--font-size-11);
+}
+.sc-kbd[data-variant="prominent"] {
+  color: var(--color-text-primary);
+  background: var(--color-surface-token);
+  box-shadow: none;
+}
+.sc-kbd[data-variant="success"] {
+  color: var(--green);
+  background: var(--green-10);
+  box-shadow: none;
+}
+.sc-kbd[data-variant="error"] {
+  color: var(--red);
+  background: var(--red-10);
+  box-shadow: none;
+}

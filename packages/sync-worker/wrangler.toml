@@ -1,0 +1,21 @@
+name = "surgecast-sync"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "surgecast-sync"
+# Replace with the id printed by `wrangler d1 create surgecast-sync`.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[durable_objects.bindings]]
+name = "NOTIFIER"
+class_name = "SyncNotifier"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SyncNotifier"]
+
+[triggers]
+crons = ["17 3 * * *"]

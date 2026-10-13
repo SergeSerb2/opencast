@@ -1,0 +1,204 @@
+/* Footer zone: absolutely positioned pills over the content (§3.4, §13.1). */
+.sc-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--window-footer-height);
+  padding: 0 var(--space-8) var(--space-8);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-8);
+  pointer-events: none;
+}
+.sc-footer__left {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.sc-footer__center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.sc-footer__pill {
+  height: var(--footer-pill-height);
+  min-width: var(--footer-pill-height);
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  pointer-events: auto;
+  overflow: hidden;
+}
+.sc-footer__pill[data-animated] {
+  animation: sc-footer-fade-in 0.2s linear;
+}
+.sc-footer__pill:has([data-state="open"]),
+.sc-footer__pill[data-open],
+.sc-footer__pill[data-menu-open] {
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.sc-footer__right {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.sc-footer__menu-glyph {
+  margin-inline: -2px;
+  color: var(--color-text-secondary);
+}
+.sc-footer__nav-title {
+  max-width: 100%;
+}
+@keyframes sc-footer-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---- action button (28px inside a 36px pill) ---- */
+.sc-action-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--action-button-height);
+  min-width: var(--action-button-height);
+  padding-inline: var(--space-6);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  outline: none;
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+.sc-action-button[data-icon-only] {
+  justify-content: center;
+  padding-inline: 0;
+  width: var(--action-button-height);
+}
+.sc-action-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.sc-action-button[data-hover-variant="outset"]::before {
+  inset: calc(-1 * var(--space-4));
+}
+.sc-action-button:hover::before,
+.sc-action-button:focus-visible::before {
+  background: var(--fg-5);
+}
+.sc-action-button[data-variant="secondary"] {
+  color: var(--color-text-secondary);
+}
+.sc-action-button[data-variant="destructive"] {
+  color: var(--red-contrast);
+}
+.sc-action-button:disabled {
+  opacity: 0.3;
+}
+.sc-action-button__icon {
+  width: var(--icon-18);
+  height: var(--icon-18);
+  flex-shrink: 0;
+}
+.sc-action-button__title,
+.sc-action-button__subtitle {
+  position: relative;
+  min-width: 0;
+  padding-inline: var(--space-4);
+  font-size: var(--font-size-12);
+  letter-spacing: 0.1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-action-button__subtitle {
+  margin-left: calc(-1 * var(--space-4));
+  color: var(--color-text-secondary);
+}
+.sc-action-button .sc-shortcut {
+  position: relative;
+}
+
+/* ---- footer toast ---- */
+.sc-footer-toast {
+  position: relative;
+  max-width: min(100%, 460px);
+  transition: opacity 0.2s linear;
+}
+.sc-footer-toast[data-fading] {
+  opacity: 0;
+}
+.sc-footer-toast__wash {
+  position: absolute;
+  inset: -20px;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  animation: sc-toast-wash 5s var(--ease-out-expo) forwards;
+}
+.sc-footer-toast[data-style="success"] .sc-footer-toast__wash {
+  background: var(--green-10);
+}
+.sc-footer-toast[data-style="failure"] .sc-footer-toast__wash {
+  background: var(--red-10);
+}
+@keyframes sc-toast-wash {
+  to {
+    opacity: 1;
+  }
+}
+.sc-footer-toast__button {
+  min-width: 0;
+  max-width: 100%;
+}
+.sc-footer-toast__status {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-inline: 1px;
+  transition: opacity 350ms linear;
+}
+.sc-footer-toast__status[data-hidden] {
+  opacity: 0;
+  transition-duration: 100ms;
+}
+.sc-footer-toast__title {
+  flex-shrink: 0;
+  max-width: 260px;
+}
+.sc-footer-toast__message {
+  flex-shrink: 1;
+}
+.sc-footer-toast__dismiss {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--action-button-height);
+  height: var(--action-button-height);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  color: var(--color-text-tertiary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 350ms linear;
+}
+.sc-footer-toast__dismiss[data-visible] {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: 100ms;
+}
+.sc-footer-toast__dismiss:active {
+  opacity: 0.5;
+}
