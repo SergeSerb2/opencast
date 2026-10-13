@@ -296,3 +296,10 @@ button.sc-s-capability:hover {
   font-size: var(--font-size-11);
   color: var(--color-text-tertiary);
 }
+
+.sc-s-provider-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
