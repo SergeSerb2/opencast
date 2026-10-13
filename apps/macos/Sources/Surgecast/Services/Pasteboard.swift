@@ -1,15 +1,22 @@
 import AppKit
 import CryptoKit
+import Vision
 
 @MainActor final class Pasteboard {
   private var timer: Timer?
   private var count = NSPasteboard.general.changeCount
+  private var captureUniversal = false
+  private var recognizeText = true
+  private var recognitionMode = "accurate"
   private var ignored = Set<String>()
   private let hub: EventHub
   init(hub: EventHub) { self.hub = hub }
   func monitor(_ p: [String: Any]) throws {
     timer?.invalidate()
     timer = nil
+    captureUniversal = p.bool("captureUniversalClipboard")
+    recognizeText = p["textRecognitionEnabled"] as? Bool ?? true
+    recognitionMode = p["recognitionMode"] as? String ?? "accurate"
     ignored = Set(p["ignoredBundleIds"] as? [String] ?? [])
     guard try p.boolean("enabled") else { return }
     let ms = p["intervalMs"] as? Double ?? 300
@@ -26,8 +33,9 @@ import CryptoKit
     let board = NSPasteboard.general
     guard board.changeCount != count else { return }
     count = board.changeCount
+    if !captureUniversal && (board.types ?? []).contains(where: { $0.rawValue == "com.apple.is-remote-clipboard" }) { return }
     let source = NSWorkspace.shared.frontmostApplication
-    if let id = source?.bundleIdentifier, ignored.contains(id) { return }
+    if ignored.contains(source?.bundleIdentifier ?? "") || ignored.contains(source?.bundleURL?.path ?? "") { return }
     Task {
       if var snapshot = try? await read() {
         snapshot["sourceApp"] = source?.bundleURL.map(Applications.info)
@@ -67,6 +75,16 @@ import CryptoKit
           try png.write(to: file, options: .atomic)
         }
       }.value
+      if recognizeText && o["concealed"] as? Bool != true && o["transient"] as? Bool != true {
+        let accurate = recognitionMode != "fast"
+        o["ocrText"] = await Task.detached {
+          let request = VNRecognizeTextRequest()
+          request.recognitionLevel = accurate ? .accurate : .fast
+          request.usesLanguageCorrection = accurate
+          try? VNImageRequestHandler(data: png).perform([request])
+          return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+        }.value
+      }
       primary = [
         "kind": "image", "path": file.path, "uti": "public.png", "width": width, "height": height,
       ]

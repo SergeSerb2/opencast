@@ -8,6 +8,9 @@ import AppKit
   let hotkeys: Hotkeys
   let manager = WindowManager()
   let speech = Speech()
+  let power = Power()
+  let hyperKey = HyperKey()
+  let tidyMenuBar = TidyMenuBar()
   let hud = HUD()
   let confetti = Confetti()
   let extras: MenuBarExtras
@@ -36,6 +39,19 @@ import AppKit
   }
   func call(_ method: String, _ p: [String: Any]) async throws -> Any {
     switch method {
+    case "app.configure":
+      guard let settings = p["settings"] as? [String: Any] else { throw RpcError.invalid("Missing settings") }
+      windows.launcher.presentationMode = settings["launcher.windowPresentationMode"] as? String ?? "mouse-screen"
+      windows.launcher.activationBehavior = settings["advanced.windowActivationBehavior"] as? String ?? "move-to-active-space"
+      windows.launcher.keepVisible = p.bool("developmentActive") && (settings["developer.keepWindowVisibleDuringDevelopment"] as? Bool ?? false)
+      manager.cycling = settings["windowManagement.cycling"] as? String ?? "halves-thirds"
+      if settings["ai.preventIdleSleep"] as? Bool != true { power.stop() }
+      manager.respectStageManager = settings["windowManagement.respectStageManager"] as? Bool ?? true
+      tidyMenuBar.set(settings["advanced.tidyMenuBar"] as? Bool ?? false)
+      hotkeys.hyperIncludeShift = settings["keyboard.hyperKeyIncludeShift"] as? Bool ?? true
+      try hyperKey.configure(settings)
+    case "system.onBattery": return Power.onBattery()
+    case "system.setIdleSleepPrevented": try power.set(p)
     case "app.info":
       #if arch(arm64)
         let arch = "arm64"
@@ -133,6 +149,9 @@ import AppKit
     Environment.log("Stopping applications watcher")
     applications.stop()
     Environment.log("Applications watcher stopped")
+    tidyMenuBar.stop()
+    hyperKey.stop()
+    power.stop()
     permissions.stop()
     clipboard.stop()
     hotkeys.stop()

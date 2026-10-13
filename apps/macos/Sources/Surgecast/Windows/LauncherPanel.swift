@@ -4,6 +4,9 @@ import WebKit
 @MainActor final class LauncherPanel: NSPanel, NSWindowDelegate {
   let hub: EventHub
   var previous: NSRunningApplication?
+  var presentationMode = "mouse-screen"
+  var activationBehavior = "move-to-active-space"
+  var keepVisible = false
   var hidden: (() -> Void)?
   override var canBecomeKey: Bool { true }
   override var canBecomeMain: Bool { false }
@@ -59,8 +62,16 @@ import WebKit
     {
       previous = app
     }
-    let screen =
-      NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main
+    collectionBehavior = activationBehavior == "switch-space"
+      ? [.fullScreenAuxiliary, .ignoresCycle] : [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+    let screen: NSScreen?
+    if presentationMode == "primary-screen" { screen = NSScreen.screens.first }
+    else if presentationMode == "active-window-screen", let pid = previous?.processIdentifier,
+      let window = try? AX.focused(pid), let rect = try? AX.rect(window) {
+      let top = NSScreen.screens.first?.frame.maxY ?? 0
+      let center = NSPoint(x: rect.midX, y: top - rect.midY)
+      screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? NSScreen.main
+    } else { screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main }
     if let screen {
       let v = screen.visibleFrame
       setFrameOrigin(
@@ -90,6 +101,6 @@ import WebKit
   }
   func windowDidResignKey(_ notification: Notification) {
     hub.emit("window.didResignKey", ["kind": "main"])
-    if Environment.env["SURGECAST_KEEP_OPEN"] != "1" { hide() }
+    if !keepVisible && Environment.env["SURGECAST_KEEP_OPEN"] != "1" { hide() }
   }
 }

@@ -6,6 +6,11 @@ import ApplicationServices
   private var source: CFRunLoopSource?
   private var observer: NSObjectProtocol?
   private var keywords: [(id: String, keyword: String)] = []
+  private var expandWithinWords = true
+  private var mode = "immediately"
+  private var injectionDelay: UInt64 = 0
+  private var responseDelay: UInt64 = 50_000_000
+  private var sound = ""
   private var ignored = Set<String>()
   private var buffer = ""
   private var expanding = false
@@ -28,6 +33,11 @@ import ApplicationServices
     keywords = []
     buffer = ""
     revision += 1
+    expandWithinWords = p["expandWithinWords"] as? Bool ?? true
+    mode = p["expansionMode"] as? String ?? "immediately"
+    injectionDelay = ["none": 0, "short": 100_000_000, "regular": 250_000_000, "long": 500_000_000, "extra-long": 1_000_000_000][p["injectionDelay"] as? String ?? "none"] ?? 0
+    responseDelay = ["instant": 0, "quick": 20_000_000, "default": 50_000_000, "delayed": 150_000_000, "extended": 300_000_000][p["responseTime"] as? String ?? "default"] ?? 50_000_000
+    sound = p["completionSound"] as? String ?? ""
     ignored = Set(p["ignoredBundleIds"] as? [String] ?? [])
     guard try p.boolean("enabled") else { return }
     try Permissions.requireAX()
@@ -72,14 +82,14 @@ import ApplicationServices
       return
     }
     guard type == .keyDown, let app = NSWorkspace.shared.frontmostApplication,
-      !ignored.contains(app.bundleIdentifier ?? ""),
+      !ignored.contains(app.bundleIdentifier ?? ""), !ignored.contains(app.bundleURL?.path ?? ""),
       app.processIdentifier != ProcessInfo.processInfo.processIdentifier
     else {
       buffer = ""
       return
     }
     let key = event.getIntegerValueField(.keyboardEventKeycode)
-    if [36, 48, 53, 115, 116, 117, 119, 121, 123, 124, 125, 126].contains(key)
+    if [53, 115, 116, 117, 119, 121, 123, 124, 125, 126].contains(key)
       || !event.flags.intersection([.maskCommand, .maskControl, .maskAlternate]).isEmpty
     {
       buffer = ""
@@ -93,11 +103,21 @@ import ApplicationServices
     var length = 0
     event.keyboardGetUnicodeString(
       maxStringLength: 64, actualStringLength: &length, unicodeString: &units)
-    buffer += String(utf16CodeUnits: units, count: length)
+    let inputText = key == 36 ? "\n" : key == 48 ? "\t" : String(utf16CodeUnits: units, count: length)
+    buffer += inputText
     buffer = String(buffer.suffix(512))
-    guard let match = keywords.first(where: { buffer.hasSuffix($0.keyword) }), let resolve else {
-      return
-    }
+    let delimiter = inputText
+    let afterDelimiter = mode != "immediately"
+    if afterDelimiter && (delimiter.isEmpty || !delimiter.allSatisfy({ $0.isWhitespace || $0.isPunctuation })) { return }
+    let candidate = afterDelimiter ? String(buffer.dropLast(delimiter.count)) : buffer
+    guard let match = keywords.first(where: {
+      guard candidate.hasSuffix($0.keyword) else { return false }
+      if expandWithinWords { return true }
+      let prefix = candidate.dropLast($0.keyword.count)
+      return prefix.last.map { !$0.isLetter && !$0.isNumber && $0 != "_" } ?? true
+    }), let resolve else { return }
+    let suffix = afterDelimiter ? delimiter : ""
+    let keepSuffix = mode == "after-delimiter-keeping"
     let typed = buffer
     let pid = app.processIdentifier
     let expansionRevision = revision
@@ -108,18 +128,22 @@ import ApplicationServices
         expanding = false
       }
       do {
+        if injectionDelay > 0 { try await Task.sleep(nanoseconds: injectionDelay) }
+        guard revision == expansionRevision else { return }
         let result = try await resolve(match.id, match.keyword)
         guard let p = result as? [String: Any], let text = p["text"] as? String,
           NSWorkspace.shared.frontmostApplication?.processIdentifier == pid, buffer == typed,
           revision == expansionRevision
         else { return }
+        if responseDelay > 0 { try await Task.sleep(nanoseconds: responseDelay) }
         try await input.expandSnippet(
-          keyword: match.keyword, text: text,
-          cursorOffset: p["cursorOffset"] as? Int ?? 0
+          keyword: match.keyword + suffix, text: text + (keepSuffix ? suffix : ""),
+          cursorOffset: (p["cursorOffset"] as? Int ?? 0) + (keepSuffix && (p["cursorOffset"] as? Int ?? 0) > 0 ? suffix.count : 0)
         ) {
           self.revision == expansionRevision
             && NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
         }
+        if !sound.isEmpty { NSSound(named: NSSound.Name(sound))?.play() }
       } catch { Environment.log("Snippet expansion failed: \(error.localizedDescription)") }
     }
   }

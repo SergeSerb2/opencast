@@ -2,6 +2,8 @@ import AppKit
 import CoreServices
 
 @MainActor final class Applications {
+  private var directories: [String] = []
+  private var recursive = false
   private var cache: [[String: Any]] = []
   private var stream: FSEventStreamRef?
   private var observer: NSObjectProtocol?
@@ -27,6 +29,9 @@ import CoreServices
           "frontmost.changed", Self.running(NSWorkspace.shared.frontmostApplication) ?? NSNull())
       }
     }
+    startWatching()
+  }
+  private func startWatching() {
     var context = FSEventStreamContext(
       version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil, release: nil,
       copyDescription: nil)
@@ -36,7 +41,7 @@ import CoreServices
         guard let info else { return }
         let service = Unmanaged<Applications>.fromOpaque(info).takeUnretainedValue()
         DispatchQueue.main.async { service.changed() }
-      }, &context, (Self.roots + ["/System/Library/CoreServices"]) as CFArray,
+      }, &context, (Self.roots + directories + ["/System/Library/CoreServices"]) as CFArray,
       FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 1,
       FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents))
     if let stream {
@@ -93,7 +98,8 @@ import CoreServices
   }
   func list(refresh: Bool = false) async -> [[String: Any]] {
     if !refresh && !cache.isEmpty { return cache }
-    let roots = Self.roots
+    let roots = Self.roots + directories
+    let depth = recursive ? 32 : 1
     let result = await Task.detached { () -> [[String: Any]] in
       var paths = Set<String>()
       func scan(_ root: URL, depth: Int) {
@@ -111,7 +117,7 @@ import CoreServices
           }
         }
       }
-      for root in roots { scan(URL(fileURLWithPath: root), depth: 1) }
+      for root in roots { scan(URL(fileURLWithPath: root), depth: depth) }
       let finder = "/System/Library/CoreServices/Finder.app"
       if FileManager.default.fileExists(atPath: finder) { paths.insert(finder) }
       return paths.map { Self.info(URL(fileURLWithPath: $0)) }.sorted {
@@ -135,7 +141,17 @@ import CoreServices
     -> Any
   {
     switch method {
-    case "apps.list": return await list(refresh: p.bool("refresh"))
+    case "apps.list":
+      let paths = (p["directories"] as? [String] ?? directories).map { ($0 as NSString).expandingTildeInPath }
+      let recurse = p["recursive"] as? Bool ?? recursive
+      let changed = paths != directories || recurse != recursive
+      directories = paths; recursive = recurse
+      if changed {
+        if let stream { FSEventStreamStop(stream); FSEventStreamInvalidate(stream); FSEventStreamRelease(stream) }
+        stream = nil
+        startWatching()
+      }
+      return await list(refresh: changed || p.bool("refresh"))
     case "apps.running": return NSWorkspace.shared.runningApplications.compactMap(Self.running)
     case "apps.frontmost": return Self.running(NSWorkspace.shared.frontmostApplication) ?? NSNull()
     case "apps.previous": return Self.running(previous) ?? NSNull()

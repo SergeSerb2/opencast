@@ -2,6 +2,11 @@ import AppKit
 import SurgecastCore
 
 @MainActor final class WindowManager {
+  var respectStageManager = true
+  var cycling = "halves-thirds"
+  private var cycleCommand = ""
+  private var cycleIndex = 0
+  private var cycleFrame: CGRect?
   private var history: [(AXUIElement, CGRect)] = []
   var previous: (() -> NSRunningApplication?)?
   static func rectObject(_ rect: CGRect) -> [String: Double] {
@@ -57,7 +62,15 @@ import SurgecastCore
         let rb = displays[b].intersection(current)
         return (ra.isNull ? 0 : ra.width * ra.height) < (rb.isNull ? 0 : rb.width * rb.height)
       } ?? 0
-    let screen = displays[screenIndex]
+    let outerGap = p["outerGap"] as? Double ?? 0
+    guard outerGap.isFinite && outerGap >= 0 && outerGap <= 100 else { throw RpcError.invalid("Outer gap must be 0...100") }
+    var layoutScreen = displays[screenIndex]
+    if respectStageManager && UserDefaults(suiteName: "com.apple.WindowManager")?.bool(forKey: "GloballyEnabled") == true {
+      // Leave the Stage Manager recent-app strip visible rather than covering it.
+      if UserDefaults(suiteName: "com.apple.dock")?.string(forKey: "orientation") != "left" { layoutScreen.origin.x += 72 }
+      layoutScreen.size.width -= 72
+    }
+    let screen = layoutScreen.insetBy(dx: outerGap, dy: outerGap)
     if method == "windows.focused" {
       var appInfo: [String: Any] = [
         "name": app.localizedName ?? "", "path": app.bundleURL?.path ?? "",
@@ -81,11 +94,19 @@ import SurgecastCore
         x >= 0 && y >= 0 && width > 0 && height > 0 && x + width <= 1.00001 && y + height <= 1.00001
       else { throw RpcError.invalid("Layout must fit within 0...1") }
       frame = Geometry.layout(
-        CGRect(x: x, y: y, width: width, height: height), screen: screen, gap: gap)
+        CGRect(x: x, y: y, width: width, height: height), screen: layoutScreen, innerGap: gap, outerGap: outerGap)
     } else if method == "windows.run" {
-      let command = try p.string("command")
+      let requested = try p.string("command")
+      let cycles = ["leftHalf": ["leftHalf", "firstTwoThird", "firstThird", "firstFourth"], "rightHalf": ["rightHalf", "lastTwoThird", "lastThird", "lastFourth"], "topHalf": ["topHalf", "topTwoThird", "topThird", "topFirstFourth"], "bottomHalf": ["bottomHalf", "bottomTwoThird", "bottomThird", "topLastFourth"]]
+      var command = requested
+      if cycling != "off", let choices = cycles[requested] {
+        let count = cycling == "halves-thirds-quarters" ? 4 : 3
+        cycleIndex = cycleCommand == requested && cycleFrame == current ? (cycleIndex + 1) % count : 0
+        command = choices[cycleIndex]
+      } else { cycleIndex = 0 }
+      cycleCommand = requested
       if let fraction = Geometry.fraction(command) {
-        frame = Geometry.layout(fraction, screen: screen, gap: gap)
+        frame = Geometry.layout(fraction, screen: layoutScreen, innerGap: gap, outerGap: outerGap)
       } else {
         switch command {
         case "toggleAlwaysOnTop": throw RpcError.unsupported("Not supported on macOS")
@@ -181,6 +202,7 @@ import SurgecastCore
     }
     let axFrame = Geometry.ax(frame, desktopTop: desktopTop)
     try await Task.detached { try AX.setRect(window, axFrame) }.value
+    cycleFrame = frame
     history.append((window, old))
     if history.count > 100 { history.removeFirst() }
     return NSNull()

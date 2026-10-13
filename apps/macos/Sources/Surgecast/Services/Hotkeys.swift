@@ -3,6 +3,14 @@ import Carbon
 import SurgecastCore
 
 @MainActor final class Hotkeys {
+  var hyperIncludeShift = true {
+    didSet {
+      if oldValue != hyperIncludeShift {
+        for (id, hotkey) in hyperBindings { _ = try? register(id, hotkey: hotkey) }
+      }
+    }
+  }
+  private var hyperBindings: [String: [String: Any]] = [:]
   private var refs: [String: EventHotKeyRef] = [:]
   private var ids: [UInt32: String] = [:]
   private var bindings: [String: (key: UInt16, modifiers: UInt32)] = [:]
@@ -52,7 +60,7 @@ import SurgecastCore
   func register(_ id: String, hotkey: [String: Any]) throws -> [String: Any] {
     let key = try Self.code(hotkey)
     var modifiers = hotkey["modifiers"] as? [String] ?? []
-    if hotkey.bool("hyper") { modifiers = ["cmd", "ctrl", "opt", "shift"] }
+    if hotkey.bool("hyper") { modifiers = ["cmd", "ctrl", "opt"] + (hyperIncludeShift ? ["shift"] : []) }
     let flags = try Self.flags(modifiers)
     var carbon: UInt32 = 0
     if flags.contains(.maskCommand) { carbon |= UInt32(cmdKey) }
@@ -77,18 +85,21 @@ import SurgecastCore
     refs[id] = ref
     ids[number] = id
     bindings[id] = (key, carbon)
+    if hotkey.bool("hyper") { hyperBindings[id] = hotkey } else { hyperBindings.removeValue(forKey: id) }
     return ["ok": true]
   }
   func unregister(_ id: String) {
     if let ref = refs.removeValue(forKey: id) { UnregisterEventHotKey(ref) }
     ids = ids.filter { $0.value != id }
     bindings.removeValue(forKey: id)
+    hyperBindings.removeValue(forKey: id)
   }
   func unregisterAll() {
     for ref in refs.values { UnregisterEventHotKey(ref) }
     refs.removeAll()
     ids.removeAll()
     bindings.removeAll()
+    hyperBindings.removeAll()
   }
   private func pressed(_ number: UInt32) {
     guard let id = ids[number] else { return }

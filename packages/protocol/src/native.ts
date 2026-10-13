@@ -13,6 +13,7 @@
  * RpcErrorCode.PermissionDenied and `data: { permission }`.
  */
 
+import type { SettingsValues } from "./settings";
 import type { Hotkey, ImageLike } from "./ui";
 
 export type PermissionKind =
@@ -58,6 +59,7 @@ export interface ClipboardSnapshot {
   primary: ClipboardContent;
   /** Plain text representation if one exists (also for file/url items). */
   text?: string;
+  ocrText?: string;
   html?: string;
   /** Pasteboard UTIs present, for filtering. */
   types: string[];
@@ -155,6 +157,10 @@ export interface MenuBarExtraItem {
 }
 
 export interface NativeMethods {
+  /** Apply live host preferences; contains settings only, never credentials. */
+  "app.configure": { params: { settings: Partial<SettingsValues>; developmentActive?: boolean }; result: void };
+  "system.onBattery": { params: void; result: boolean };
+  "system.setIdleSleepPrevented": { params: { id: string; prevented: boolean }; result: void };
   // --- app & windows -------------------------------------------------------
   "app.info": { params: void; result: { version: string; build: string; macOSVersion: string; macOSMajor: number; arch: string; bundlePath: string; dataDir: string } };
   "app.quit": { params: void; result: void };
@@ -175,7 +181,7 @@ export interface NativeMethods {
   "window.startDrag": { params: { kind: WindowKind }; result: void };
 
   // --- applications -----------------------------------------------------------
-  "apps.list": { params: { refresh?: boolean }; result: AppInfo[] };
+  "apps.list": { params: { refresh?: boolean; directories?: string[]; recursive?: boolean }; result: AppInfo[] };
   "apps.running": { params: void; result: RunningAppInfo[] };
   "apps.frontmost": { params: void; result: RunningAppInfo | null };
   /** The app that was frontmost before Surgecast's main window opened. */
@@ -187,7 +193,7 @@ export interface NativeMethods {
   "apps.quit": { params: { bundleIdOrPath: string; force?: boolean }; result: void };
 
   // --- opening ---------------------------------------------------------------
-  "open.url": { params: { url: string; app?: string; background?: boolean }; result: void };
+  "open.url": { params: { url: string; preferExistingTabs?: boolean; app?: string; background?: boolean }; result: void };
   "open.path": { params: { path: string; app?: string }; result: void };
   "open.showInFinder": { params: { path: string }; result: void };
   "open.trash": { params: { paths: string[] }; result: void };
@@ -200,7 +206,7 @@ export interface NativeMethods {
   "clipboard.setSequentialPaste": { params: { contents: ClipboardContent[] }; result: void };
   "clipboard.clear": { params: void; result: void };
   /** Start/stop emitting `clipboard.changed`. Poll interval in ms (default 300). */
-  "clipboard.setMonitoring": { params: { enabled: boolean; intervalMs?: number; ignoredBundleIds?: string[] }; result: void };
+  "clipboard.setMonitoring": { params: { enabled: boolean; intervalMs?: number; ignoredBundleIds?: string[]; captureUniversalClipboard?: boolean; textRecognitionEnabled?: boolean; recognitionMode?: "fast" | "accurate" }; result: void };
   /**
    * Hide Surgecast, restore focus to the previous app, put `content` on the
    * pasteboard and press ⌘V. Restores the old pasteboard afterwards when
@@ -226,11 +232,11 @@ export interface NativeMethods {
    * keyword with backspaces, pastes the returned text (restoring the
    * clipboard), and moves the caret left by `cursorOffset` characters.
    */
-  "snippets.setKeywords": { params: { keywords: { id: string; keyword: string }[]; enabled: boolean; ignoredBundleIds?: string[] }; result: void };
+  "snippets.setKeywords": { params: { keywords: { id: string; keyword: string }[]; enabled: boolean; ignoredBundleIds?: string[]; expandWithinWords?: boolean; expansionMode?: SettingsValues["snippets.expansionMode"]; injectionDelay?: SettingsValues["snippets.injectionDelay"]; responseTime?: SettingsValues["snippets.responseTime"]; completionSound?: string; overrideSystemSnippets?: boolean }; result: void };
 
   // --- window management ---------------------------------------------------
-  "windows.run": { params: { command: WindowCommand; gap?: number }; result: void };
-  "windows.applyLayout": { params: { rect: WindowLayoutRect; gap?: number }; result: void };
+  "windows.run": { params: { command: WindowCommand; gap?: number; outerGap?: number }; result: void };
+  "windows.applyLayout": { params: { rect: WindowLayoutRect; gap?: number; outerGap?: number }; result: void };
   "windows.undo": { params: void; result: void };
   "windows.screens": { params: void; result: ScreenInfo[] };
   "windows.focused": { params: void; result: { app: AppInfo; title: string; frame: WindowLayoutRect; screenId?: number } | null };

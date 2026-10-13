@@ -38,6 +38,10 @@ for screen in [primary, secondary] {
     let ax = Geometry.ax(r, desktopTop: 900)
     expect(Geometry.cocoa(ax, desktopTop: 900) == r, "AX transform round trip")
   }
+  let spacedLeft = Geometry.layout(Geometry.fraction("leftHalf")!, screen: screen, innerGap: 10, outerGap: 20)
+  let spacedRight = Geometry.layout(Geometry.fraction("rightHalf")!, screen: screen, innerGap: 10, outerGap: 20)
+  expect(spacedLeft.minX == screen.minX + 20 && spacedRight.maxX == screen.maxX - 20, "Outer gaps apply only at display edges")
+  expect(spacedRight.minX - spacedLeft.maxX == 10, "Adjacent halves share one inner gap")
   let gap = Geometry.layout(CGRect(x: 0, y: 0, width: 1, height: 1), screen: screen, gap: 8)
   expect(gap.width == screen.width - 16 && gap.minX == screen.minX + 8, "Gap applied inside")
 }

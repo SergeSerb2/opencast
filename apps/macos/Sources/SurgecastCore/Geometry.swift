@@ -14,6 +14,15 @@ public enum Geometry {
       width: screen.width * fraction.width, height: screen.height * fraction.height
     ).insetBy(dx: gap, dy: gap)
   }
+  public static func layout(_ fraction: CGRect, screen: CGRect, innerGap: CGFloat, outerGap: CGFloat) -> CGRect {
+    let rect = layout(fraction, screen: screen)
+    let left = fraction.minX <= 0 ? outerGap : innerGap / 2
+    let right = fraction.maxX >= 1 ? outerGap : innerGap / 2
+    let top = fraction.minY <= 0 ? outerGap : innerGap / 2
+    let bottom = fraction.maxY >= 1 ? outerGap : innerGap / 2
+    return CGRect(x: rect.minX + left, y: rect.minY + bottom,
+      width: rect.width - left - right, height: rect.height - top - bottom)
+  }
   public static func moved(_ rect: CGRect, from: CGRect, to: CGRect) -> CGRect {
     CGRect(
       x: to.minX + (rect.minX - from.minX) / from.width * to.width,
