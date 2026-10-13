@@ -137,13 +137,16 @@ function ListContent({ children, searchText = "", onSearchTextChange, filtering,
     if (first !== selectedId) setSelectedId(first);
   }
 
-  const changeSelection = useCallback(
-    (id: string | null) => {
-      setSelectedId(id);
-      onSelectionChangeRef.current?.(id);
-    },
-    [onSelectionChangeRef],
-  );
+  const changeSelection = useCallback((id: string | null) => setSelectedId(id), []);
+
+  // Report every selection change (keyboard, mouse, filtering, reconciliation) once.
+  const notified = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (notified.current === selectedId) return;
+    const first = notified.current === undefined;
+    notified.current = selectedId;
+    if (!first || selectedId !== null) onSelectionChangeRef.current?.(selectedId);
+  }, [selectedId, onSelectionChangeRef]);
 
   const selectedItem = useMemo(() => {
     for (const s of sections) for (const item of s.items) if (item.id === selectedId) return item;

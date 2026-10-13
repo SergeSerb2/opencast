@@ -80,7 +80,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(function Se
     leadingNode = (
       <button type="button" className="sc-search-bar__back" aria-label="Back" title={"Esc to go back\n⌘Esc to go to root search"} onMouseDown={(e) => e.preventDefault()} onClick={onBack}>
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <path d="M13.4 4.2 6.6 11l6.8 6.8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M12.9 4.9 6.6 11l6.3 6.1" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
     );

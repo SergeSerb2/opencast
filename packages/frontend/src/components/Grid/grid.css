@@ -82,6 +82,7 @@
 }
 .sc-grid-cell__emoji {
   position: relative;
+  top: 1px;
   z-index: 1;
   font-family: var(--font-emoji);
   line-height: 1;

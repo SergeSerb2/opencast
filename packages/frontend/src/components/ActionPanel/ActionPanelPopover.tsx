@@ -9,6 +9,8 @@ export interface ActionPanelPopoverProps {
   open: boolean;
   onClose: () => void;
   onRun: (action: ActionModel) => void;
+  /** Submenu to show when the panel opens (action ids from the root), e.g. after a submenu shortcut. */
+  initialPath?: string[];
   /** Defaults to the window's bottom-right corner, inset 8px (§4). */
   anchor?: PopoverAnchor;
   align?: "start" | "end";
@@ -21,6 +23,23 @@ interface Level {
 }
 
 const BOTTOM_RIGHT: PopoverAnchor = (root) => ({ x: root.width - 8, y: root.height - 8 });
+
+function findById(sections: ActionSectionModel[], id: string): ActionModel | undefined {
+  for (const section of sections) for (const action of section.actions) if (action.id === id) return action;
+  return undefined;
+}
+
+/** Resolve the submenu path against the current model, so content updates keep the open submenu. */
+export function resolveLevels(model: ActionPanelModel | null, path: string[]): Level[] {
+  if (!model) return [];
+  const levels: Level[] = [{ title: model.title, sections: model.sections }];
+  for (const id of path) {
+    const action = findById(levels[levels.length - 1].sections, id);
+    if (!action?.submenu) break;
+    levels.push({ title: action.title, sections: action.submenu.sections, submenu: action.submenu });
+  }
+  return levels;
+}
 
 function toMenuSections(sections: ActionSectionModel[]): { menu: MenuSection[]; byId: Map<string, ActionModel> } {
   const byId = new Map<string, ActionModel>();
@@ -37,14 +56,17 @@ function toMenuSections(sections: ActionSectionModel[]): { menu: MenuSection[]; 
 }
 
 /** The ⌘K panel: 350×≤280 glass card opening upward from the footer's right pill, search at the bottom. */
-export function ActionPanelPopover({ model, open, onClose, onRun, anchor = BOTTOM_RIGHT, align = "end" }: ActionPanelPopoverProps) {
-  const [stack, setStack] = useState<Level[]>([]);
+export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, anchor = BOTTOM_RIGHT, align = "end" }: ActionPanelPopoverProps) {
+  const [path, setPath] = useState<string[]>([]);
 
+  // Reset only when the panel opens; model updates while open keep the submenu path.
   useLayoutEffect(() => {
-    if (open) setStack(model ? [{ title: model.title, sections: model.sections }] : []);
-  }, [open, model]);
+    if (open) setPath(initialPath ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const level = stack[stack.length - 1];
+  const levels = useMemo(() => resolveLevels(model, path), [model, path]);
+  const level = levels[levels.length - 1];
   const { menu, byId } = useMemo(() => toMenuSections(level?.sections ?? []), [level]);
 
   const select = (id: string) => {
@@ -52,7 +74,7 @@ export function ActionPanelPopover({ model, open, onClose, onRun, anchor = BOTTO
     if (!action) return;
     if (action.submenu) {
       action.submenu.onOpen?.();
-      setStack((s) => [...s, { title: action.title, sections: action.submenu!.sections, submenu: action.submenu }]);
+      setPath((p) => [...p.slice(0, levels.length - 1), action.id]);
       return;
     }
     onRun(action);
@@ -62,7 +84,7 @@ export function ActionPanelPopover({ model, open, onClose, onRun, anchor = BOTTO
     <Popover open={open && Boolean(level)} onClose={onClose} anchor={anchor} side="top" align={align} offset={0} width={350} flip={false} className="sc-action-panel" aria-label="Actions" role="dialog">
       {level && (
         <Menu
-          key={stack.length}
+          key={levels.length}
           sections={menu}
           title={level.title}
           layout="up"
@@ -71,7 +93,7 @@ export function ActionPanelPopover({ model, open, onClose, onRun, anchor = BOTTO
           isLoading={level.submenu?.isLoading}
           onSearchTextChange={level.submenu?.onSearchTextChange}
           onSelect={(item) => select(item.id)}
-          onDismiss={() => (stack.length > 1 ? setStack((s) => s.slice(0, -1)) : onClose())}
+          onDismiss={() => (levels.length > 1 ? setPath((p) => p.slice(0, levels.length - 2)) : onClose())}
           aria-label={level.title ?? "Actions"}
         />
       )}

@@ -295,13 +295,13 @@ function FormValuesBridge({ valuesRef }: { valuesRef: { current: () => Record<st
 export function renderExtensionRoot(node: UINode, options: RenderOptions): ReactNode {
   switch (node.type) {
     case "List":
-      return <ExtensionList node={node} options={options} />;
+      return <ExtensionList key={node.id} node={node} options={options} />;
     case "Grid":
-      return <ExtensionGrid node={node} options={options} />;
+      return <ExtensionGrid key={node.id} node={node} options={options} />;
     case "Detail":
-      return <ExtensionDetail node={node} options={options} />;
+      return <ExtensionDetail key={node.id} node={node} options={options} />;
     case "Form":
-      return <ExtensionForm node={node} options={options} />;
+      return <ExtensionForm key={node.id} node={node} options={options} />;
     default:
       return <Detail navigationTitle={options.navigationTitle} markdown={`Unsupported view \`${node.type}\`.`} />;
   }

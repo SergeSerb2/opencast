@@ -308,7 +308,16 @@ function defineWord(s: MockSession): UINode {
   });
 }
 
+function forecast(s: MockSession): UINode {
+  return s.node("Detail", {
+    navigationTitle: "Weather Forecast",
+    markdown: "# Berlin\n\n**21°C** · Partly cloudy · Wind 12 km/h\n\n| Day | High | Low |\n|---|---|---|\n| Tue | 21° | 12° |\n| Wed | 19° | 11° |\n| Thu | 23° | 13° |",
+    metadata: s.node("Detail.Metadata", {}, [s.node("Detail.Metadata.Label", { title: "Humidity", text: "54%", icon: "droplets-16" }), s.node("Detail.Metadata.Label", { title: "Sunset", text: "18:42", icon: "sunrise-16" })]),
+  });
+}
+
 const BUILDERS: Record<string, (s: MockSession) => UINode> = {
+  "weather.forecast": forecast,
   "github.my-pull-requests": pullRequests,
   "github.create-issue": createIssue,
   "github.repository-readme": (s) => readmeDetail(s),

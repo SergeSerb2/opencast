@@ -1,12 +1,12 @@
 import { useCallback, useContext, useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type Ref } from "react";
-import type { CommandArgument, ImageLike } from "@surgecast/protocol";
+import type { CommandArgument, ImageLike, KeyboardShortcut } from "@surgecast/protocol";
 import { useLatest } from "../../bridge/hooks";
 import { eventKey, matchesShortcut, sc } from "../../lib/keyboard";
 import { ActionPanelPopover } from "../ActionPanel/ActionPanelPopover";
 import { Footer } from "../Footer/Footer";
 import { SearchBar, type SearchBarHandle } from "../SearchBar/SearchBar";
-import { actionsWithShortcuts, primaryActions, type ActionModel, type ActionPanelModel } from "../actions/model";
-import { showFailureToast } from "../feedback/toast-store";
+import { actionsWithShortcuts, primaryActions, type ActionModel, type ActionPanelModel, type ActionSectionModel } from "../actions/model";
+import { showFailureToast, useToastStore } from "../feedback/toast-store";
 import { NavigationContext, ViewContext, type ViewController, type ViewKeyHandler } from "./contexts";
 import "./view.css";
 
@@ -54,6 +54,34 @@ export interface ViewFrameProps {
 
 const CMD_K = sc("cmd", "k");
 const SHIFT_CMD_K = sc("shift", "cmd", "k");
+
+const EDITING_KEYS = new Set(["a", "c", "v", "x", "z", "arrowLeft", "arrowRight", "delete", "deleteForward"]);
+
+/** Plain/shift keys type text; ⌘A/C/V/X/Z and word navigation edit it. */
+function shortcutConflictsWithEditing(event: KeyboardEvent, shortcut: KeyboardShortcut): boolean {
+  const mods = shortcut.modifiers.filter((m) => m !== "shift");
+  if (mods.length === 0) return true;
+  const target = event.target as HTMLInputElement | HTMLTextAreaElement;
+  const hasSelection = typeof target.selectionStart === "number" && target.selectionStart !== target.selectionEnd;
+  return mods.length === 1 && (mods[0] === "cmd" || mods[0] === "opt") && EDITING_KEYS.has(shortcut.key) && (shortcut.key !== "c" && shortcut.key !== "x" ? true : hasSelection);
+}
+
+/** Path of action ids from the panel root to `target` (for submenus). */
+function actionPath(model: ActionPanelModel | null, target: ActionModel): string[] | null {
+  const visit = (sections: ActionSectionModel[], trail: string[]): string[] | null => {
+    for (const section of sections) {
+      for (const action of section.actions) {
+        if (action === target || action.id === target.id) return [...trail, action.id];
+        if (action.submenu) {
+          const found = visit(action.submenu.sections, [...trail, action.id]);
+          if (found) return found;
+        }
+      }
+    }
+    return null;
+  };
+  return model ? visit(model.sections, []) : null;
+}
 
 function isEditable(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -114,10 +142,15 @@ export function ViewFrame({
     [],
   );
 
+  const [panelPath, setPanelPath] = useState<string[] | undefined>(undefined);
+
   const runAction = useCallback(
     (action: ActionModel) => {
       setPanel(null);
       if (action.submenu) {
+        // A submenu's shortcut opens the panel directly inside that submenu.
+        action.submenu.onOpen?.();
+        setPanelPath(actionPath(actionsRef.current, action) ?? undefined);
         setPanel("actions");
         return;
       }
@@ -126,6 +159,7 @@ export function ViewFrame({
         .then(() => action.onAction?.())
         .catch((error: unknown) => showFailureToast(`${action.title} failed`, error));
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -134,7 +168,10 @@ export function ViewFrame({
       isActive,
       setActions: (model) => setContentActions(model),
       runAction,
-      openActions: () => setPanel("actions"),
+      openActions: () => {
+        setPanelPath(undefined);
+        setPanel("actions");
+      },
       closeActions: () => setPanel(null),
       isActionPanelOpen: panel === "actions",
       focusSearch,
@@ -153,7 +190,7 @@ export function ViewFrame({
     if (isActive && !panel) focusSearch();
   }, [isActive, panel, focusSearch]);
 
-  const escapeRef = useLatest(onEscape ?? (() => navigation?.pop()));
+  const escapeRef = useLatest(onEscape ?? (() => (navigation?.escape ?? navigation?.pop)?.()));
   const menuRef = useLatest(menu);
 
   useEffect(() => {
@@ -163,6 +200,7 @@ export function ViewFrame({
       const key = eventKey(event);
       if (matchesShortcut(event, CMD_K)) {
         event.preventDefault();
+        setPanelPath(undefined);
         setPanel((p) => (p === "actions" ? null : actionsRef.current ? "actions" : null));
         return;
       }
@@ -192,8 +230,21 @@ export function ViewFrame({
         }
         return;
       }
+      const toast = useToastStore.getState().toast;
+      for (const toastAction of [toast?.primaryAction, toast?.secondaryAction]) {
+        if (toastAction?.shortcut && matchesShortcut(event, toastAction.shortcut)) {
+          event.preventDefault();
+          Promise.resolve()
+            .then(() => toastAction.onAction())
+            .catch((error: unknown) => showFailureToast(`${toastAction.title} failed`, error));
+          return;
+        }
+      }
+      const editing = isEditable(event.target);
       for (const action of actionsWithShortcuts(model)) {
         if (action.shortcut && !action.disabled && matchesShortcut(event, action.shortcut)) {
+          // Typing and native text editing win over plain/editing-key shortcuts inside fields.
+          if (editing && shortcutConflictsWithEditing(event, action.shortcut)) continue;
           event.preventDefault();
           runAction(action);
           return;
@@ -250,12 +301,15 @@ export function ViewFrame({
             actions={effectiveActions}
             primaryActionTitle={primaryActionTitle}
             actionsOpen={panel === "actions"}
-            onOpenActions={() => setPanel("actions")}
+            onOpenActions={() => {
+              setPanelPath(undefined);
+              setPanel("actions");
+            }}
             onRunAction={runAction}
             primaryShortcut={primaryShortcut}
           />
         )}
-        <ActionPanelPopover model={effectiveActions} open={isActive && panel === "actions"} onClose={() => setPanel(null)} onRun={runAction} />
+        <ActionPanelPopover model={effectiveActions} open={isActive && panel === "actions"} initialPath={panelPath} onClose={() => setPanel(null)} onRun={runAction} />
         {menu && (
           <ActionPanelPopover model={menu} open={isActive && panel === "menu"} onClose={() => setPanel(null)} onRun={runAction} anchor={(root) => ({ x: 8, y: root.height - 8 })} align="start" />
         )}

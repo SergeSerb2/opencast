@@ -67,7 +67,3 @@ export function actionsWithShortcuts(model: ActionPanelModel | null | undefined)
   if (model) visit(model.sections);
   return out;
 }
-
-export function isEmptyPanel(model: ActionPanelModel | null | undefined): boolean {
-  return flattenActions(model).length === 0;
-}

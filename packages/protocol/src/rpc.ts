@@ -71,6 +71,7 @@ export interface BackendMethods {
     params: { id: CommandId; arguments?: Record<string, string>; fallbackText?: string; launchContext?: Record<string, unknown>; source?: "root" | "hotkey" | "deeplink" | "fallback" | "alias" };
     result: LaunchResult;
   };
+  /** `unset` clears fields (JSON cannot carry `undefined`), e.g. removing an alias or a favorite. */
   "commands.setPrefs": { params: { id: CommandId; prefs: Partial<CommandPrefs>; unset?: (keyof CommandPrefs)[] }; result: CommandInfo };
   "commands.resetRanking": { params: { id?: CommandId }; result: Void };
   "commands.moveFavorite": { params: { id: CommandId; toIndex: number }; result: Void };

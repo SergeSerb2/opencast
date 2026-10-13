@@ -1,5 +1,15 @@
 /* Browser-only window simulation (see DevBackdrop.tsx). */
 
+/*
+ * In the app, WebKit composites the page over the tinted system glass, which
+ * makes translucent white selections read slightly lavender over a purple
+ * desktop. Mirror that in the browser so screenshots compare like for like.
+ */
+.theme-root[dev-glass][dark] {
+  --selection-5: rgb(184 171 253 / 5%);
+  --selection-10: rgb(184 171 253 / 10%);
+}
+
 .sc-dev-backdrop {
   position: fixed;
   inset: 0;

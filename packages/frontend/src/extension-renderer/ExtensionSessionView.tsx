@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ExtensionSessionState, HandlerRef, ImageLike, UINode } from "@surgecast/protocol";
 import { backend } from "../bridge/backend";
 import { errorMessage, isCancelled } from "../bridge/errors";
-import { useEvent } from "../bridge/hooks";
+import { onReconnect, useEvent } from "../bridge/hooks";
 import { List } from "../components/List/List";
 import { NavigationContext, type NavigationApi } from "../components/View/contexts";
 import { showToast } from "../components/feedback/toast-store";
@@ -49,18 +49,26 @@ export function ExtensionSessionView({ sessionId, title, icon }: ExtensionSessio
 
   useEvent("ext.session.updated", apply);
 
-  // The first update may have been sent before this view subscribed.
+  // The first update may have been sent before this view subscribed; after a
+  // reconnect, updates (or the close) may have been missed entirely.
   useEffect(() => {
     let cancelled = false;
-    backend
-      .call("ext.session.state", { sessionId })
-      .then((current) => {
-        if (!cancelled && current) setLayers((prev) => (prev.length ? prev : nextLayers(prev, current)));
-      })
-      .catch(() => undefined);
+    const sync = (initial: boolean) =>
+      backend
+        .call("ext.session.state", { sessionId })
+        .then((current) => {
+          if (cancelled) return;
+          if (current) setLayers((prev) => (initial && prev.length ? prev : nextLayers(initial ? prev : prev.filter((l) => l.depth < current.depth), current)));
+          else if (!initial) parent?.pop();
+        })
+        .catch(() => undefined);
+    void sync(true);
+    const off = onReconnect(() => void sync(false));
     return () => {
       cancelled = true;
+      off();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   const dispatch = useCallback(

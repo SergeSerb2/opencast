@@ -25,8 +25,10 @@ export function AlertDialog({ options, onResult }: AlertDialogProps) {
         event.stopImmediatePropagation();
         onResult(false);
       } else if (event.key === "Enter" && !event.metaKey && !event.ctrlKey) {
-        event.preventDefault();
         event.stopImmediatePropagation();
+        // A focused button answers through its own click (Cancel stays Cancel).
+        if ((document.activeElement as HTMLElement | null)?.closest(".sc-alert__button")) return;
+        event.preventDefault();
         onResult(true);
       }
     };

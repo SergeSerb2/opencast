@@ -4,6 +4,8 @@ import { ViewFrame } from "../components/View/ViewFrame";
 import { EmptyView } from "../components/EmptyView/EmptyView";
 import { ExtensionSessionView } from "../extension-renderer/ExtensionSessionView";
 import { backend } from "../bridge/backend";
+import { getSetting } from "../bridge/settings";
+import { hideLauncher } from "./launch";
 import { useNavigationStore, type NavEntry } from "./navigation";
 import { RootSearch } from "./root/RootSearch";
 import { useLauncherBehavior } from "./useLauncherBehavior";
@@ -42,18 +44,22 @@ function renderEntry(entry: NavEntry): ReactNode {
 /** One stack entry with its own navigation API (extension entries pop through the runtime). */
 function StackEntry({ entry, depth, active }: { entry: NavEntry; depth: number; active: boolean }) {
   const store = useNavigationStore;
-  const api = useMemo<NavigationApi>(
+  const api: NavigationApi = useMemo<NavigationApi>(
     () => ({
       depth,
       isActive: active,
       push: (element, options) => store.getState().push({ kind: "element", element, title: options?.title }),
       popToRoot: () => store.getState().popToRoot(),
+      escape: () => {
+        if (getSetting("keyboard.escapeKeyBehavior") === "close-window") hideLauncher();
+        else api.pop();
+      },
       pop: () => {
         if (entry.kind === "extension") {
           backend
             .call("ext.session.pop", { sessionId: entry.sessionId })
-            .then(({ closed }) => closed && store.getState().remove(entry.key))
-            .catch(() => store.getState().remove(entry.key));
+            .then(({ closed }) => closed && store.getState().remove(entry.key, { sessionClosed: true }))
+            .catch(() => store.getState().remove(entry.key, { sessionClosed: true }));
           return;
         }
         store.getState().pop();

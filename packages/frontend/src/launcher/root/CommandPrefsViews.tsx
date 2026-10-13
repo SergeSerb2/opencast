@@ -16,7 +16,7 @@ export function SetAliasView({ item }: { item: RootSearchItem }) {
       return;
     }
     try {
-      await backend.call("commands.setPrefs", { id: item.id, prefs: { alias: alias || undefined } });
+      await backend.call("commands.setPrefs", alias ? { id: item.id, prefs: { alias } } : { id: item.id, prefs: {}, unset: ["alias"] });
       showToast({ style: "success", title: alias ? `Alias set to “${alias}”` : "Alias removed" });
       navigation.pop();
     } catch (err) {
@@ -58,7 +58,7 @@ export function SetHotkeyView({ item }: { item: RootSearchItem }) {
   };
   const save = async (value: Hotkey | undefined) => {
     try {
-      await backend.call("commands.setPrefs", { id: item.id, prefs: { hotkey: value } });
+      await backend.call("commands.setPrefs", value ? { id: item.id, prefs: { hotkey: value } } : { id: item.id, prefs: {}, unset: ["hotkey"] });
       showToast({ style: "success", title: value ? "Hotkey saved" : "Hotkey removed" });
       navigation.pop();
     } catch (error) {

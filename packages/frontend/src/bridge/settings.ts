@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { defaultSettings, isSettingsKey, type SettingsKey, type SettingsValues, type SettingValue } from "@surgecast/protocol";
 import { backend } from "./backend";
+import { onReconnect } from "./hooks";
 
 interface SettingsState {
   values: SettingsValues;
@@ -27,9 +28,7 @@ function ensureSettingsLoaded(): void {
       .then((values) => useSettingsStore.setState({ values: { ...defaultSettings(), ...values }, loaded: true, error: undefined }))
       .catch((error: unknown) => useSettingsStore.setState({ loaded: true, error }));
   load();
-  backend.onStateChange((state) => {
-    if (state === "open") load();
-  });
+  onReconnect(load);
 }
 
 export async function setSetting<K extends SettingsKey>(key: K, value: SettingValue<K>): Promise<void> {

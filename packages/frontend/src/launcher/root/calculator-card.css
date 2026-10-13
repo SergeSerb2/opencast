@@ -14,8 +14,15 @@
   flex-direction: column;
   align-items: center;
 }
+/* Each half's content sits slightly away from the arrow. */
+.sc-calc__half:first-child {
+  padding-right: calc(var(--space-24) + var(--space-8));
+}
+.sc-calc__half:last-child {
+  padding-left: calc(var(--space-24) + var(--space-8));
+}
 .sc-calc__value {
-  margin-top: 37px;
+  margin-top: 38.5px;
   max-width: 100%;
   font-size: var(--font-size-24);
   font-weight: 600;
@@ -43,8 +50,8 @@
 }
 .sc-calc__pill {
   position: absolute;
-  bottom: 11px;
-  height: round(calc(22 * var(--spx)), 1px);
+  bottom: 12px;
+  height: round(calc(20 * var(--spx)), 1px);
   max-width: calc(100% - 32px);
   padding: 0 var(--space-8);
   display: inline-flex;
@@ -69,7 +76,7 @@
   background: var(--color-border-separator);
 }
 .sc-calc__arrow {
-  margin: 10px 0;
+  margin: 13px 0;
   flex-shrink: 0;
   color: var(--color-text-primary);
 }

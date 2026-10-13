@@ -44,6 +44,12 @@ export function DevBackdrop({ children }: { children: ReactNode }) {
   useWindowEvent<{ visible: boolean }>(DEV_VISIBILITY_EVENT, ({ visible: next }) => setVisible(next));
 
   useEffect(() => {
+    if (env.native) return;
+    document.documentElement.setAttribute("dev-glass", "");
+    return () => document.documentElement.removeAttribute("dev-glass");
+  }, [env.native]);
+
+  useEffect(() => {
     if (visible || env.native) return;
     // ⌥Space brings the window back, like the global hotkey.
     const onKey = (event: KeyboardEvent) => {

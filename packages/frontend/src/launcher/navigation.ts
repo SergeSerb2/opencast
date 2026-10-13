@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { create } from "zustand";
 import type { BuiltinView, ImageLike } from "@surgecast/protocol";
+import { backend } from "../bridge/backend";
 
 interface EntryBase {
   key: string;
@@ -27,7 +28,15 @@ interface NavigationState {
   pop: () => NavEntry | undefined;
   popToRoot: (options?: { clearSearch?: boolean }) => NavEntry[];
   replaceTop: (entry: NewEntry) => void;
-  remove: (key: string) => void;
+  /** Remove an entry; `sessionClosed` when the extension session already ended. */
+  remove: (key: string, options?: { sessionClosed?: boolean }) => void;
+}
+
+/** Entries the frontend discards end their extension sessions (the worker would keep running). */
+function disposeEntries(entries: NavEntry[]): void {
+  for (const entry of entries) {
+    if (entry.kind === "extension") backend.call("ext.session.close", { sessionId: entry.sessionId }).catch(() => undefined);
+  }
 }
 
 let counter = 0;
@@ -44,19 +53,28 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
     if (stack.length <= 1) return undefined;
     const top = stack[stack.length - 1];
     set({ stack: stack.slice(0, -1) });
+    disposeEntries([top]);
     return top;
   },
   popToRoot: (options) => {
     const removed = get().stack.slice(1);
     set((state) => ({ stack: [ROOT], rootResetToken: options?.clearSearch ? state.rootResetToken + 1 : state.rootResetToken }));
+    disposeEntries(removed);
     return removed;
   },
-  replaceTop: (entry) =>
-    set((state) => (state.stack.length <= 1 ? { stack: [...state.stack, keyed(entry)] } : { stack: [...state.stack.slice(0, -1), keyed(entry)] })),
-  remove: (key) => set((state) => ({ stack: state.stack.filter((e) => e.key !== key || e.kind === "root") })),
+  replaceTop: (entry) => {
+    const { stack } = get();
+    if (stack.length <= 1) {
+      set({ stack: [...stack, keyed(entry)] });
+      return;
+    }
+    set({ stack: [...stack.slice(0, -1), keyed(entry)] });
+    disposeEntries([stack[stack.length - 1]]);
+  },
+  remove: (key, options) => {
+    const entry = get().stack.find((e) => e.key === key && e.kind !== "root");
+    if (!entry) return;
+    set((state) => ({ stack: state.stack.filter((e) => e !== entry) }));
+    if (!options?.sessionClosed) disposeEntries([entry]);
+  },
 }));
-
-export function topEntry(): NavEntry {
-  const { stack } = useNavigationStore.getState();
-  return stack[stack.length - 1];
-}

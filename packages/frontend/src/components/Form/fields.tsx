@@ -160,11 +160,12 @@ export interface CheckboxProps extends FieldBase<boolean> {
   label?: string;
 }
 
-export function Checkbox({ id, title, info, error, value, defaultValue, onChange, label, storeValue }: CheckboxProps) {
+export function Checkbox({ id, title, info, error, value, defaultValue, onChange, onFocus, onBlur, label, storeValue }: CheckboxProps) {
   const field = useFormField<boolean>(id, { value, defaultValue: storedDefault(id, storeValue, defaultValue), fallback: false, onChange });
   return (
     <FormRow title={title} info={info} error={error} compact>
       <CheckboxControl
+        {...focusHandlers(id, field.value, onFocus, onBlur)}
         checked={field.value}
         label={label}
         onChange={(v) => {
@@ -214,13 +215,14 @@ export interface DropdownProps extends FieldBase<string> {
   children?: ReactNode;
 }
 
-export function Dropdown({ id, title, info, error, value, defaultValue, onChange, placeholder, filtering, onSearchTextChange, isLoading, children, storeValue }: DropdownProps) {
+export function Dropdown({ id, title, info, error, value, defaultValue, onChange, onFocus, onBlur, placeholder, filtering, onSearchTextChange, isLoading, children, storeValue }: DropdownProps) {
   const sections = collectDropdown(children);
   const first = sections[0]?.items[0]?.value;
   const field = useFormField<string>(id, { value, defaultValue: storedDefault(id, storeValue, defaultValue ?? first), fallback: "", onChange });
   return (
     <FormRow title={title} info={info} error={error}>
       <DropdownControl
+        {...focusHandlers(id, field.value, onFocus, onBlur)}
         value={field.value}
         onChange={(v) => {
           field.setValue(v);
@@ -254,14 +256,14 @@ export interface TagPickerProps extends FieldBase<string[]> {
   children?: ReactNode;
 }
 
-export function TagPicker({ id, title, info, error, value, defaultValue, onChange, placeholder, children }: TagPickerProps) {
+export function TagPicker({ id, title, info, error, value, defaultValue, onChange, onFocus, onBlur, placeholder, children }: TagPickerProps) {
   const options = flattenElements(children)
     .filter((c) => c.type === TagPickerItem)
     .map((c) => c.props as TagPickerItemProps);
   const field = useFormField<string[]>(id, { value, defaultValue, fallback: [], onChange });
   return (
     <FormRow title={title} info={info} error={error}>
-      <TagInput value={field.value} onChange={field.setValue} options={options} placeholder={placeholder} aria-label={title} />
+      <TagInput {...focusHandlers(id, field.value, onFocus, onBlur)} value={field.value} onChange={field.setValue} options={options} placeholder={placeholder} aria-label={title} />
     </FormRow>
   );
 }
@@ -273,7 +275,7 @@ export interface DatePickerProps extends FieldBase<Date | null> {
 
 const DATE_SUGGESTIONS = ["Today", "Tomorrow", "Next Week", "Next Month"];
 
-export function DatePicker({ id, title, info, error, value, defaultValue, onChange, type = "datetime" }: DatePickerProps) {
+export function DatePicker({ id, title, info, error, value, defaultValue, onChange, onFocus, onBlur, type = "datetime" }: DatePickerProps) {
   const field = useFormField<Date | null>(id, { value, defaultValue, fallback: null, onChange });
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -307,6 +309,7 @@ export function DatePicker({ id, title, info, error, value, defaultValue, onChan
         data-validation={error ? "error" : undefined}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => setOpen(true)}
+        {...focusHandlers(id, field.value, onFocus, open ? undefined : onBlur)}
       >
         <Icon name={withTime ? "clock-16" : "calendar-16"} size={16} className="sc-dropdown__icon" />
         <span className="sc-dropdown__value sc-truncate">{field.value ? formatDateValue(field.value, withTime) : "No Date"}</span>
@@ -336,7 +339,7 @@ export interface FilePickerProps extends FieldBase<string[]> {
   showHiddenFiles?: boolean;
 }
 
-export function FilePicker({ id, title, info, error, value, defaultValue, onChange, allowMultipleSelection = true, canChooseDirectories = false, canChooseFiles = true }: FilePickerProps) {
+export function FilePicker({ id, title, info, error, value, defaultValue, onChange, onFocus, onBlur, allowMultipleSelection = true, canChooseDirectories = false, canChooseFiles = true }: FilePickerProps) {
   const field = useFormField<string[]>(id, { value, defaultValue, fallback: [], onChange });
   const pick = async () => {
     try {
@@ -349,7 +352,7 @@ export function FilePicker({ id, title, info, error, value, defaultValue, onChan
   const label = canChooseDirectories && !canChooseFiles ? (allowMultipleSelection ? "Select Folders" : "Select Folder") : allowMultipleSelection ? "Select Files" : "Select File";
   return (
     <FormRow title={title} info={info} error={error}>
-      <button type="button" className="sc-file-picker" onMouseDown={(e) => e.preventDefault()} onClick={() => void pick()}>
+      <button type="button" className="sc-file-picker" onMouseDown={(e) => e.preventDefault()} onClick={() => void pick()} {...focusHandlers(id, field.value, onFocus, onBlur)}>
         <Icon name="plus-16" size={16} />
         <span>{label}</span>
       </button>

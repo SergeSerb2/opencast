@@ -34,13 +34,15 @@ function fileIconFallback(path: string): ResolvedImage {
  */
 export const Image = memo(function Image({ source, size = 16, className, style, placeholder = false, tintColor, alt = "" }: ImageProps) {
   const { appearance } = useTheme();
-  const [failed, setFailed] = useState(false);
+  const [failedUrls, setFailedUrls] = useState<readonly string[]>([]);
   const object = source && isImageObject(source) ? source : null;
   const mask: ImageMask | undefined = object?.mask;
   const tint = resolveColor(tintColor ?? object?.tintColor, appearance);
 
   let resolved = resolveImage(source, appearance);
   if (resolved.kind === "file-icon" && !getEnv().native) resolved = fileIconFallback(resolved.path);
+  const primaryUrl = resolved.kind === "url" ? resolved.url : resolved.kind === "file-icon" ? fileIconUrl(resolved.path, size) : null;
+  const failed = primaryUrl !== null && failedUrls.includes(primaryUrl);
   if ((failed || resolved.kind === "none") && object?.fallback) resolved = resolveSourceString(pickSource(object.fallback, appearance));
 
   const boxStyle: CSSProperties = { width: size, height: size, ...style };
@@ -66,7 +68,7 @@ export const Image = memo(function Image({ source, size = 16, className, style, 
     case "url":
     case "file-icon": {
       const url = resolved.kind === "url" ? resolved.url : fileIconUrl(resolved.path, size);
-      if (failed && !object?.fallback) return placeholder ? <EmptyIconSlot size={size} /> : <Icon name="app-window-16" size={size} className={className} />;
+      if (failedUrls.includes(url)) return placeholder ? <EmptyIconSlot size={size} /> : <Icon name="app-window-16" size={size} className={className} />;
       if (tint) {
         const maskImage = `url("${url.replace(/"/g, '\\"')}")`;
         return (
@@ -77,7 +79,7 @@ export const Image = memo(function Image({ source, size = 16, className, style, 
       }
       return (
         <span className={cls} style={boxStyle} data-mask={mask}>
-          <img src={url} alt={alt} draggable={false} loading="lazy" decoding="async" onError={() => setFailed(true)} />
+          <img src={url} alt={alt} draggable={false} loading="lazy" decoding="async" onError={() => setFailedUrls((list) => (list.includes(url) ? list : [...list, url]))} />
         </span>
       );
     }

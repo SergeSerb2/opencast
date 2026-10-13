@@ -93,9 +93,11 @@ export function useBackend<M extends BackendMethod>(
 
   const refetch = useCallback(() => setVersion((v) => v + 1), []);
 
+  const topics = (options.refetchOn ?? refetchRulesFor(method)).map((r) => r.topic);
+  const topicsKey = [...new Set(topics)].join(",");
+
   useEffect(() => {
     if (!enabled) return;
-    const rules = optionsRef.current.refetchOn ?? refetchRulesFor(method);
     let scheduled = false;
     const schedule = () => {
       if (scheduled) return;
@@ -105,24 +107,34 @@ export function useBackend<M extends BackendMethod>(
         refetch();
       });
     };
-    const offs = rules.map((rule) =>
-      backend.on(rule.topic, (payload) => {
-        if (!rule.when || (rule.when as (p: unknown) => boolean)(payload)) schedule();
+    // Predicates are read at event time so they see the latest params (e.g. another note id).
+    const offs = topicsKey.split(",").filter(Boolean).map((topic) =>
+      backend.on(topic as BackendEventTopic, (payload) => {
+        const rules = (optionsRef.current.refetchOn ?? refetchRulesFor(method)).filter((r) => r.topic === topic);
+        if (rules.some((rule) => !rule.when || (rule.when as (p: unknown) => boolean)(payload))) schedule();
       }),
     );
-    offs.push(
-      backend.onStateChange((state) => {
-        if (state === "open") schedule();
-      }),
-    );
+    offs.push(onReconnect(schedule));
     return () => offs.forEach((off) => off());
-  }, [method, enabled, refetch, optionsRef]);
+  }, [method, enabled, refetch, optionsRef, topicsKey]);
 
   const setData = useCallback((update: BackendResult<M> | ((previous: BackendResult<M> | undefined) => BackendResult<M>)) => {
     setDataState((previous) => (typeof update === "function" ? (update as (p: BackendResult<M> | undefined) => BackendResult<M>)(previous) : update));
   }, []);
 
   return { data, error, isLoading, refetch, setData };
+}
+
+/** Call `fn` when the connection comes back after a drop (not on the first connect). */
+export function onReconnect(fn: () => void): () => void {
+  let dropped = false;
+  return backend.onStateChange((state) => {
+    if (state === "reconnecting") dropped = true;
+    else if (state === "open" && dropped) {
+      dropped = false;
+      fn();
+    }
+  });
 }
 
 function callUntyped<R>(method: BackendMethod, params: unknown, options: CallOptions): Promise<R> {

@@ -4,8 +4,8 @@ import { FormValuesContext } from "./form-context";
 interface FormState {
   values: Record<string, unknown>;
   setValue: (id: string, value: unknown) => void;
-  /** Register a field's initial value (uncontrolled) once. */
-  register: (id: string, initial: unknown) => void;
+  /** Register a field's initial value; the returned function removes the field again. */
+  register: (id: string, initial: unknown) => () => void;
   /** Id of the field that should take focus first. */
   firstFieldId: string | null;
 }
@@ -35,7 +35,7 @@ export function FormProvider({ children, onValuesChange }: { children: ReactNode
   const register = useCallback((id: string, initial: unknown) => {
     if (!order.current.includes(id)) {
       order.current.push(id);
-      if (order.current.length === 1) setFirstFieldId(id);
+      setFirstFieldId(order.current[0]);
     }
     setValues((prev) => {
       if (id in prev) return prev;
@@ -43,6 +43,18 @@ export function FormProvider({ children, onValuesChange }: { children: ReactNode
       valuesRef.current = next;
       return next;
     });
+    // Removed fields (conditional rendering) no longer submit their value.
+    return () => {
+      order.current = order.current.filter((f) => f !== id);
+      setFirstFieldId(order.current[0] ?? null);
+      setValues((prev) => {
+        if (!(id in prev)) return prev;
+        const next = { ...prev };
+        delete next[id];
+        valuesRef.current = next;
+        return next;
+      });
+    };
   }, []);
 
   const state = useMemo(() => ({ values, setValue, register, firstFieldId }), [values, setValue, register, firstFieldId]);
@@ -65,7 +77,7 @@ export function useFormField<T>(id: string, options: { value?: T; defaultValue?:
   const initial = useRef(defaultValue ?? fallback);
 
   useEffect(() => {
-    form?.register(id, value !== undefined ? value : initial.current);
+    return form?.register(id, value !== undefined ? value : initial.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

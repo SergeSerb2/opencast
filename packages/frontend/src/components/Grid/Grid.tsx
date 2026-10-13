@@ -7,6 +7,7 @@ import { Image } from "../../icons/Image";
 import { isEmoji } from "../../icons/image-source";
 import { fuzzyFilter } from "../../lib/fuzzy";
 import { navigationIntent } from "../../lib/keyboard";
+import { scaled, useZoom } from "../../lib/zoom";
 import { useTheme } from "../../theme/ThemeProvider";
 import { collectActions, type ActionsProp } from "../actions/ActionPanel";
 import { primaryActions } from "../actions/model";
@@ -113,14 +114,14 @@ function collectGrid(children: ReactNode, defaults: { columns: number; aspectRat
   let loose: GridItemModel[] = [];
   const toItem = (el: { props: unknown; key: string | null }, i: number, prefix: string): GridItemModel => {
     const props = el.props as GridItemProps;
-    return { ...props, id: props.id ?? (el.key !== null ? String(el.key) : `${prefix}${i}`) };
+    return { ...props, id: props.id ?? `${prefix}${el.key !== null ? String(el.key) : `#${i}`}` };
   };
   const flush = () => {
     if (loose.length) sections.push({ id: `loose-${sections.length}`, ...defaults, items: loose });
     loose = [];
   };
   flattenElements(children).forEach((child, i) => {
-    if (child.type === GridItem) loose.push(toItem(child, i, "item-"));
+    if (child.type === GridItem) loose.push(toItem(child, i, "~/"));
     else if (child.type === GridSection) {
       flush();
       const p = child.props as GridSectionProps;
@@ -143,7 +144,7 @@ function collectGrid(children: ReactNode, defaults: { columns: number; aspectRat
   return { sections, emptyView };
 }
 
-type Row = { kind: "header"; section: GridSectionModel; first: boolean } | { kind: "row"; section: GridSectionModel; start: number; flatStart: number; last: boolean };
+type Row = { kind: "header"; section: GridSectionModel; first: boolean } | { kind: "row"; section: GridSectionModel; start: number; flatStart: number; count: number; last: boolean };
 
 /** Raycast-style grid view: sections of cells with an image/emoji/color, keyboard navigation in 2D. */
 export function Grid(props: GridProps) {
@@ -185,16 +186,19 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
   const flat = useMemo(() => sections.flatMap((s) => s.items), [sections]);
 
   const [width, setWidth] = useState(750);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = wrapRef.current;
+  const observer = useRef<ResizeObserver | null>(null);
+  const wrapRef = useCallback((el: HTMLDivElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
     if (!el) return;
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
-    observer.observe(el);
-    return () => observer.disconnect();
+    setWidth(el.clientWidth || 750);
+    observer.current = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.current.observe(el);
   }, []);
 
-  const rowWidth = Math.max(100, width - 32);
+  const zoom = useZoom();
+  const gap = scaled(8, zoom);
+  const rowWidth = Math.max(100, width - 2 * scaled(16, zoom));
   const { rows, heights } = useMemo(() => {
     const out: Row[] = [];
     const hs: number[] = [];
@@ -203,22 +207,22 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
       const lastSection = si === sections.length - 1;
       if (section.title) {
         out.push({ kind: "header", section, first: si === 0 });
-        hs.push(si === 0 ? 32 : 24);
+        hs.push(scaled(si === 0 ? 32 : 24, zoom));
       }
-      const cell = (rowWidth - 8 * (section.columns - 1)) / section.columns;
+      const cell = (rowWidth - gap * (section.columns - 1)) / section.columns;
       const cellHeight = Math.round(cell / RATIO[section.aspectRatio]);
-      const details = detailsHeight(section.items);
+      const details = scaled(detailsHeight(section.items), zoom);
       const rowCount = Math.ceil(section.items.length / section.columns);
       for (let r = 0; r < rowCount; r++) {
         const lastRow = r === rowCount - 1;
-        out.push({ kind: "row", section, start: r * section.columns, flatStart: flatStart + r * section.columns, last: lastRow });
+        out.push({ kind: "row", section, start: r * section.columns, flatStart: flatStart + r * section.columns, count: Math.min(section.columns, section.items.length - r * section.columns), last: lastRow });
         const finalRow = lastRow && lastSection;
-        hs.push(cellHeight + details + (finalRow ? 0 : 8) + (details && !finalRow ? 4 : 0));
+        hs.push(cellHeight + details + (finalRow ? 0 : gap) + (details && !finalRow ? scaled(4, zoom) : 0));
       }
       flatStart += section.items.length;
     });
     return { rows: out, heights: hs };
-  }, [sections, rowWidth]);
+  }, [sections, rowWidth, gap, zoom]);
 
   const [selectedId, setSelectedId] = useState<string | null>(selectedItemId ?? null);
   useEffect(() => {
@@ -240,17 +244,23 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
   const select = useCallback(
     (index: number) => {
       const item = flat[index];
-      if (!item) return;
-      setSelectedId(item.id);
-      onSelectionChangeRef.current?.(item.id);
+      if (item) setSelectedId(item.id);
     },
-    [flat, onSelectionChangeRef],
+    [flat],
   );
+  const notified = useRef<string | null | undefined>(undefined);
+  const effectiveId = selected?.id ?? null;
+  useEffect(() => {
+    if (notified.current === effectiveId) return;
+    const first = notified.current === undefined;
+    notified.current = effectiveId;
+    if (!first || effectiveId !== null) onSelectionChangeRef.current?.(effectiveId);
+  }, [effectiveId, onSelectionChangeRef]);
 
   const listRef = useRef<VirtualListHandle>(null);
   useEffect(() => {
     if (selectedIndex < 0) return;
-    const rowIndex = rows.findIndex((r) => r.kind === "row" && selectedIndex >= r.flatStart && selectedIndex < r.flatStart + r.section.columns);
+    const rowIndex = rows.findIndex((r) => r.kind === "row" && selectedIndex >= r.flatStart && selectedIndex < r.flatStart + r.count);
     if (rowIndex < 0) return;
     const header = rows[rowIndex - 1]?.kind === "header" ? rowIndex - 1 : rowIndex;
     listRef.current?.scrollToIndex(rowIndex, "auto", header);
@@ -275,9 +285,14 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
     return view.registerKeyHandler((event) => {
       const s = state.current;
       let intent = navigationIntent(event, s.bindings);
-      if (!intent && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
-        if (event.key === "ArrowLeft") intent = "left";
-        if (event.key === "ArrowRight") intent = "right";
+      if (!intent && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+        // ←/→ move the selection unless they would move the caret inside typed text.
+        const input = event.target as HTMLInputElement;
+        const editing = input.tagName === "INPUT" && input.value.length > 0;
+        const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
+        const atEnd = input.selectionStart === input.value?.length;
+        if (event.key === "ArrowLeft" && (!editing || atStart)) intent = "left";
+        if (event.key === "ArrowRight" && (!editing || atEnd)) intent = "right";
       }
       if (intent === "pageUp" || intent === "pageDown") intent = intent === "pageUp" ? "up" : "down";
       if (!intent) return false;
@@ -292,8 +307,11 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
   }, [view, state, select]);
 
   if (isEmpty) {
-    if (isLoading) return null;
-    return emptyView ? <EmptyView title={emptyView.title} description={emptyView.description} icon={emptyView.icon} /> : <EmptyView title={searchText ? "No Results" : "No Items"} />;
+    return (
+      <div ref={wrapRef} className="sc-grid">
+        {isLoading ? null : emptyView ? <EmptyView title={emptyView.title} description={emptyView.description} icon={emptyView.icon} /> : <EmptyView title={searchText ? "No Results" : "No Items"} />}
+      </div>
+    );
   }
 
   const renderRow = (index: number) => {
@@ -307,7 +325,7 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
       );
     }
     const { section } = row;
-    const cellWidth = (rowWidth - 8 * (section.columns - 1)) / section.columns;
+    const cellWidth = (rowWidth - gap * (section.columns - 1)) / section.columns;
     const items = section.items.slice(row.start, row.start + section.columns);
     return (
       <div className="sc-grid-row" style={{ gridTemplateColumns: `repeat(${section.columns}, minmax(0, 1fr))` }} role="row">
@@ -322,7 +340,7 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
               fit={section.fit}
               inset={gridInset(section.inset, section.columns)}
               selected={flatIndex === selectedIndex}
-              onClick={() => (flatIndex === selectedIndex ? activate(item) : select(flatIndex))}
+              onClick={() => select(flatIndex)}
               onDoubleClick={() => activate(item)}
             />
           );
@@ -342,12 +360,12 @@ function GridContentView({ children, columns = 5, aspectRatio = "1", fit = "cont
           return r.kind === "header" ? `h:${r.section.id}` : `r:${r.section.id}:${r.start}`;
         }}
         renderRow={renderRow}
-        paddingTop={56}
-        paddingBottom={52}
-        scrollPaddingStart={64}
-        scrollPaddingEnd={52}
-        fade={{ top: 96, bottom: 72 }}
-        thumbInset={{ top: 64, bottom: 52 }}
+        paddingTop={scaled(56, zoom)}
+        paddingBottom={scaled(52, zoom)}
+        scrollPaddingStart={scaled(64, zoom)}
+        scrollPaddingEnd={scaled(52, zoom)}
+        fade={{ top: scaled(96, zoom), bottom: scaled(72, zoom) }}
+        thumbInset={{ top: scaled(64, zoom), bottom: scaled(52, zoom) }}
       />
     </div>
   );
@@ -391,7 +409,7 @@ const GridCell = memo(function GridCell({ item, cellWidth, aspectRatio, fit, ins
             {emoji}
           </span>
         )}
-        <span className="sc-grid-cell__emoji" style={{ fontSize: Math.round(cellWidth * 0.45) }}>
+        <span className="sc-grid-cell__emoji" style={{ fontSize: Math.round(cellWidth * 0.48) }}>
           {emoji}
         </span>
       </>
