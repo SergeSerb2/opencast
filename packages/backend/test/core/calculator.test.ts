@@ -206,3 +206,12 @@ describe("calculator", () => {
     expect(evaluateExpression(expression)).toBeNull(),
   );
 });
+
+it.each(["100 + 10%", "(50 + 50) + 10%", "sqrt(10000) + 10%", "100 + (10%)"])("applies percentages to expression nodes: %s", expression => {
+  expect(evaluateExpression(expression)?.copyValue).toBe("110");
+});
+it("compounds relative percentages and preserves percent-of and multiplication", () => {
+  expect(evaluateExpression("(50+50)+10%+10%")?.copyValue).toBe("121");
+  expect(evaluateExpression("20% of (25 + 25)")?.copyValue).toBe("10");
+  expect(evaluateExpression("100 * 10%")?.copyValue).toBe("10");
+});

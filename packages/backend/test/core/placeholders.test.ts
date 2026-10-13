@@ -105,3 +105,7 @@ describe("argument compatibility", () => {
     expect(value.arguments[1].options).toEqual([]);
   });
 });
+
+it.each(["👩‍💻x", "e\u0301x", "🇨🇦x"])("counts grapheme clusters after the cursor: %s", async suffix => {
+  expect((await renderTemplate(`prefix{cursor}${suffix}`)).cursorOffset).toBe(2);
+});

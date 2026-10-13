@@ -47,12 +47,29 @@ export function evaluateMath(source: string): number | Unit | Complex | null {
   if (!/\d/.test(source) || source.length > 512 || /[;\n]/.test(source))
     return null;
   source = source
-    .replace(/([\d.]+)%\s+of\s+([\d.]+)/gi, "($1 / 100 * $2)")
-    .replace(/([\d.]+)\s*([+-])\s*([\d.]+)%/g, "($1 $2 ($1 * $3 / 100))")
-    .replace(/([\d.]+)%/g, "($1 / 100)")
+    .replace(/([\d.]+)%/g, "surgecastPercent($1)")
+    .replace(/\s+of\s+/gi, " * ")
     .replace(/\s+in\s+/gi, " to ");
   try {
-    const node = math.parse(source);
+    const percent = (node: MathNode): MathNode | undefined => {
+      if (math.isParenthesisNode(node)) return percent(node.content);
+      if (math.isFunctionNode(node) && node.fn.name === "surgecastPercent" && node.args.length === 1) return node.args[0];
+      return undefined;
+    };
+    const percentages = (node: MathNode): MathNode => {
+      if (math.isOperatorNode(node) && ["+", "-"].includes(node.op) && node.args.length === 2) {
+        const amount = percent(node.args[1]);
+        if (amount) {
+          const base = percentages(node.args[0]);
+          const fraction = new math.OperatorNode("/", "divide", [percentages(amount), new math.ConstantNode(100)]);
+          return new math.OperatorNode(node.op, node.fn, [base, new math.OperatorNode("*", "multiply", [base, fraction])]);
+        }
+      }
+      const amount = percent(node);
+      if (amount) return new math.OperatorNode("/", "divide", [percentages(amount), new math.ConstantNode(100)]);
+      return node.map(child => percentages(child));
+    };
+    const node = percentages(math.parse(source));
     let nodes = 0;
     node.traverse((child: MathNode) => {
       if (

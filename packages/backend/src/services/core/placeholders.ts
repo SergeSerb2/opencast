@@ -329,7 +329,7 @@ export async function renderTemplate(
         value = await once("uuid", async () => randomUUID());
         break;
       case "cursor":
-        cursor = Array.from(out).length;
+        cursor = out.length;
         break;
       case "argument":
       case "query": {
@@ -411,7 +411,7 @@ export async function renderTemplate(
   return {
     text: out,
     cursorOffset:
-      cursor === undefined ? undefined : Array.from(out).length - cursor,
+      cursor === undefined ? undefined : Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(out.slice(cursor))).length,
     arguments: args,
   };
 }
