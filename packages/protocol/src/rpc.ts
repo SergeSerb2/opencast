@@ -200,6 +200,7 @@ export interface BackendMethods {
   "extensions.develop": { params: { path: string }; result: InstalledExtension };
 
   // ---- extension sessions (view commands) -----------------------------------------------------------
+  "ext.session.start": { params: { name: string; command: string; arguments?: Record<string, string>; fallbackText?: string; launchContext?: Record<string, unknown>; draftValues?: Record<string, unknown>; launchType?: "userInitiated" | "background" }; result: LaunchResult };
   "ext.session.dispatch": { params: { sessionId: string; handlerId: string; args?: unknown[] }; result: unknown };
   /** User pressed Esc / back: pop the extension's own stack, or close the session at depth 1. */
   "ext.session.pop": { params: { sessionId: string }; result: { closed: boolean } };
@@ -266,6 +267,7 @@ export interface BackendEvents {
   "ext.session.closed": { sessionId: string; reason: "completed" | "error" | "user" | "popToRoot"; error?: string };
   "ext.toast": { sessionId?: string; toast: ToastState | null };
   "ext.alert": { sessionId: string; alertId: string; options: AlertOptions };
+  "ext.ui.control": { sessionId: string; action: "focus" | "reset" | "shake" | "clearSearchBar"; itemId?: string };
   /** The backend or an extension asks the launcher to navigate. */
   "launcher.navigate": { action: "popToRoot" | "close" | "show" | "launch"; result?: LaunchResult; clearSearchBar?: boolean };
   "launcher.toast": { toast: ToastState | null };

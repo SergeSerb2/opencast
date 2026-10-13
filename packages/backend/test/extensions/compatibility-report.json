@@ -1,0 +1,152 @@
+{
+  "checkedAt": "2026-10-13T08:42:44.840Z",
+  "backend": "--no-native",
+  "results": [
+    {
+      "name": "extension-template",
+      "command": "static-list",
+      "root": "List",
+      "nodes": 6,
+      "items": 3,
+      "text": ""
+    },
+    {
+      "name": "extension-template",
+      "command": "detail",
+      "root": "Detail",
+      "nodes": 1,
+      "items": 0,
+      "text": "# Hello World"
+    },
+    {
+      "name": "extension-template",
+      "command": "form",
+      "root": "Form",
+      "nodes": 13,
+      "items": 0,
+      "text": ""
+    },
+    {
+      "name": "extension-template",
+      "command": "grid",
+      "root": "Grid",
+      "nodes": 485,
+      "items": 478,
+      "text": ""
+    },
+    {
+      "name": "extension-template",
+      "command": "list-and-detail",
+      "root": "List",
+      "nodes": 5,
+      "items": 1,
+      "text": "",
+      "pushedRoot": "Detail"
+    },
+    {
+      "name": "extension-template",
+      "command": "menu-bar-extra",
+      "root": "MenuBarExtra",
+      "nodes": 7,
+      "items": 0,
+      "text": ""
+    },
+    {
+      "name": "extension-template",
+      "command": "blank",
+      "kind": "done",
+      "closeWindow": false
+    },
+    {
+      "name": "extension-template",
+      "command": "script",
+      "kind": "done",
+      "closeWindow": true
+    },
+    {
+      "name": "extension-template",
+      "command": "typeahead-search",
+      "root": "List",
+      "nodes": 10,
+      "items": 3,
+      "text": "",
+      "searchDispatched": true
+    },
+    {
+      "name": "extension-template",
+      "command": "ai",
+      "root": "Detail",
+      "nodes": 1,
+      "items": 0,
+      "text": ""
+    },
+    {
+      "slug": "codedbyjordan/markdown-reference",
+      "version": "3c654737b0d566d3103fcdf72221a9f34664bdf2",
+      "name": "markdown-reference",
+      "command": "markdown-reference",
+      "root": "List",
+      "nodes": 18,
+      "items": 15,
+      "text": "",
+      "searchDispatched": true,
+      "pushedRoot": "Detail"
+    },
+    {
+      "slug": "joshuaiz/password-generator",
+      "version": "c7bb9d4e7481fb6a71e2c1712c809e52be0b2955",
+      "name": "password-generator",
+      "command": "generate-random-password",
+      "root": "Form",
+      "nodes": 6,
+      "items": 0,
+      "text": "",
+      "formChangeDispatched": true
+    },
+    {
+      "slug": "thomas/hacker-news",
+      "version": "3c654737b0d566d3103fcdf72221a9f34664bdf2",
+      "name": "hacker-news",
+      "command": "frontpage",
+      "root": "List",
+      "nodes": 53,
+      "items": 30,
+      "text": ""
+    },
+    {
+      "slug": "braydoncoyer/office-quotes",
+      "version": "c33bf4cb4b9ad70c2b93432ee713ffb7486ed331",
+      "name": "office-quotes",
+      "command": "index",
+      "root": "List",
+      "nodes": 332,
+      "items": 326,
+      "text": "",
+      "pushedRoot": "Detail"
+    },
+    {
+      "slug": "koinzhang/menubar-calendar",
+      "version": "c33bf4cb4b9ad70c2b93432ee713ffb7486ed331",
+      "name": "menubar-calendar",
+      "command": "index",
+      "root": "MenuBarExtra",
+      "nodes": 15,
+      "items": 0,
+      "text": ""
+    }
+  ],
+  "failureToasts": [
+    {
+      "title": "Failed to fetch latest data",
+      "message": "AI is not available: no AI service is registered"
+    },
+    {
+      "title": "Failed to fetch latest data",
+      "message": "accessDenied"
+    },
+    {
+      "title": "Failed to fetch latest data",
+      "message": "accessDenied"
+    }
+  ]
+}

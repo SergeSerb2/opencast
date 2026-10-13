@@ -149,6 +149,7 @@ export interface MenuBarExtraItem {
   kind: "item" | "separator" | "section" | "submenu";
   enabled?: boolean;
   children?: MenuBarExtraItem[];
+  alternate?: MenuBarExtraItem;
 }
 
 export interface NativeMethods {
@@ -228,7 +229,7 @@ export interface NativeMethods {
   "windows.applyLayout": { params: { rect: WindowLayoutRect; gap?: number }; result: void };
   "windows.undo": { params: void; result: void };
   "windows.screens": { params: void; result: ScreenInfo[] };
-  "windows.focused": { params: void; result: { app: AppInfo; title: string; frame: WindowLayoutRect } | null };
+  "windows.focused": { params: void; result: { app: AppInfo; title: string; frame: WindowLayoutRect; screenId?: number } | null };
 
   // --- system ------------------------------------------------------------------
   "system.run": {

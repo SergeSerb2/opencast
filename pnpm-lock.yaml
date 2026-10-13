@@ -16,6 +16,9 @@ importers:
       '@surgecast/protocol':
         specifier: workspace:*
         version: link:../protocol
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       chrono-node:
         specifier: ^2.10.3
         version: 2.10.3

@@ -1,0 +1,56 @@
+import React from "react";
+import { ExtensionRenderer } from "./renderer";
+import { Action, ActionPanel, Form, List } from "./components";
+import { Clipboard, LocalStorage } from "./services";
+export * from "./components";
+export * from "./services";
+export * from "./values";
+export * from "./environment";
+export * from "./cache";
+export * from "./oauth";
+export { AI, AI as unstable_AI } from "./ai";
+export { randomId } from "./bridge";
+export { useNavigation } from "./navigation";
+export type { LaunchProps, Application, FileSystemItem, ImageLike, ColorLike, KeyboardShortcut, FormValues, Navigation } from "../public-api";
+export const Tool = {};
+export const ActionPanelItem = Action;
+export const ActionPanelSection = ActionPanel.Section;
+export const ActionPanelSubmenu = ActionPanel.Submenu;
+export const ListItem = List.Item;
+export const ListSection = List.Section;
+export const FormCheckbox = Form.Checkbox;
+export const FormDatePicker = Form.DatePicker;
+export const FormDropdown = Form.Dropdown;
+export const FormDropdownItem = Form.Dropdown.Item;
+export const FormDropdownSection = Form.Dropdown.Section;
+export const FormSeparator = Form.Separator;
+export const FormTagPicker = Form.TagPicker;
+export const FormTagPickerItem = Form.TagPicker.Item;
+export const FormTextArea = Form.TextArea;
+export const FormTextField = Form.TextField;
+export const CopyToClipboardAction = Action.CopyToClipboard;
+export const OpenAction = Action.Open;
+export const OpenInBrowserAction = Action.OpenInBrowser;
+export const OpenWithAction = Action.OpenWith;
+export const PasteAction = Action.Paste;
+export const PushAction = Action.Push;
+export const ShowInFinderAction = Action.ShowInFinder;
+export const SubmitFormAction = Action.SubmitForm;
+export const TrashAction = Action.Trash;
+export const allLocalStorageItems = LocalStorage.allItems;
+export const getLocalStorageItem = LocalStorage.getItem;
+export const setLocalStorageItem = LocalStorage.setItem;
+export const removeLocalStorageItem = LocalStorage.removeItem;
+export const clearLocalStorage = LocalStorage.clear;
+export const copyTextToClipboard = Clipboard.copy;
+export const clearClipboard = Clipboard.clear;
+export const pasteText = Clipboard.paste;
+export function useId(explicitId?: string) { const id = React.useId(); return explicitId || id; }
+export const useUnstableAI = () => undefined;
+export function useActionPanel() { return { update: () => { throw new Error("useActionPanel.update is deprecated; supply actions on the view instead"); } }; }
+let legacyRenderer: ExtensionRenderer | undefined;
+export function render(element: React.ReactNode): void { legacyRenderer ??= new ExtensionRenderer(); legacyRenderer.render(element); }
+import * as bridge from "./bridge";
+import * as renderer from "./renderer";
+/** Internal worker entrypoints; not part of the public Raycast API. */
+export const __host = { bridge, renderer };
