@@ -95,7 +95,7 @@ function groupFor(id: string, commands: CommandInfo[], extensions: readonly Inst
   const extension = extensions.find((e) => e.name === id);
   if (extension) return { id, title: extension.title, icon: extension.icon ?? EXTENSION_FALLBACK_ICON, route: `extensions/${extension.name}`, commands };
   const page = BUILTIN_PAGES.find((p) => p.commandGroups?.includes(id));
-  const title = commands[0]?.extensionTitle ?? page?.title ?? commands[0]?.subtitle ?? id;
+  const title = page?.title ?? commands[0]?.extensionTitle ?? commands[0]?.subtitle ?? id;
   return { id, title, icon: page?.icon ?? commands[0]?.icon ?? "app-window-grid-2x2-16", route: page?.id, commands };
 }
 
@@ -118,7 +118,9 @@ export function buildShortcutTree(commands: readonly CommandInfo[], extensions: 
     }
     const grouped = new Map<string, CommandInfo[]>();
     for (const command of members) {
-      const key = commandGroup(command) ?? "other";
+      const group = commandGroup(command);
+      const coreCommand = command.kind === "builtin" && command.extensionTitle === "Surgecast" && !BUILTIN_PAGES.some((page) => page.commandGroups?.includes(group ?? ""));
+      const key = coreCommand ? "surgecast" : group ?? "other";
       grouped.set(key, [...(grouped.get(key) ?? []), command]);
     }
     const groups = [...grouped].map(([key, list]) => groupFor(key, list, extensions)).sort(byTitle);

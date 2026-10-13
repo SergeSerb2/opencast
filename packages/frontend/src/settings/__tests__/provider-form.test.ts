@@ -49,11 +49,11 @@ describe("provider draft validation", () => {
     expect(hasErrors(validateProviderDraft({ ...draftFromTemplate(openai), apiKey: "sk-test" }, openai, false))).toBe(false);
   });
 
-  it("lets keyless templates and saved keys through, but not a removed required key", () => {
+  it("lets keyless templates and saved keys through and lets an existing key be removed", () => {
     expect(validateProviderDraft(draftFromTemplate(cliproxy), cliproxy, false)).toEqual({});
     const edit = draftFromProvider(saved);
     expect(validateProviderDraft(edit, openai, true)).toEqual({});
-    expect(validateProviderDraft({ ...edit, removeApiKey: true }, openai, true).apiKey).toBeDefined();
+    expect(validateProviderDraft({ ...edit, removeApiKey: true }, openai, true).apiKey).toBeUndefined();
     expect(validateProviderDraft({ ...edit, apiKey: "sk-abc def" }, openai, true).apiKey).toMatch(/spaces/);
   });
 

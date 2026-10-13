@@ -25,18 +25,37 @@ export function Dialog({ title, onClose, children, footer, width = 400, ...aria 
 
   useEffect(() => {
     const panel = panelRef.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const background = document.querySelector<HTMLElement>(".sc-s-window");
+    const wasInert = background?.inert ?? false;
+    if (background) background.inert = true;
     const first = panel?.querySelector<HTMLElement>("input:not([disabled]), textarea:not([disabled]), [data-autofocus]");
     (first ?? panel)?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (event.defaultPrevented) return;
       // Let an open popover/menu inside the dialog handle Esc first.
       if (document.querySelector(".sc-popover[data-state='open']")) return;
+      if (event.key === "Tab") {
+        const focusable = [...(panel?.querySelectorAll<HTMLElement>('input:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex="0"]') ?? [])].filter((el) => !el.hidden && !el.closest("[hidden]") && el.getClientRects().length > 0);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!first || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first)?.focus();
+        }
+        return;
+      }
+      if (event.key !== "Escape") return;
       event.preventDefault();
       event.stopImmediatePropagation();
       onCloseRef.current();
     };
     window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      if (background) background.inert = wasInert;
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    };
   }, []);
 
   const root = document.getElementById("sc-overlay-root") ?? document.body;

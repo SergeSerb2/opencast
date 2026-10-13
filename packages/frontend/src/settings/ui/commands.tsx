@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { CommandInfo, ExtensionPreference } from "@surgecast/protocol";
 import { Checkbox } from "../../components/Checkbox/Checkbox";
 import { Icon } from "../../icons/Icon";
@@ -12,17 +12,25 @@ import "./commands.css";
 /** Inline alias editor (§8.4): 24px, "Add Alias" placeholder, saves on Enter/blur. */
 export function AliasInput({ command }: { command: CommandInfo }) {
   const [draft, setDraft] = useState(command.alias ?? "");
+  const cancelled = useRef(false);
   useEffect(() => setDraft(command.alias ?? ""), [command.alias]);
   const commit = () => {
+    if (cancelled.current) {
+      cancelled.current = false;
+      return;
+    }
     const alias = draft.trim();
     if (alias === (command.alias ?? "")) return setDraft(alias);
-    void updateCommand(command.id, alias ? { alias } : {}, alias ? undefined : ["alias"]);
+    void updateCommand(command.id, alias ? { alias } : {}, alias ? undefined : ["alias"]).then((updated) => {
+      if (!updated) setDraft(command.alias ?? "");
+    });
   };
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") event.currentTarget.blur();
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
+      cancelled.current = true;
       setDraft(command.alias ?? "");
       event.currentTarget.blur();
     }
@@ -123,7 +131,7 @@ export function CommandsCard({ commands, allCommands, extensionName, manifestPre
                 <AliasInput command={command} />
               </span>
               <CommandHotkey command={command} commands={allCommands} />
-              <Checkbox checked={command.enabled} onChange={(enabled) => void updateCommand(command.id, { enabled })} label={undefined} id={`enabled-${command.id}`} />
+              <Checkbox checked={command.enabled} onChange={(enabled) => void updateCommand(command.id, { enabled })} aria-label={`Enable ${command.title}`} id={`enabled-${command.id}`} />
             </div>
             {open && <CommandDetail command={command} extensionName={extensionName} preferences={preferences} />}
           </div>

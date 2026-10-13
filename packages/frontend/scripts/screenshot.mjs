@@ -7,6 +7,7 @@
  *   node scripts/screenshot.mjs root clip       # selected scenes
  *   node scripts/screenshot.mjs --list          # scene names
  *   node scripts/screenshot.mjs --url "gallery.html#form" --out form --size 750x475 [--light]
+ *   node scripts/screenshot.mjs --settings --out-dir /tmp/surgecast-re/ours/fe-settings
  *
  * Output: packages/frontend/.screenshots/<name>.png (gitignored).
  * Uses Playwright 1.64 through npx (no local dependency) and a Vite dev server.
@@ -14,12 +15,11 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "vite";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const outDir = join(root, ".screenshots");
 
 /** @typedef {{ name: string, url: string, size?: [number, number], steps?: Array<{ type?: string, press?: string, wait?: number, click?: string, hover?: string, scroll?: [string, number] }>, fullPage?: boolean }} Scene */
 
@@ -74,6 +74,7 @@ const SCENES = [
   settingsScene("window-management", "window-management"),
   settingsScene("file-search", "file-search"),
   settingsScene("extension", "extensions/github"),
+  ...["applications", "calculator", "calendar", "developer", "emoji", "notes", "quicklinks", "script-commands", "translator", "navigation", "system", "web-searches"].map((route) => settingsScene(route, route)),
   settingsScene("search", "general", [{ click: "[data-settings-search]" }, { type: "api key", wait: 300 }]),
   settingsScene("general-bottom", "general", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 2000] }]),
   settingsScene("ai-bottom", "ai", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 1200] }]),
@@ -86,17 +87,26 @@ const SCENES = [
   settingsScene("theme-menu", "general", [{ click: "[aria-label='Dark Theme']", wait: 400 }]),
   settingsScene("add-provider-menu", "ai/models", [{ click: "text=Add Provider", wait: 400 }]),
   settingsScene("light", "general?appearance=light"),
+  settingsScene("onboarding", "ai/models?mock.ai.empty=1"),
+  settingsScene("cloud-sync-connected", "cloud-sync?set.sync.enabled=true&set.sync.serverUrl=https://sync.example.workers.dev"),
+  settingsScene("cloud-sync-devices", "cloud-sync?set.sync.enabled=true&set.sync.serverUrl=https://sync.example.workers.dev", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 1000] }]),
+  settingsScene("agent-editor", "ai/presets", [{ click: "text=Create Agent", wait: 250 }]),
+  settingsScene("command-editor", "ai/commands", [{ click: "text=Create AI Command", wait: 250 }]),
+  settingsScene("mcp-editor", "mcp", [{ click: "text=Add Server", wait: 250 }]),
+  settingsScene("sync-create-vault", "cloud-sync", [{ click: "[aria-label='Create a New Vault']", wait: 250 }]),
 ];
 
 function parseArgs(argv) {
-  const args = { names: [], url: null, out: null, size: null, light: false, list: false };
+  const args = { names: [], url: null, out: null, outDir: null, size: null, light: false, list: false, settings: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--url") args.url = argv[++i];
     else if (a === "--out") args.out = argv[++i];
+    else if (a === "--out-dir") args.outDir = argv[++i];
     else if (a === "--size") args.size = argv[++i].split("x").map(Number);
     else if (a === "--light") args.light = true;
     else if (a === "--list") args.list = true;
+    else if (a === "--settings") args.settings = true;
     else args.names.push(a);
   }
   return args;
@@ -139,8 +149,10 @@ async function main() {
   let scenes = SCENES;
   if (args.url) scenes = [{ name: args.out ?? "custom", url: args.url, size: args.size ?? undefined }];
   else if (args.names.length) scenes = SCENES.filter((s) => args.names.includes(s.name));
+  else if (args.settings) scenes = SCENES.filter((s) => s.name.startsWith("settings-"));
   if (!scenes.length) throw new Error(`No scenes match: ${args.names.join(", ")}`);
 
+  const outDir = args.outDir ? resolve(args.outDir) : join(root, ".screenshots");
   mkdirSync(outDir, { recursive: true });
   const server = await createServer({ root, configFile: join(root, "vite.config.ts"), logLevel: "error", server: { port: 0, host: "127.0.0.1" } });
   await server.listen();

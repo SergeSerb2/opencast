@@ -5,6 +5,7 @@ import { Button } from "../../components/Button/Button";
 import { Checkbox } from "../../components/Checkbox/Checkbox";
 import { showFailureToast } from "../../components/feedback/toast-store";
 import { tildePath } from "../lists";
+import { settingId } from "../search";
 import { useInstalledApps } from "./apps";
 import { CommitTextField, Select } from "./controls";
 import { Card, Row } from "./layout";
@@ -71,12 +72,19 @@ function PreferenceControl({ preference, value, onChange }: { preference: Extens
         </span>
       );
     }
+    case "password":
+      return (
+        <span className="sc-s-controls">
+          <CommitTextField value="" onCommit={onChange} type="password" placeholder={text ? "Saved in Keychain — replace" : preference.placeholder ?? "Enter password"} width={200} label={preference.title ?? preference.name} />
+          {text && <Button size="small" variant="ghost" onClick={() => onChange("")}>Remove</Button>}
+        </span>
+      );
     default:
       return (
         <CommitTextField
           value={text}
           onCommit={onChange}
-          type={preference.type === "password" ? "password" : "text"}
+          type="text"
           placeholder={preference.placeholder}
           width={220}
           label={preference.title ?? preference.name}
@@ -113,7 +121,7 @@ export function ExtensionPreferencesForm({ extensionName, commandName, preferenc
           {preference.required && <span className="sc-s-required"> *</span>}
         </>
       }
-      anchor={`pref-${preference.name}`}
+      anchor={settingId(preference.title ?? preference.name)}
       description={missing.has(preference.name) ? <span className="sc-s-missing">Required — commands won't run until this is set.</span> : preference.description}
     >
       <PreferenceControl preference={preference} value={data?.values[preference.name] ?? preference.default} onChange={(value) => void save(preference.name, value)} />

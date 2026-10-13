@@ -267,7 +267,6 @@ function isHttpUrl(value: string): boolean {
  * Spread into the mock handler table after the foundation's handlers.
  */
 export function settingsMockHandlers({ settings, commands, events }: SettingsMockContext): Handlers {
-  if (!commands.some((command) => command.id === "builtin:extensions.store")) commands.push({ id: "builtin:extensions.store", title: "Extension Store", kind: "builtin", typeLabel: "Command", icon: "store-16", extensionTitle: "Surgecast", mode: "view", enabled: true });
   let identity = 0;
   const newId = (prefix: string) => `${prefix}-${++identity}`;
   const providers: ProviderRow[] = structuredClone(PROVIDERS).concat([

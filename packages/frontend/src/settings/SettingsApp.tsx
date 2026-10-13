@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { getEnv } from "../bridge/env";
+import { getSetting } from "../bridge/settings";
 import { useBackend, useNativeEvent } from "../bridge/hooks";
 import { native } from "../bridge/native";
 import { FloatingToastHost } from "../components/Toast/InlineToast";
@@ -19,6 +20,7 @@ function useSettingsKeys(): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
+      if (document.querySelector(".sc-s-dialog, .sc-alert")) return;
       const nav = useSettingsNavigation.getState();
       const command = event.metaKey && !event.ctrlKey && !event.altKey;
       if (command && event.key === "[") {
@@ -30,7 +32,7 @@ function useSettingsKeys(): void {
       } else if (command && event.key.toLowerCase() === "f") {
         event.preventDefault();
         document.querySelector<HTMLInputElement>("[data-settings-search]")?.focus();
-      } else if ((command && event.key.toLowerCase() === "w") || (event.key === "Escape" && !isEditable(document.activeElement) && !document.querySelector(".sc-popover, .sc-s-dialog, .sc-alert"))) {
+      } else if ((command && event.key.toLowerCase() === "w") || (event.key === "Escape" && getSetting("keyboard.escapeKeyClosesWindow") && !isEditable(document.activeElement) && !document.querySelector(".sc-popover"))) {
         event.preventDefault();
         void native.call("window.hide", { kind: getEnv().window }).catch(() => undefined);
       }

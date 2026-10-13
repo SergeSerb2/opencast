@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { getEnv } from "../bridge/env";
 import { ScrollArea } from "../components/ScrollArea/ScrollArea";
 import { Icon } from "../icons/Icon";
@@ -42,10 +42,16 @@ export interface SidebarProps {
 export function Sidebar({ route, installed }: SidebarProps) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
   const selectedId = sidebarIdFor(route);
   const searchable = useMemo(() => [...CORE_PAGES, ...BUILTIN_PAGES, ...SUBPAGES, ...installed], [installed]);
   const results = useMemo(() => (query.trim() ? searchSettings(searchable, query) : null), [searchable, query]);
   const titleOf = (id: string | undefined) => searchable.find((p) => p.id === id)?.title;
+
+  useLayoutEffect(() => {
+    if (query.trim()) return;
+    sidebarRef.current?.querySelector<HTMLElement>(".sc-s-nav-item[data-selected]")?.scrollIntoView({ block: "nearest" });
+  }, [selectedId, installed, query]);
 
   const openResult = (page: PageEntry, row?: string) => navigate(page.id, row ? { highlight: settingId(row) } : undefined);
 
@@ -74,7 +80,7 @@ export function Sidebar({ route, installed }: SidebarProps) {
   };
 
   return (
-    <nav className="sc-s-sidebar" aria-label="Settings">
+    <nav ref={sidebarRef} className="sc-s-sidebar" aria-label="Settings">
       {/* Chrome after the list: it paints above the scrolling content without a z-index. */}
       <ScrollArea className="sc-s-sidebar__scroll" fade={{ top: 104 }} fadeMinOpacity={{ top: 0 }}>
         <div className="sc-s-sidebar__content" onKeyDown={onListKeyDown}>

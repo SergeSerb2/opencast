@@ -152,7 +152,7 @@ describe("MCP server form", () => {
 
   it("parses env and header lines", () => {
     expect(parseEnv("A=1\n\n  B_2 = two=2 ")).toEqual({ values: { A: "1", B_2: "two=2" } });
-    expect(parseEnv("not valid")).toEqual({ error: "“not valid” isn't KEY=value" });
+    expect(parseEnv("not valid")).toEqual({ error: "Each environment variable must be KEY=value" });
     expect(parseHeaders("Authorization: Bearer x:y")).toEqual({ values: { Authorization: "Bearer x:y" } });
     expect(parseHeaders("Bad Header: 1")).toHaveProperty("error");
   });

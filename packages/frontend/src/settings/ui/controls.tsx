@@ -113,7 +113,6 @@ export function CommitTextField({ value, onCommit, placeholder, width = 200, typ
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      commit();
       event.currentTarget.blur();
     } else if (event.key === "Escape" && draft !== value) {
       event.preventDefault();

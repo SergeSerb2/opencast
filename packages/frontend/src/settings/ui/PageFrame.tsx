@@ -45,6 +45,23 @@ function HistoryButtons() {
 /** How long to keep looking for a searched row while the page loads its data. */
 const HIGHLIGHT_WAIT_MS = 1500;
 
+const HIGHLIGHT_FALLBACKS: Record<string, string[]> = {
+  "web-search-api-key": ["web-search-provider"],
+  theme: ["follow-system-appearance"],
+  "dark-theme": ["theme"],
+  "light-theme": ["theme"],
+  "server-url": ["server"],
+  "access-token": ["cloud-sync"],
+  "encryption-passphrase": ["cloud-sync"],
+  "device-name": ["cloud-sync"],
+  "sync-now": ["connect-to-your-server"],
+  "sync-every": ["connect-to-your-server"],
+  "synced-devices": ["connect-to-your-server"],
+  "danger-zone": ["connect-to-your-server"],
+  "disconnect-this-mac": ["connect-to-your-server"],
+  "delete-cloud-sync-data-devices": ["connect-to-your-server"],
+};
+
 /**
  * Main-pane chrome for one settings page: the 52px overlay header (history
  * buttons, title, options) above a scrolling content column with the spec's
@@ -61,7 +78,9 @@ export function PageFrame({ title, titleMode = "scroll", actions, children }: Pa
     const started = performance.now();
     let frame = 0;
     const find = () => {
-      const target = contentRef.current?.querySelector<HTMLElement>(`[data-setting-id="${CSS.escape(highlight)}"]`);
+      const target = [highlight, ...(HIGHLIGHT_FALLBACKS[highlight] ?? [])]
+        .map((id) => contentRef.current?.querySelector<HTMLElement>(`[data-setting-id="${CSS.escape(id)}"]`))
+        .find(Boolean);
       if (target) {
         target.scrollIntoView({ block: "center" });
         target.classList.remove("sc-s-highlight");
@@ -81,7 +100,7 @@ export function PageFrame({ title, titleMode = "scroll", actions, children }: Pa
   return (
     <div className="sc-s-page">
       {/* The header comes after the content so it paints above it without a z-index (glass needs no stacking context). */}
-      <ScrollArea className="sc-s-page__scroll" thumbInset={{ top: 52 }} onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 24)} aria-label={title}>
+      <ScrollArea className="sc-s-page__scroll" thumbInset={{ top: 52 }} fade={{ top: 52 }} fadeMinOpacity={{ top: 0 }} onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 24)} aria-label={title}>
         <div ref={contentRef} className="sc-s-page__content">
           {children}
         </div>

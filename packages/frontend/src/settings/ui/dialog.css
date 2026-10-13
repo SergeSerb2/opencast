@@ -1,13 +1,11 @@
 .sc-s-dialog-backdrop {
   position: absolute;
   inset: 0;
-  z-index: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-24);
   background: #0000004d;
-  animation: sc-s-dialog-fade 250ms ease both;
 }
 
 .sc-s-dialog {
@@ -93,11 +91,6 @@
   user-select: text;
 }
 
-@keyframes sc-s-dialog-fade {
-  from {
-    opacity: 0;
-  }
-}
 /* Opacity only: transforms on glass make WebKit sample a stale backdrop. */
 @keyframes sc-s-dialog-in {
   from {
