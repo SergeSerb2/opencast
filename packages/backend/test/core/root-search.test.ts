@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { fixture } from "./fixture";
 import type { CommandInfo } from "@surgecast/protocol";
+import { realisticCatalog } from "./catalog";
 import { emptyRootItems } from "../../src/services/core/root-search";
 
 let f: Awaited<ReturnType<typeof fixture>> | undefined;
@@ -188,5 +189,37 @@ describe("suggestion limits", () => {
     const root = emptyRootItems([seed, seed, ordinary, ordinary], new Map());
     expect(root.suggestions.map((c) => c.id)).toEqual(["seed"]);
     expect(root.commands.map((c) => c.id)).toEqual(["ordinary"]);
+  });
+});
+
+
+describe("ranked root RPC", () => {
+  it("ranks a realistic catalog and applies sensitivity without noisy metadata matches", async () => {
+    f = await fixture();
+    f.ctx.settings.set("launcher.includeFilesInRootSearch", false);
+    f.ctx.commands.registerProvider({
+      id: "ranking-catalog",
+      list: () => realisticCatalog.filter((command) => command.kind === "app" && !["Safari", "Terminal"].includes(command.title)),
+      launch: () => ({ kind: "done", closeWindow: true }),
+    });
+    for (const sensitivity of ["low", "medium", "high"] as const) {
+      f.ctx.settings.set("launcher.rootSearchSensitivity", sensitivity);
+      const root = await f.call("search.root", { query: "clip" });
+      const items = root.sections.flatMap((section) => section.items);
+      expect(items[0]).toMatchObject({ title: "Clipboard History", subtitle: "Surgecast" });
+      expect(items[1]).toMatchObject({ title: "Clipboard History Settings", subtitle: "Surgecast Settings" });
+      expect(items.every((command) => command.kind !== "app")).toBe(true);
+    }
+    for (const [query, title] of [["snip", "Search Snippets"], ["vs code", "Visual Studio Code"], ["ai", "AI Chat"]]) {
+      const root = await f.call("search.root", { query });
+      expect(root.sections[0].items[0].title).toBe(title);
+    }
+  });
+  it("keeps settings routes and ids stable after renaming", async () => {
+    f = await fixture();
+    await f.call("commands.launch", { id: "builtin:settings.openClipboardSettings" });
+    expect(f.nativeCall).toHaveBeenCalledWith("window.show", { kind: "settings", route: "clipboard" });
+    await f.call("commands.launch", { id: "builtin:settings.openAiSettings" });
+    expect(f.nativeCall).toHaveBeenCalledWith("window.show", { kind: "settings", route: "ai" });
   });
 });

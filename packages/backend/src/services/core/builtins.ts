@@ -55,13 +55,21 @@ function info(
   mode: CommandInfo["mode"],
   args?: CommandArgument[],
 ): CommandInfo {
-  const [subtitle, glyph] = GROUPS[group] ?? GROUPS.core;
+  const [extensionTitle, glyph] = GROUPS[group] ?? GROUPS.core;
+  const subtitle =
+    group === "clipboard" || group === "emoji" || extensionTitle === title
+      ? "Surgecast"
+      : group === "menus"
+        ? "Navigation"
+        : group === "core" && key === "manageExtensions"
+          ? "Developer"
+          : extensionTitle;
   return {
     id: `builtin:${group}.${key}`,
     kind: "builtin",
     title,
     subtitle,
-    extensionTitle: subtitle,
+    extensionTitle,
     extensionId: group,
     typeLabel: "Command",
     mode,
@@ -71,7 +79,7 @@ function info(
     enabled: true,
     suggestionPriority:
       BUILTIN_SUGGESTION_PRIORITIES[`builtin:${group}.${key}`],
-    keywords: [group, subtitle, key.replace(/([A-Z])/g, " $1")],
+    keywords: [group, extensionTitle, key.replace(/([A-Z])/g, " $1")],
     arguments: args,
   };
 }
@@ -276,19 +284,16 @@ export function builtinCatalog(): Builtin[] {
     "cloudSync",
     "advanced",
     "about",
-    "extensions",
     "ai",
     "clipboard",
-    "snippets",
-    "quicklinks",
-    "notes",
-    "windowManagement",
-    "scripts",
-    "themes",
   ]) {
-    const title = page
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (c) => c.toUpperCase());
+    const pageTitle =
+      page === "ai"
+        ? "AI"
+        : page === "clipboard"
+          ? "Clipboard History"
+          : page.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+    const title = `${pageTitle} Settings`;
     add(
       "settings",
       `open${page[0].toUpperCase()}${page.slice(1)}Settings`,
