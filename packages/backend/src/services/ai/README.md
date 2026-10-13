@@ -109,7 +109,8 @@ tests clean up their temporary databases, mock servers and backend processes.
   its conservative GPT-6 tool inference; compatibility bridges can override it.
   Responses supports the configured function tools; vendor-hosted tools are not
   enabled automatically.
-- System proxy settings are not integrated; global Node fetch is used as permitted.
+- Backend global fetch honors macOS HTTP/HTTPS proxies and extra PEM CAs through
+  `services/network.ts`. PAC scripts and SOCKS proxies are not supported.
 - Scanned/encrypted/complex PDFs require a document-capable model or extracted UTF-8
   text; unsupported input produces an explicit error.
 - MCP supports stdio and Streamable HTTP with configured headers. Legacy SSE and an

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -84,6 +84,10 @@ try {
     });
   const info = await rpc("app.info");
   assert.ok(info.methods.includes("search.root"));
+  const contract = await readFile(new URL("../../../protocol/src/rpc.ts", import.meta.url), "utf8");
+  const start = contract.indexOf("export interface BackendMethods"), end = contract.indexOf("\n}\n", start);
+  const methods = [...contract.slice(start, end).matchAll(/^\s+"([a-zA-Z][\w.]+)":/gm)].map(match => match[1]);
+  assert.deepEqual(methods.filter(method => !info.methods.includes(method)), [], "All backend contracts register in the bundled process");
   const fresh = await rpc("search.root", { query: "" });
   assert.equal(fresh.sections[0].id, "suggestions");
   assert.equal(fresh.sections[0].items.length, 5);
