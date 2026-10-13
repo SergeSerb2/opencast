@@ -238,7 +238,7 @@ export interface ClipboardItem {
 // ---------------------------------------------------------------------------
 
 /** How Surgecast talks to a provider. */
-export type AIProviderApi = "openai" | "anthropic" | "google" | "ollama";
+export type AIProviderApi = "openai" | "openai-responses" | "anthropic" | "google" | "ollama";
 
 /** (entity: aiProviders) API keys are in the Keychain at "ai.provider:<id>:apiKey". */
 export interface AIProvider {
@@ -253,6 +253,9 @@ export interface AIProvider {
   enabled: boolean;
   /** Fetch the model list from the provider (GET /models) and merge with manual models. */
   autoFetchModels: boolean;
+  modelFetchError?: string;
+  /** Header values held in Keychain rather than in synced provider metadata. */
+  secretHeaders?: string[];
   models: AIModel[];
   createdAt: number;
   updatedAt: number;
@@ -265,6 +268,8 @@ export interface AIModelCapabilities {
   webSearch?: boolean;
   pdf?: boolean;
   imageGeneration?: boolean;
+  system?: boolean;
+  temperature?: boolean;
 }
 
 export interface AIModel {
@@ -368,6 +373,7 @@ export interface AIPreset {
   instructions: string;
   model?: ModelRef;
   creativity: Creativity;
+  reasoningEffort?: "none" | "low" | "medium" | "high";
   webSearch: boolean;
   tools: string[];
   builtin?: boolean;
@@ -387,6 +393,9 @@ export interface AICommand {
   model?: ModelRef;
   creativity: Creativity;
   output: AICommandOutput;
+  reasoningEffort?: "none" | "low" | "medium" | "high";
+  highlightEdits?: boolean;
+  tags?: string[];
   webSearch?: boolean;
   /** Built-in commands ship with Surgecast; they can be edited and reset. */
   builtin?: boolean;

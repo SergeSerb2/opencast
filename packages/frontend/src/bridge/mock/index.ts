@@ -21,6 +21,7 @@ import { ALL_COMMANDS, QUICKLINKS } from "./fixtures/commands";
 import { CHATS, CLIPBOARD, EXTENSIONS, MESSAGES, NOTES, PROVIDERS, SNIPPETS } from "./fixtures/content";
 import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
+import { settingsMockHandlers } from "./settings-handlers";
 
 type Handlers = { [M in BackendMethod]?: (params: BackendParams<M>) => BackendResult<M> | Promise<BackendResult<M>> };
 
@@ -238,6 +239,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "themes.list": () => [],
     "sync.status": () => ({ phase: "disabled", deviceId: "mock-device", deviceName: "This Mac", pendingChanges: 0, counts: {} }),
     "hud.show": () => undefined,
+    ...settingsMockHandlers({ settings, commands, events }),
   };
 
   return {

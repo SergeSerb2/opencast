@@ -48,6 +48,7 @@ import type { AlertOptions, ToastState } from "./ui";
 import type { CalendarEvent, MenuItemInfo, WindowCommand } from "./native";
 
 type Void = void;
+type WebSearchProvider = Exclude<SettingsValues["ai.webSearchProvider"], "none">;
 
 export interface BackendMethods {
   // ---- meta -------------------------------------------------------------------
@@ -70,7 +71,7 @@ export interface BackendMethods {
     params: { id: CommandId; arguments?: Record<string, string>; fallbackText?: string; launchContext?: Record<string, unknown>; source?: "root" | "hotkey" | "deeplink" | "fallback" | "alias" };
     result: LaunchResult;
   };
-  "commands.setPrefs": { params: { id: CommandId; prefs: Partial<CommandPrefs> }; result: CommandInfo };
+  "commands.setPrefs": { params: { id: CommandId; prefs: Partial<CommandPrefs>; unset?: (keyof CommandPrefs)[] }; result: CommandInfo };
   "commands.resetRanking": { params: { id?: CommandId }; result: Void };
   "commands.moveFavorite": { params: { id: CommandId; toIndex: number }; result: Void };
 
@@ -141,7 +142,7 @@ export interface BackendMethods {
 
   // ---- AI: providers & models -------------------------------------------------------------------
   "ai.providers.list": { params: Void; result: (AIProvider & { hasApiKey: boolean })[] };
-  "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
+  "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; supportedApis?: AIProvider["api"][]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
   "ai.providers.upsert": { params: { provider: Partial<AIProvider> & { name: string; template: string; api: AIProvider["api"]; baseUrl: string }; apiKey?: string | null }; result: AIProvider };
   "ai.providers.delete": { params: { id: string }; result: Void };
   "ai.providers.test": { params: { id: string }; result: { ok: boolean; message: string; latencyMs?: number } };
@@ -181,9 +182,14 @@ export interface BackendMethods {
   "ai.presets.upsert": { params: Partial<AIPreset> & { name: string }; result: AIPreset };
   "ai.presets.delete": { params: { id: string }; result: Void };
   "ai.tools.list": { params: Void; result: AIToolInfo[] };
+  /** Web search API keys live in the Keychain at "ai.websearch:<provider>:apiKey"; values are never returned. */
+  "ai.webSearch.hasApiKey": { params: { provider: WebSearchProvider }; result: boolean };
+  /** `apiKey: null` (or "") removes the stored key. */
+  "ai.webSearch.setApiKey": { params: { provider: WebSearchProvider; apiKey: string | null }; result: Void };
   "ai.mcp.list": { params: Void; result: (MCPServer & { status: "connected" | "disconnected" | "error"; toolCount: number; error?: string })[] };
   "ai.mcp.upsert": { params: Partial<MCPServer> & { name: string; transport: MCPServer["transport"] }; result: MCPServer };
   "ai.mcp.delete": { params: { id: string }; result: Void };
+  "ai.mcp.import": { params: { json: string }; result: { imported: number } };
   "ai.mcp.test": { params: { id: string }; result: { ok: boolean; message: string; tools: string[] } };
 
   // ---- extensions ---------------------------------------------------------------------------------
@@ -236,6 +242,7 @@ export interface BackendMethods {
   // ---- import / export --------------------------------------------------------------------------------
   /** Import a Raycast .rayconfig export (v3 container, older JSON wrapper, or classic). */
   "data.importRayconfig": { params: { path: string; password?: string; categories?: string[] }; result: { results: { category: string; imported: number; error?: string }[] } };
+  "data.storage": { params: Void; result: { totalBytes: number; databaseBytes: number; clipboardBytes: number; entities: Record<string, number>; clipboardItems: number } };
   "data.export": { params: { path: string; password?: string; categories?: string[] }; result: { path: string } };
   "data.import": { params: { path: string; password?: string }; result: { results: { category: string; imported: number; error?: string }[] } };
 

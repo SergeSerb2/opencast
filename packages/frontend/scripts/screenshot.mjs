@@ -21,7 +21,13 @@ import { createServer } from "vite";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, ".screenshots");
 
-/** @typedef {{ name: string, url: string, size?: [number, number], steps?: Array<{ type?: string, press?: string, wait?: number, click?: string, hover?: string }>, fullPage?: boolean }} Scene */
+/** @typedef {{ name: string, url: string, size?: [number, number], steps?: Array<{ type?: string, press?: string, wait?: number, click?: string, hover?: string, scroll?: [string, number] }>, fullPage?: boolean }} Scene */
+
+/** Settings pages at the size used to compare with the reference (800×640). */
+const settingsScene = (name, route, steps) => {
+  const [hash, query] = route.split("?");
+  return { name: `settings-${name}`, url: `settings.html${query ? `?${query}` : ""}#${hash}`, size: [800, 640], steps };
+};
 
 /** @type {Scene[]} */
 const SCENES = [
@@ -50,6 +56,36 @@ const SCENES = [
   { name: "toast", url: "gallery.html#toast", steps: [{ wait: 1700 }] },
   { name: "toast-failure", url: "gallery.html#toast-failure", steps: [{ wait: 400 }] },
   { name: "gallery", url: "gallery.html", size: [1500, 1000], fullPage: true },
+  settingsScene("general", "general"),
+  settingsScene("launcher", "launcher"),
+  settingsScene("shortcuts", "shortcuts"),
+  settingsScene("keyboard", "keyboard"),
+  settingsScene("cloud-sync", "cloud-sync"),
+  settingsScene("advanced", "advanced"),
+  settingsScene("about", "about"),
+  settingsScene("ai", "ai"),
+  settingsScene("ai-models", "ai/models"),
+  settingsScene("ai-provider", "ai/providers/openai"),
+  settingsScene("ai-commands", "ai/commands"),
+  settingsScene("ai-presets", "ai/presets"),
+  settingsScene("mcp", "mcp"),
+  settingsScene("clipboard", "clipboard-history"),
+  settingsScene("snippets", "snippets"),
+  settingsScene("window-management", "window-management"),
+  settingsScene("file-search", "file-search"),
+  settingsScene("extension", "extensions/github"),
+  settingsScene("search", "general", [{ click: "[data-settings-search]" }, { type: "api key", wait: 300 }]),
+  settingsScene("general-bottom", "general", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 2000] }]),
+  settingsScene("ai-bottom", "ai", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 1200] }]),
+  settingsScene("ai-tools", "ai", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 2400] }]),
+  settingsScene("ai-provider-models", "ai/providers/openai", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 900] }]),
+  settingsScene("ai-provider-new", "ai/providers/new/cliproxyapi"),
+  settingsScene("shortcuts-expanded", "shortcuts", [{ click: ".sc-s-tree__group-toggle >> nth=4" }, { scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 300] }]),
+  settingsScene("cloud-sync-bottom", "cloud-sync", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 900] }]),
+  settingsScene("hotkey-recorder", "general", [{ click: ".sc-s-hotkey__trigger", wait: 400 }]),
+  settingsScene("theme-menu", "general", [{ click: "[aria-label='Dark Theme']", wait: 400 }]),
+  settingsScene("add-provider-menu", "ai/models", [{ click: "text=Add Provider", wait: 400 }]),
+  settingsScene("light", "general?appearance=light"),
 ];
 
 function parseArgs(argv) {
@@ -130,6 +166,7 @@ async function main() {
         if (step.press) await page.keyboard.press(step.press);
         if (step.click) await page.click(step.click);
         if (step.hover) await page.hover(step.hover);
+        if (step.scroll) await page.$eval(step.scroll[0], (el, top) => el.scrollTo({ top }), step.scroll[1]);
         await page.waitForTimeout(step.wait ?? 200);
       }
       const file = join(outDir, `${scene.name}.png`);

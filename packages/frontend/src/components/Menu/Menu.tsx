@@ -139,6 +139,7 @@ export function Menu({
   });
   const listRef = useRef<VirtualListHandle>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
   useEffect(() => {
@@ -151,7 +152,8 @@ export function Menu({
   }, [selected]);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    // Without a search field the menu itself takes focus so arrow keys and ↵ work.
+    (inputRef.current ?? rootRef.current)?.focus({ preventScroll: true });
   }, []);
 
   const contentHeight = heights.reduce((a, b) => a + b, 0) + LIST_PADDING * 2;
@@ -276,7 +278,7 @@ export function Menu({
   );
 
   return (
-    <div className="sc-menu" data-layout={layout} onKeyDown={showSearch ? undefined : onKeyDown} tabIndex={showSearch ? undefined : -1} aria-label={aria["aria-label"]}>
+    <div ref={rootRef} className="sc-menu" data-layout={layout} onKeyDown={showSearch ? undefined : onKeyDown} tabIndex={showSearch ? undefined : -1} aria-label={aria["aria-label"]}>
       {layout === "down" && search}
       <div className="sc-menu__list" style={{ height: listHeight }}>
         <VirtualList
