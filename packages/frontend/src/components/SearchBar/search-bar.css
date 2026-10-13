@@ -47,7 +47,6 @@
 }
 .sc-search-bar__back {
   position: relative;
-  left: -1px;
   display: inline-flex;
   width: var(--icon-22);
   height: var(--icon-22);

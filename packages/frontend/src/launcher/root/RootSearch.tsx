@@ -145,7 +145,7 @@ export function RootSearch() {
       searchBar={{
         value: query,
         onChange: setQuery,
-        placeholder: "Search for apps and commands…",
+        placeholder: "Search for apps or commands…",
         args: commandArgs,
         argValues: args,
         onArgChange: (name, value) => setArgs((prev) => ({ ...prev, [name]: value })),

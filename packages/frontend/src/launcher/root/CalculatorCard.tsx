@@ -1,6 +1,5 @@
 import { memo, type ReactNode } from "react";
 import type { CalculatorResult } from "@surgecast/protocol";
-import { Icon } from "../../icons/Icon";
 import "./calculator-card.css";
 
 const OPERATOR = /(\s+(?:in|to|as|of)\s+|[+\-−×÷*/^%=]|\s+)/;
@@ -36,7 +35,9 @@ export const CalculatorCard = memo(function CalculatorCard({ result }: { result:
       </div>
       <div className="sc-calc__divider" aria-hidden="true">
         <span className="sc-calc__line" />
-        <Icon name="arrow-right-16" size={16} className="sc-calc__arrow" />
+        <svg className="sc-calc__arrow" width="12" height="9" viewBox="0 0 12 9" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M1 4.5h10M7.4 1 11 4.5 7.4 8" />
+        </svg>
         <span className="sc-calc__line" />
       </div>
       <div className="sc-calc__half">

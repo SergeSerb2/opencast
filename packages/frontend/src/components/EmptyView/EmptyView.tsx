@@ -7,14 +7,14 @@ import "./empty-view.css";
 export function EmptyIllustration() {
   return (
     <svg className="sc-empty-view__illustration" width="100" height="78" viewBox="0 0 100 78" fill="none" aria-hidden="true">
-      <rect x="15" y="20" width="80" height="52" rx="5" fill="currentColor" fillOpacity="0.1" />
-      <path d="M15 31.5h80" stroke="currentColor" strokeOpacity="0.14" />
-      <circle cx="24" cy="25.8" r="1.6" fill="currentColor" fillOpacity="0.28" />
-      <circle cx="29.5" cy="25.8" r="1.6" fill="currentColor" fillOpacity="0.28" />
-      <circle cx="35" cy="25.8" r="1.6" fill="currentColor" fillOpacity="0.28" />
-      <circle cx="26" cy="23" r="16" fill="currentColor" fillOpacity="0.06" />
-      <circle cx="26" cy="23" r="16" stroke="currentColor" strokeOpacity="0.62" strokeWidth="3.4" />
-      <path d="M37.6 34.6 47 44" stroke="currentColor" strokeOpacity="0.62" strokeWidth="3.6" strokeLinecap="round" />
+      <rect x="10" y="14.5" width="80" height="52" rx="5" fill="currentColor" fillOpacity="0.1" />
+      <path d="M10 26h80" stroke="currentColor" strokeOpacity="0.14" />
+      <circle cx="19" cy="20.3" r="1.6" fill="currentColor" fillOpacity="0.28" />
+      <circle cx="24.5" cy="20.3" r="1.6" fill="currentColor" fillOpacity="0.28" />
+      <circle cx="30" cy="20.3" r="1.6" fill="currentColor" fillOpacity="0.28" />
+      <circle cx="18.5" cy="18.5" r="18.4" fill="currentColor" fillOpacity="0.06" />
+      <circle cx="18.5" cy="18.5" r="18.4" stroke="currentColor" strokeOpacity="0.62" strokeWidth="3.8" />
+      <path d="M31.8 31.8 42.6 42.6" stroke="currentColor" strokeOpacity="0.62" strokeWidth="4.1" strokeLinecap="round" />
     </svg>
   );
 }

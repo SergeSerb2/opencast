@@ -409,7 +409,7 @@ const GridCell = memo(function GridCell({ item, cellWidth, aspectRatio, fit, ins
             {emoji}
           </span>
         )}
-        <span className="sc-grid-cell__emoji" style={{ fontSize: Math.round(cellWidth * 0.45) }}>
+        <span className="sc-grid-cell__emoji" style={{ fontSize: Math.round(cellWidth * 0.48) }}>
           {emoji}
         </span>
       </>

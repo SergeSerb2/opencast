@@ -114,7 +114,7 @@ export function Dropdown({
       >
         {leading !== undefined && <Image source={leading} size={16} className="sc-dropdown__icon" />}
         <span className="sc-dropdown__value sc-truncate">{selected?.title ?? placeholder}</span>
-        <Icon name="chevron-down-small-16" size={16} className="sc-dropdown__chevron" />
+        <Icon name="chevron-down-small-16" size={variant === "nav" ? 18 : 16} className="sc-dropdown__chevron" />
       </button>
       <Popover
         open={open}

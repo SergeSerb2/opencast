@@ -20,6 +20,7 @@
   display: inline-flex;
   align-items: center;
   margin-bottom: -2px;
+  margin-left: -2px;
 }
 
 /* ---- rows ---- */
