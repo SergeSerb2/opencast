@@ -38,7 +38,14 @@ separate GitHub-hosted job downloads those files and checks their checksum and
 source manifest before publishing. Only the publishing step receives the
 short-lived write token. It runs no dependency installs or build tools. Release
 actions are pinned to full commit SHAs. All Node and pnpm build commands use the
-same checksum-pinned standalone Node runtime that is bundled in the app.
+same checksum-pinned standalone Node runtime that is bundled in the app. The
+pnpm 10.18.0 bootstrap also uses a committed checksum and matches packageManager.
+Release typechecks also verify committed SHA-256 digests for the tsc-rs launcher
+and its native package before extraction. They run through pnpm from a temporary
+directory without installing dependencies or running package install scripts.
+Tag and draft checks run again before publication. Only explicit GitHub 404
+responses allow creation; other lookup errors stop the release. Draft retries
+compare existing files and upload only missing files without overwriting assets.
 There is no personal access token or signing secret in the repository. Other
 repositories' runners on this Mac are independent of the OpenCast runner.
 

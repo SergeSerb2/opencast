@@ -25,6 +25,12 @@ if (a[0] === 'api') {
     if (!s.tag) fail('gh: Not Found (HTTP 404)');
     console.log((s.annotated ? 'tag' : 'commit') + '\\t' + s.tag);
   } else if (endpoint.includes('/git/tags/')) console.log('commit\\t' + s.target);
+  else if (endpoint.includes('/releases/tags/')) {
+    if (s.releaseError) fail(s.releaseError);
+    if (!s.release) fail('gh: Not Found (HTTP 404)');
+    console.log(JSON.stringify({ id: s.id, draft: s.release === 'draft',
+      target_commitish: s.target || s.revision, assets: s.assets }));
+  }
   else if (endpoint.endsWith('/git/refs')) {
     if (s.tag || s.tagRace) fail('gh: Reference already exists (HTTP 422)');
     s.tag = a.find(arg => arg.startsWith('sha=')).slice(4); save();
@@ -42,12 +48,25 @@ if (a[0] === 'api') {
       else fail('Unexpected field: ' + field);
     }
   } else if (a[1] === 'download') {
-    for (const name of s.assets) fs.copyFileSync(path.join(s.remote, name), path.join(value('--dir'), name));
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] === '--pattern') fs.copyFileSync(path.join(s.remote, a[i + 1]), path.join(value('--dir'), a[i + 1]));
+    }
   } else if (a[1] === 'create') {
     if (!a.includes('--verify-tag') || s.tag !== s.revision) fail('wrong tag');
-    s.release = 'draft'; save();
+    s.release = 'draft'; s.assets = [];
+    if (s.retargetOnCreate) s.tag = '0'.repeat(40);
+    save();
   } else if (a[1] === 'upload') {
     if (s.release !== 'draft') fail('attempted published overwrite');
+    if (a.includes('--clobber')) fail('attempted overwrite');
+    const file = a[a.length - 1];
+    const name = path.basename(file);
+    if (s.assets.includes(name)) fail('asset already exists');
+    fs.copyFileSync(file, path.join(s.remote, name));
+    s.assets.push(name);
+    if (s.retargetOnUpload) s.tag = '0'.repeat(40);
+    if (s.publishOnUpload) s.release = 'published';
+    save();
   } else if (a[1] === 'edit') { s.release = 'published'; save(); }
   else fail('Unexpected release command');
 } else fail('Unexpected command');
@@ -83,7 +102,7 @@ function fixture(t, options = {}) {
   writeAssets(local, 'verified image');
   writeAssets(remote, 'verified image');
   const statePath = join(dir, 'state.json');
-  const state = { revision, assets, remote, calls: [], ...options };
+  const state = { id: 123, revision, assets: options.release ? assets : [], remote, calls: [], ...options };
   if (state.tag === true) state.tag = revision;
   writeFileSync(statePath, JSON.stringify(state));
   const gh = join(dir, 'gh');
@@ -103,7 +122,7 @@ test('creates an exact tag and publishes a draft only after validation', t => {
   const result = f.run();
   assert.equal(result.status, 0, result.stderr);
   const writes = f.writes();
-  assert.deepEqual(writes.map(a => a[0] === 'api' ? 'tag' : a[1]), ['tag', 'create', 'upload', 'edit']);
+  assert.deepEqual(writes.map(a => a[0] === 'api' ? 'tag' : a[1]), ['tag', 'create', 'upload', 'upload', 'upload', 'edit']);
   assert.ok(writes[0].includes('sha=' + f.revision));
 });
 test('rejects an unrelated existing tag without a release', t => {
@@ -150,4 +169,32 @@ test('rejects a replaced source manifest', t => {
   f.writeAssets(f.remote, 'verified image', '0'.repeat(40));
   assert.notEqual(f.run().status, 0);
   assert.deepEqual(f.writes(), []);
+});
+test('release lookup failures cannot bypass published asset protection', t => {
+  const f = fixture(t, { tag: true, release: 'published', releaseError: 'gh: Server error (HTTP 500)' });
+  assert.notEqual(f.run().status, 0);
+  assert.deepEqual(f.writes(), []);
+});
+test('rejects a tag retargeted during draft creation', t => {
+  const f = fixture(t, { retargetOnCreate: true });
+  assert.notEqual(f.run().status, 0);
+  assert.ok(!f.calls().some(a => a[0] === 'release' && ['upload', 'edit'].includes(a[1])));
+});
+test('rejects a tag retargeted during upload before making the draft public', t => {
+  const f = fixture(t, { retargetOnUpload: true });
+  assert.notEqual(f.run().status, 0);
+  assert.ok(!f.calls().some(a => a[0] === 'release' && a[1] === 'edit'));
+});
+test('does not edit a draft another writer made public', t => {
+  const f = fixture(t, { publishOnUpload: true });
+  assert.notEqual(f.run().status, 0);
+  assert.ok(!f.calls().some(a => a[0] === 'release' && a[1] === 'edit'));
+});
+test('resumes a partial draft by comparing present files and uploading missing ones', t => {
+  const f = fixture(t, { tag: true, release: 'draft', assets: ['OpenCast-0.1.0-build.1-arm64.dmg'] });
+  const result = f.run();
+  assert.equal(result.status, 0, result.stderr);
+  const uploads = f.calls().filter(a => a[0] === 'release' && a[1] === 'upload');
+  assert.equal(uploads.length, 2);
+  assert.ok(!uploads.some(a => a.includes('--clobber')));
 });

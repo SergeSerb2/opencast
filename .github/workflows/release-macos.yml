@@ -31,18 +31,14 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Use the checksum-pinned Node runtime for build tools
+      - name: Use checksum-pinned Node and pnpm for build tools
         run: |
           node_path="$(./scripts/prepare-release-node.sh)"
           printf '%s\n' "$(dirname "$node_path")" >> "$GITHUB_PATH"
           printf 'OPENCAST_NODE=%s\n' "$node_path" >> "$GITHUB_ENV"
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - run: pnpm install --frozen-lockfile
       - name: Typecheck packaged TypeScript with tsc-rs
-        run: |
-          for package in protocol frontend backend raycast-api; do
-            pnpm dlx tsc-rs@0.5.0 --noEmit -p "packages/$package/tsconfig.json"
-          done
+        run: ./scripts/typecheck-release.sh
       - name: Build and verify the DMG
         run: ./scripts/build-dmg.sh
       - name: Upload verified release files

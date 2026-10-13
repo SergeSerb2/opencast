@@ -18,6 +18,14 @@ curl --fail --location --proto '=https' --tlsv1.2 \
 test "$(shasum -a 256 "$STAGE/$NAME.tar.gz" | awk '{print $1}')" = "$SHA256"
 tar -xzf "$STAGE/$NAME.tar.gz" -C "$STAGE"
 "$ROOT/scripts/verify-node.sh" "$STAGE/$NAME/bin/node"
+# Keep the package manager bootstrap under the same integrity boundary.
+curl --fail --location --proto '=https' --tlsv1.2 \
+    https://registry.npmjs.org/pnpm/-/pnpm-10.18.0.tgz -o "$STAGE/pnpm.tgz"
+test "$(shasum -a 256 "$STAGE/pnpm.tgz" | awk '{print $1}')" = 3967a3efe2909df305fec4b833a304dfca17c380b6bb77672f4dac4f2cdd3788
+"$STAGE/$NAME/bin/node" -e 'if(require(process.argv[1]).packageManager!=="pnpm@10.18.0")process.exit(1)' "$ROOT/package.json"
+mkdir -p "$STAGE/$NAME/share/pnpm"
+tar -xzf "$STAGE/pnpm.tgz" --strip-components 1 -C "$STAGE/$NAME/share/pnpm"
+ln -s ../share/pnpm/bin/pnpm.cjs "$STAGE/$NAME/bin/pnpm"
 rm -rf "$ROOT/build/$NAME"
 mv "$STAGE/$NAME" "$ROOT/build/$NAME"
 printf '%s\n' "$ROOT/build/$NAME/bin/node"
