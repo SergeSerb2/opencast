@@ -10,6 +10,7 @@
  *   node scripts/screenshot.mjs --url main.html --steps '[{"type":"store"},{"press":"Enter","wait":600}]' --out store
  *
  * Feature scenes live in scripts/scenes/*.mjs (each default-exports a Scene[]).
+ *   node scripts/screenshot.mjs --settings --out-dir /tmp/surgecast-re/ours/fe-settings
  *
  * Output: packages/frontend/.screenshots/<name>.png (gitignored).
  * Uses Playwright 1.64 through npx (no local dependency) and a Vite dev server.
@@ -17,14 +18,19 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "vite";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const outDir = join(root, ".screenshots");
 
-/** @typedef {{ name: string, url: string, size?: [number, number], steps?: Array<{ type?: string, press?: string, wait?: number, click?: string, hover?: string }>, fullPage?: boolean }} Scene */
+/** @typedef {{ name: string, url: string, size?: [number, number], steps?: Array<{ type?: string, press?: string, wait?: number, click?: string, hover?: string, scroll?: [string, number] }>, fullPage?: boolean }} Scene */
+
+/** Settings pages at the size used to compare with the reference (800×640). */
+const settingsScene = (name, route, steps) => {
+  const [hash, query] = route.split("?");
+  return { name: `settings-${name}`, url: `settings.html${query ? `?${query}` : ""}#${hash}`, size: [800, 640], steps };
+};
 
 /** @type {Scene[]} */
 const SCENES = [
@@ -102,6 +108,44 @@ const SCENES = [
   { name: "quick-ai-answer", url: "main.html", steps: [{ type: "what is a launcher" }, { press: "Tab", wait: 6000 }] },
   { name: "quick-ai-empty", url: "main.html", steps: [{ press: "Tab", wait: 400 }] },
   { name: "quick-ai-actions", url: "main.html", steps: [{ type: "what is a launcher" }, { press: "Tab", wait: 6000 }, { press: "Meta+k", wait: 350 }] },
+  settingsScene("general", "general"),
+  settingsScene("launcher", "launcher"),
+  settingsScene("shortcuts", "shortcuts"),
+  settingsScene("keyboard", "keyboard"),
+  settingsScene("cloud-sync", "cloud-sync"),
+  settingsScene("advanced", "advanced"),
+  settingsScene("about", "about"),
+  settingsScene("ai", "ai"),
+  settingsScene("ai-models", "ai/models"),
+  settingsScene("ai-provider", "ai/providers/openai"),
+  settingsScene("ai-commands", "ai/commands"),
+  settingsScene("ai-presets", "ai/presets"),
+  settingsScene("mcp", "mcp"),
+  settingsScene("clipboard", "clipboard-history"),
+  settingsScene("snippets", "snippets"),
+  settingsScene("window-management", "window-management"),
+  settingsScene("file-search", "file-search"),
+  settingsScene("extension", "extensions/github"),
+  ...["applications", "calculator", "calendar", "developer", "emoji", "notes", "quicklinks", "script-commands", "translator", "navigation", "system", "web-searches"].map((route) => settingsScene(route, route)),
+  settingsScene("search", "general", [{ click: "[data-settings-search]" }, { type: "api key", wait: 300 }]),
+  settingsScene("general-bottom", "general", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 2000] }]),
+  settingsScene("ai-bottom", "ai", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 1200] }]),
+  settingsScene("ai-tools", "ai", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 2400] }]),
+  settingsScene("ai-provider-models", "ai/providers/openai", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 900] }]),
+  settingsScene("ai-provider-new", "ai/providers/new/cliproxyapi"),
+  settingsScene("shortcuts-expanded", "shortcuts", [{ click: ".sc-s-tree__group-toggle >> nth=4" }, { scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 300] }]),
+  settingsScene("cloud-sync-bottom", "cloud-sync", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 900] }]),
+  settingsScene("hotkey-recorder", "general", [{ click: ".sc-s-hotkey__trigger", wait: 400 }]),
+  settingsScene("theme-menu", "general", [{ click: "[aria-label='Dark Theme']", wait: 400 }]),
+  settingsScene("add-provider-menu", "ai/models", [{ click: "text=Add Provider", wait: 400 }]),
+  settingsScene("light", "general?appearance=light"),
+  settingsScene("onboarding", "ai/models?mock.ai.empty=1"),
+  settingsScene("cloud-sync-connected", "cloud-sync?set.sync.enabled=true&set.sync.serverUrl=https://sync.example.workers.dev"),
+  settingsScene("cloud-sync-devices", "cloud-sync?set.sync.enabled=true&set.sync.serverUrl=https://sync.example.workers.dev", [{ scroll: [".sc-s-page__scroll .sc-scroll-area__viewport", 1000] }]),
+  settingsScene("agent-editor", "ai/presets", [{ click: "text=Create Agent", wait: 250 }]),
+  settingsScene("command-editor", "ai/commands", [{ click: "text=Create AI Command", wait: 250 }]),
+  settingsScene("mcp-editor", "mcp", [{ click: "text=Add Server", wait: 250 }]),
+  settingsScene("sync-create-vault", "cloud-sync", [{ click: "[aria-label='Create a New Vault']", wait: 250 }]),
 ];
 
 /** Scenes contributed by feature modules in scripts/scenes/. */
@@ -115,14 +159,17 @@ async function featureScenes() {
 
 function parseArgs(argv) {
   const args = { names: [], url: null, out: null, size: null, steps: null, light: false, list: false };
+  const args = { names: [], url: null, out: null, outDir: null, size: null, light: false, list: false, settings: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--url") args.url = argv[++i];
     else if (a === "--out") args.out = argv[++i];
+    else if (a === "--out-dir") args.outDir = argv[++i];
     else if (a === "--size") args.size = argv[++i].split("x").map(Number);
     else if (a === "--steps") args.steps = JSON.parse(argv[++i]);
     else if (a === "--light") args.light = true;
     else if (a === "--list") args.list = true;
+    else if (a === "--settings") args.settings = true;
     else args.names.push(a);
   }
   return args;
@@ -166,8 +213,13 @@ async function main() {
   let scenes = all;
   if (args.url) scenes = [{ name: args.out ?? "custom", url: args.url, size: args.size ?? undefined, steps: args.steps ?? undefined }];
   else if (args.names.length) scenes = all.filter((s) => args.names.includes(s.name));
+  let scenes = SCENES;
+  if (args.url) scenes = [{ name: args.out ?? "custom", url: args.url, size: args.size ?? undefined }];
+  else if (args.names.length) scenes = SCENES.filter((s) => args.names.includes(s.name));
+  else if (args.settings) scenes = SCENES.filter((s) => s.name.startsWith("settings-"));
   if (!scenes.length) throw new Error(`No scenes match: ${args.names.join(", ")}`);
 
+  const outDir = args.outDir ? resolve(args.outDir) : join(root, ".screenshots");
   mkdirSync(outDir, { recursive: true });
   const server = await createServer({ root, configFile: join(root, "vite.config.ts"), logLevel: "error", server: { port: 0, host: "127.0.0.1" } });
   await server.listen();
@@ -193,6 +245,7 @@ async function main() {
         if (step.press) await page.keyboard.press(step.press);
         if (step.click) await page.click(step.click);
         if (step.hover) await page.hover(step.hover);
+        if (step.scroll) await page.$eval(step.scroll[0], (el, top) => el.scrollTo({ top }), step.scroll[1]);
         await page.waitForTimeout(step.wait ?? 200);
       }
       const file = join(outDir, `${scene.name}.png`);

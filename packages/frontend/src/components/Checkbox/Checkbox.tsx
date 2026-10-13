@@ -9,10 +9,11 @@ export interface CheckboxProps {
   id?: string;
   onFocus?: () => void;
   onBlur?: () => void;
+  "aria-label"?: string;
 }
 
 /** 14px checkbox with an animated check stroke (§5.3, §8.4). */
-export const Checkbox = memo(function Checkbox({ checked, onChange, label, disabled, id, onFocus, onBlur }: CheckboxProps) {
+export const Checkbox = memo(function Checkbox({ checked, onChange, label, disabled, id, onFocus, onBlur, "aria-label": ariaLabel }: CheckboxProps) {
   const autoId = useId();
   const inputId = id ?? autoId;
   const state = checked === "indeterminate" ? "indeterminate" : checked ? "checked" : "unchecked";
@@ -24,6 +25,7 @@ export const Checkbox = memo(function Checkbox({ checked, onChange, label, disab
         className="sc-checkbox__input"
         checked={checked === true}
         aria-checked={checked === "indeterminate" ? "mixed" : checked}
+        aria-label={ariaLabel}
         disabled={disabled}
         onChange={(event) => onChange(event.currentTarget.checked)}
         onFocus={onFocus}

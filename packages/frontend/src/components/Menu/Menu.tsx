@@ -157,6 +157,7 @@ export function Menu({
   }, [selected]);
 
   useEffect(() => {
+    // Without a search field the menu itself takes focus so arrow keys and ↵ work.
     (inputRef.current ?? rootRef.current)?.focus({ preventScroll: true });
   }, []);
 

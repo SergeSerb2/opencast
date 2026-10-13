@@ -1,0 +1,48 @@
+/* Fallback command rows (§8.6 "Launcher fallback-command rows"). */
+
+.sc-s-fallback {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: round(calc(46 * var(--spx)), 1px);
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-8);
+}
+.sc-s-fallback[data-dragging] {
+  opacity: 0.5;
+}
+.sc-s-fallback[data-over] {
+  background: var(--selection-5);
+}
+.sc-s-fallback__handle {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  cursor: grab;
+}
+.sc-s-fallback__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sc-s-fallback__meta {
+  flex: 0 1 auto;
+  min-width: 96px;
+  max-width: 180px;
+  text-align: right;
+  color: var(--color-text-secondary);
+  transition: opacity 120ms ease;
+}
+.sc-s-fallback__actions {
+  position: absolute;
+  right: var(--space-12);
+  display: flex;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.sc-s-fallback:hover .sc-s-fallback__meta,
+.sc-s-fallback:focus-within .sc-s-fallback__meta {
+  opacity: 0;
+}
+.sc-s-fallback:hover .sc-s-fallback__actions,
+.sc-s-fallback:focus-within .sc-s-fallback__actions {
+  opacity: 1;
+}

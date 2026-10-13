@@ -1,0 +1,148 @@
+/* Hotkey trigger and recorder popover (§8.4). */
+
+.sc-s-hotkey {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.sc-s-hotkey[data-appearance="cell"] {
+  width: 100%;
+  max-width: round(calc(145 * var(--spx)), 1px);
+}
+
+.sc-s-hotkey__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  height: var(--space-24);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-6);
+  font-size: var(--font-size-13);
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+.sc-s-hotkey[data-appearance="cell"] .sc-s-hotkey__trigger:hover {
+  box-shadow: 0 0 0 1px var(--color-border-secondary);
+}
+.sc-s-hotkey[data-appearance="button"] .sc-s-hotkey__trigger {
+  width: auto;
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-8);
+  background: var(--color-surface-control);
+}
+.sc-s-hotkey[data-appearance="button"] .sc-s-hotkey__trigger:hover {
+  background: var(--fg-15);
+}
+.sc-s-hotkey__trigger[data-state="open"],
+.sc-s-hotkey__trigger:focus-visible {
+  box-shadow: none !important;
+  outline: var(--focus-ring);
+}
+
+.sc-s-hotkey__glyphs {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sc-s-hotkey__placeholder,
+.sc-s-hotkey__recording {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-tertiary);
+}
+
+.sc-s-hotkey__clear {
+  position: absolute;
+  right: var(--space-6);
+  display: inline-flex;
+  color: var(--color-text-tertiary);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.sc-s-hotkey[data-appearance="button"] .sc-s-hotkey__clear {
+  position: static;
+  margin-left: var(--space-6);
+}
+.sc-s-hotkey:hover .sc-s-hotkey__clear,
+.sc-s-hotkey__clear:focus-visible {
+  opacity: 1;
+}
+.sc-s-hotkey__clear:hover {
+  color: var(--color-text-primary);
+}
+
+.sc-s-recorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-12);
+  height: round(calc(170 * var(--spx)), 1px);
+  padding: var(--space-8) var(--space-16) 0;
+  text-align: center;
+  background: linear-gradient(to bottom, var(--recorder-tint, transparent), var(--recorder-tint-mid, transparent) 50%, transparent);
+}
+.sc-s-recorder[data-state="conflict"],
+.sc-s-recorder[data-state="error"] {
+  --recorder-tint: var(--red-15);
+  --recorder-tint-mid: rgb(from var(--red) r g b / 8%);
+}
+.sc-s-recorder[data-state="saved"] {
+  --recorder-tint: var(--green-15);
+  --recorder-tint-mid: rgb(from var(--green) r g b / 8%);
+}
+
+.sc-s-recorder__row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.sc-s-recorder__example {
+  font-size: var(--font-size-11);
+  color: var(--color-text-tertiary);
+}
+.sc-s-recorder__keys {
+  display: inline-flex;
+  gap: var(--space-4);
+}
+.sc-s-recorder__keys[data-dim] {
+  opacity: 0.5;
+}
+.sc-s-recorder__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-24);
+  height: var(--space-24);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-6);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-11);
+  color: var(--color-text-primary);
+  background: var(--fg-10);
+  box-shadow:
+    inset 0 var(--half-pixel) 0 #ffffff4d,
+    inset 0 calc(-1 * var(--half-pixel)) 0 #000c;
+}
+.theme-root[light] .sc-s-recorder__key {
+  box-shadow:
+    inset 0 var(--half-pixel) 0 #fffc,
+    inset 0 calc(-1 * var(--half-pixel)) 0 #0000004d;
+}
+.sc-s-recorder__message {
+  font-size: var(--font-size-13);
+  color: var(--color-text-secondary);
+}
+.sc-s-recorder[data-state="conflict"] .sc-s-recorder__message,
+.sc-s-recorder[data-state="error"] .sc-s-recorder__message {
+  color: var(--red-contrast);
+}
+.sc-s-recorder[data-state="saved"] .sc-s-recorder__message {
+  color: var(--green-contrast);
+}
+.sc-s-recorder__helper {
+  font-size: var(--font-size-11);
+  color: var(--color-text-tertiary);
+}

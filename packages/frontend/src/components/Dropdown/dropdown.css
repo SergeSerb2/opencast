@@ -17,6 +17,19 @@
   height: var(--field-height-small);
   padding: 0 var(--space-6) 0 var(--space-8);
 }
+.sc-dropdown[data-variant="ghost"] {
+  flex: 0 1 auto;
+  max-width: 100%;
+  height: var(--field-height-small);
+  padding: 0 var(--space-6) 0 var(--space-8);
+  border-radius: var(--radius-8);
+}
+.sc-dropdown[data-variant="ghost"]:hover:enabled {
+  background: var(--fg-5);
+}
+.sc-dropdown[data-variant="ghost"][data-state="open"] {
+  background: var(--fg-10);
+}
 .sc-dropdown[data-variant="nav"] {
   flex: 0 1 auto;
   max-width: 280px;

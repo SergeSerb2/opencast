@@ -49,6 +49,7 @@ import type { AlertOptions, ToastState } from "./ui";
 import type { CalendarEvent, MenuItemInfo, WindowCommand } from "./native";
 
 type Void = void;
+type WebSearchProvider = Exclude<SettingsValues["ai.webSearchProvider"], "none">;
 
 export interface BackendMethods {
   // ---- meta -------------------------------------------------------------------
@@ -187,7 +188,13 @@ export interface BackendMethods {
   "ai.presets.list": { params: Void; result: AIPreset[] };
   "ai.presets.upsert": { params: Partial<AIPreset> & { name: string }; result: AIPreset };
   "ai.presets.delete": { params: { id: string }; result: Void };
+  /** Restore the shipped definition of a built-in preset. */
+  "ai.presets.reset": { params: { id: string }; result: AIPreset };
   "ai.tools.list": { params: Void; result: AIToolInfo[] };
+  /** Web search API keys live in the Keychain at "ai.websearch:<provider>:apiKey"; values are never returned. */
+  "ai.webSearch.hasApiKey": { params: { provider: WebSearchProvider }; result: boolean };
+  /** `apiKey: null` (or "") removes the stored key. */
+  "ai.webSearch.setApiKey": { params: { provider: WebSearchProvider; apiKey: string | null }; result: Void };
   "ai.mcp.list": { params: Void; result: (MCPServer & { status: "connected" | "disconnected" | "error"; toolCount: number; error?: string })[] };
   "ai.mcp.upsert": { params: Partial<MCPServer> & { name: string; transport: MCPServer["transport"] }; result: MCPServer };
   "ai.mcp.delete": { params: { id: string }; result: Void };
@@ -249,6 +256,9 @@ export interface BackendMethods {
   /** Import a Raycast .rayconfig export (v3 container, older JSON wrapper, or classic). */
   "data.importRayconfig": { params: { path: string; password?: string; categories?: string[] }; result: { results: { category: string; imported: number; error?: string }[] } };
   "data.storage": { params: Void; result: { totalBytes: number; databaseBytes: number; clipboardBytes: number; entities: Record<string, number>; clipboardItems: number } };
+  /** Scheduled export passphrase is held in Keychain and never returned. */
+  "data.backup.hasPassphrase": { params: Void; result: boolean };
+  "data.backup.setPassphrase": { params: { passphrase: string | null }; result: Void };
   "data.export": { params: { path: string; password?: string; categories?: string[] }; result: { path: string } };
   "data.import": { params: { path: string; password?: string }; result: { results: { category: string; imported: number; error?: string }[] } };
 

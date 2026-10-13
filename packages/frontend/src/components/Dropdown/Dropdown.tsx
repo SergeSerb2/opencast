@@ -26,11 +26,13 @@ export interface DropdownProps {
   sections?: DropdownSection[];
   placeholder?: string;
   searchPlaceholder?: string;
-  /** "field" (forms, bordered), "small", or "nav" (search-bar accessory). */
-  variant?: "field" | "small" | "nav";
+  /** "field" (forms, bordered), "small", "nav" (search-bar accessory), or "ghost" (unboxed 24px popup used by Settings rows). */
+  variant?: "field" | "small" | "nav" | "ghost";
   /** Leading glyph shown in the trigger (nav variant). */
   icon?: ImageLike;
   filtering?: boolean;
+  /** Show the menu's search field (default true; short lists can hide it). */
+  showSearch?: boolean;
   onSearchTextChange?: (text: string) => void;
   isLoading?: boolean;
   disabled?: boolean;
@@ -54,6 +56,7 @@ export function Dropdown({
   variant = "field",
   icon,
   filtering = true,
+  showSearch = true,
   onSearchTextChange,
   isLoading,
   disabled,
@@ -92,7 +95,7 @@ export function Dropdown({
         ref={triggerRef}
         id={id}
         type="button"
-        className={`sc-dropdown${variant === "nav" ? "" : " sc-field"}`}
+        className={`sc-dropdown${variant === "nav" || variant === "ghost" ? "" : " sc-field"}`}
         data-variant={variant}
         data-state={open ? "open" : "closed"}
         data-validation={validation}
@@ -121,9 +124,9 @@ export function Dropdown({
         onClose={() => setOpen(false)}
         anchor={triggerRef.current}
         side="bottom"
-        align={variant === "nav" ? "end" : "start"}
-        alignOffset={-4}
-        width={variant === "nav" ? Math.max(188, (triggerRef.current?.offsetWidth ?? 0) + 8) : "anchor"}
+        align={variant === "nav" || variant === "ghost" ? "end" : "start"}
+        alignOffset={variant === "ghost" ? -8 : -4}
+        width={variant === "nav" ? Math.max(188, (triggerRef.current?.offsetWidth ?? 0) + 8) : variant === "ghost" ? Math.max(180, (triggerRef.current?.offsetWidth ?? 0) + 16) : "anchor"}
         role="dialog"
         aria-label={aria["aria-label"] ?? placeholder}
       >
@@ -132,6 +135,7 @@ export function Dropdown({
             sections={menuSections}
             layout={side === "top" ? "up" : "down"}
             searchPlaceholder={searchPlaceholder}
+            showSearch={showSearch}
             filtering={filtering}
             onSearchTextChange={onSearchTextChange}
             isLoading={isLoading}

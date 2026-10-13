@@ -1,0 +1,59 @@
+/* Cloud Sync page. */
+
+.sc-s-sync-field {
+  width: 260px;
+}
+
+.sc-s-sync-connect {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-12);
+  padding: var(--space-12);
+}
+.sc-s-sync-connect__error {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-11);
+}
+
+.sc-s-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  font-size: var(--font-size-13);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.sc-s-sync-badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-40);
+}
+.sc-s-sync-badge[data-tone="success"] .sc-s-sync-badge__dot {
+  background: var(--green);
+}
+.sc-s-sync-badge[data-tone="warning"] .sc-s-sync-badge__dot {
+  background: var(--yellow);
+}
+.sc-s-sync-badge[data-tone="error"] {
+  color: var(--red-contrast);
+}
+.sc-s-sync-badge[data-tone="error"] .sc-s-sync-badge__dot {
+  background: var(--red);
+}
+
+.sc-s-row__title .sc-s-badge {
+  margin-left: var(--space-8);
+  vertical-align: 1px;
+}
+
+.sc-s-callout code {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: var(--fg-10);
+  color: var(--color-text-primary);
+}

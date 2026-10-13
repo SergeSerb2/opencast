@@ -82,7 +82,7 @@ const fallbacks: Fallback = {
 
 export async function browserNativeCall<M extends NativeMethod>(method: M, params: NativeParams<M> | undefined, events: Emitter<NativeEvents>): Promise<NativeResult<M>> {
   const impl = fallbacks[method] as ((p: NativeParams<M> | undefined, e: Emitter<NativeEvents>) => NativeResult<M> | Promise<NativeResult<M>>) | undefined;
-  if (getEnv().dev) console.debug(`[native:browser] ${method}`, params ?? "");
+  if (getEnv().dev) console.debug(`[native:browser] ${method}`);
   if (!impl) throw new RpcError({ code: RpcErrorCode.NativeUnavailable, message: `${method} needs the Surgecast app (not available in the browser)` });
   return impl(params, events);
 }

@@ -24,6 +24,7 @@ import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
 import { createTeamBMock } from "./team-b";
 import { isTranslationPrompt } from "./team-b/translator";
+import { settingsMockHandlers } from "./settings-handlers";
 
 type Handlers = { [M in BackendMethod]?: (params: BackendParams<M>) => BackendResult<M> | Promise<BackendResult<M>> };
 
@@ -215,6 +216,8 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "themes.list": () => [],
     "sync.status": () => ({ phase: "disabled", deviceId: "mock-device", deviceName: "This Mac", pendingChanges: 0, counts: {} }),
     "hud.show": () => undefined,
+    // Settings-only areas (providers, sync, MCP); the feature mocks below own shared methods.
+    ...settingsMockHandlers({ settings, commands, events }),
     ...createLibraryHandlers(events),
     ...teamB.handlers,
     // AI Chat owns chats, streaming and tools; Team B keeps the AI Commands/Presets store and

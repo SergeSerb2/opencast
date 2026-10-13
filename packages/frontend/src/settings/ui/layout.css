@@ -1,0 +1,377 @@
+/* Settings sections, cards and rows (design spec §8.2). */
+
+.sc-s-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  border-radius: var(--radius-12);
+}
+
+.sc-s-section__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: var(--space-32);
+  padding: 0 0 0 var(--space-12);
+}
+
+.sc-s-section__titles {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sc-s-section__title {
+  font-size: var(--font-size-13);
+  font-weight: 400;
+  color: var(--color-text-primary);
+}
+
+.sc-s-section__description {
+  font-size: var(--font-size-11);
+  color: var(--color-text-secondary);
+}
+
+.sc-s-section__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.sc-s-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: round(calc(28 * var(--spx)), 1px);
+  border-radius: var(--radius-12);
+  background: rgb(from var(--fg) r g b / 2.5%);
+  overflow: hidden;
+}
+
+/* Inset hairline between consecutive items (1px fg-5, 12px inset). */
+.sc-s-item {
+  position: relative;
+}
+.sc-s-card > .sc-s-item + .sc-s-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-12);
+  right: var(--space-12);
+  height: 1px;
+  background: var(--color-border-tertiary, var(--fg-5));
+  pointer-events: none;
+}
+
+.sc-s-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  min-height: round(calc(46 * var(--spx)), 1px);
+  padding: var(--space-12);
+}
+.sc-s-row[data-align="center"] {
+  align-items: center;
+}
+.sc-s-row[data-layout="stacked"] {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-8);
+}
+.sc-s-row[data-disabled] > * {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.sc-s-row__icon {
+  flex-shrink: 0;
+}
+
+.sc-s-row__label {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+  text-align: left;
+}
+
+.sc-s-row__title {
+  font-size: var(--font-size-13);
+  color: var(--color-text-primary);
+}
+
+.sc-s-row__control {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  max-width: 60%;
+}
+.sc-s-row[data-align="start"] .sc-s-row__control {
+  margin-top: calc(-1 * var(--space-4));
+  min-height: var(--space-24);
+}
+.sc-s-row[data-align="start"] .sc-s-row__control:has(> .sc-switch:only-child) {
+  margin-top: 0;
+  min-height: 0;
+}
+.sc-s-row[data-layout="stacked"] .sc-s-row__control {
+  justify-content: flex-start;
+  max-width: none;
+  margin-top: 0;
+}
+.sc-s-row[data-layout="stacked"] .sc-s-row__control > :only-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.sc-s-description {
+  font-size: var(--font-size-11);
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+.sc-s-description__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: pre-line;
+}
+.sc-s-description[data-expanded] .sc-s-description__text {
+  -webkit-line-clamp: unset;
+}
+.sc-s-description a,
+.sc-s-link {
+  color: var(--color-text-link, var(--accent));
+}
+.sc-s-description a:hover,
+.sc-s-link:hover {
+  text-decoration: underline;
+}
+.sc-s-description__more {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-11);
+}
+.sc-s-description__more:hover {
+  color: var(--color-text-primary);
+}
+
+.sc-s-navrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  min-height: round(calc(46 * var(--spx)), 1px);
+  padding: var(--space-12);
+  text-align: left;
+  color: var(--color-text-primary);
+}
+.sc-s-navrow:active,
+.sc-s-navrow:focus-visible {
+  background: var(--selection-5);
+}
+.sc-s-navrow:focus-visible {
+  outline: none;
+}
+.sc-s-navrow__description {
+  font-size: var(--font-size-11);
+  color: var(--color-text-secondary);
+}
+.sc-s-navrow__detail {
+  flex-shrink: 0;
+  font-size: var(--font-size-13);
+  color: var(--color-text-secondary);
+}
+.sc-s-navrow__chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+.sc-s-navrow[data-tone="destructive"] .sc-s-row__title {
+  color: var(--red-contrast);
+}
+
+.sc-s-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.sc-s-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  padding: var(--space-12);
+  border-radius: var(--radius-10);
+  box-shadow: inset 0 0 0 1px var(--yellow-40);
+  background: var(--yellow-10);
+  font-size: var(--font-size-13);
+}
+.sc-s-callout[data-tone="info"] {
+  box-shadow: inset 0 0 0 1px var(--fg-10);
+  background: var(--fg-5);
+}
+.sc-s-callout[data-tone="error"] {
+  box-shadow: inset 0 0 0 1px var(--red-40);
+  background: var(--red-10);
+}
+.sc-s-callout[data-tone="success"] {
+  box-shadow: inset 0 0 0 1px var(--green-40);
+  background: var(--green-10);
+}
+.sc-s-callout__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--yellow-on-tint-10);
+}
+.sc-s-callout[data-tone="info"] .sc-s-callout__icon {
+  color: var(--color-text-secondary);
+}
+.sc-s-callout[data-tone="error"] .sc-s-callout__icon {
+  color: var(--red-on-tint-10);
+}
+.sc-s-callout[data-tone="success"] .sc-s-callout__icon {
+  color: var(--green-on-tint-10);
+}
+.sc-s-callout__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.sc-s-callout__text {
+  font-size: var(--font-size-11);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  -webkit-user-select: text;
+  user-select: text;
+}
+.sc-s-callout__actions {
+  display: flex;
+  align-self: center;
+  gap: var(--space-6);
+}
+
+.sc-s-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  min-height: round(calc(186 * var(--spx)), 1px);
+  padding: var(--space-16) 0 var(--space-32);
+  text-align: center;
+}
+.sc-s-intro__icon {
+  margin-bottom: var(--space-8);
+}
+.sc-s-intro__title {
+  max-width: 500px;
+  font-size: var(--font-size-24);
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--color-text-primary);
+}
+.sc-s-intro__description {
+  max-width: 500px;
+  font-size: var(--font-size-13);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.sc-s-card-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-24) var(--space-16);
+  text-align: center;
+}
+.sc-s-card-empty__title {
+  color: var(--color-text-primary);
+}
+.sc-s-card-empty__description {
+  max-width: 380px;
+  font-size: var(--font-size-11);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+/* Settings target highlight after search: selection-5 pulse over 2s (§8.7). */
+@keyframes sc-s-highlight {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  20%,
+  80% {
+    background-color: var(--selection-5);
+  }
+}
+.sc-s-highlight {
+  animation: sc-s-highlight 2s ease-out;
+}
+
+.sc-s-value {
+  font-size: var(--font-size-13);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.sc-s-field-error {
+  display: block;
+  margin-top: var(--space-4);
+  font-size: var(--font-size-11);
+  color: var(--red-contrast);
+}
+.sc-s-commit-field {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sc-s-disclaimer {
+  padding: 0 var(--space-24) var(--space-8);
+  text-align: center;
+  font-size: var(--font-size-11);
+  line-height: 1.4;
+  color: var(--color-text-tertiary);
+}
+
+.sc-s-intro-meta {
+  font-size: var(--font-size-11);
+  color: var(--color-text-tertiary);
+}
+
+/* Disabled extension body (§8.6): opacity 0.5, no interaction. */
+.sc-s-extension-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+.sc-s-extension-body[data-disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sc-s-skin-tones__item {
+  width: var(--space-32);
+  height: var(--space-24);
+  padding: 0;
+  font-family: var(--font-emoji);
+  font-size: 15px;
+}
+.sc-s-skin-tones__item[data-selected] {
+  background: var(--fg-10);
+}
+
+/* The row already dims disabled content; don't dim the control twice. */
+.sc-s-row[data-disabled] .sc-switch:disabled,
+.sc-s-row[data-disabled] .sc-button:disabled {
+  opacity: 1;
+}
