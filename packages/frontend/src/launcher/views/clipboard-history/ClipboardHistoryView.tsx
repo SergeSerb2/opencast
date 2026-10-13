@@ -16,6 +16,8 @@ import type { LauncherViewProps } from "../registry";
 import { QuicklinkFormView } from "../quicklinks/QuicklinkFormView";
 import { SnippetFormView } from "../snippets/SnippetFormView";
 import { ClipboardDetail } from "./ClipboardDetail";
+import { ClipboardEditView } from "./ClipboardEditView";
+import { loadClipboardItems } from "./operations";
 import { clipboardSections, entriesSince, entryPath, entryText, formattedJson, isMailto, isTextLike, RECENT_RANGES, suggestedFileName, suggestedSnippetName, TYPE_FILTERS, type TypeFilter } from "./clipboard-model";
 import { colorFormats, parseHexColor } from "./color-formats";
 import "./clipboard-history.css";
@@ -58,7 +60,6 @@ export function ClipboardHistoryView({ props, title, icon }: LauncherViewProps<C
   const { data, isLoading } = useBackend("clipboard.list", { query, kind, limit }, undefined, { refetchOn: REFETCH, onError: (error) => showFailureToast("Failed to load clipboard history", error) });
   const items = useMemo(() => data?.items ?? [], [data]);
   const sections = useMemo(() => clipboardSections(items), [items]);
-  const ordered = useMemo(() => sections.flatMap((s) => s.items), [sections]);
 
   const rowIcon = (item: ClipboardItem): ImageLike => {
     switch (item.kind) {
@@ -100,8 +101,10 @@ export function ClipboardHistoryView({ props, title, icon }: LauncherViewProps<C
 
   const pasteSequence = (item: ClipboardItem) =>
     run("Failed to start paste sequence", async () => {
+      const ordered = clipboardSections(await loadClipboardItems((params) => backend.call("clipboard.list", params), { kind, query })).flatMap((section) => section.items);
       const from = ordered.findIndex((i) => i.id === item.id);
-      const ids = ordered.slice(Math.max(0, from), from + 1000).map((i) => i.id);
+      if (from < 0) throw new Error("This entry is no longer in clipboard history");
+      const ids = ordered.slice(from).map((i) => i.id);
       await backend.call("clipboard.pasteSequentially", { ids });
       await showHUD(`Press ⌘V to paste ${ids.length === 1 ? "the entry" : `${ids.length} entries in order`}`);
     });
@@ -119,7 +122,7 @@ export function ClipboardHistoryView({ props, title, icon }: LauncherViewProps<C
     });
 
   /** Entries of the current type filter, beyond the loaded page. */
-  const allOfKind = async () => (await backend.call("clipboard.list", { kind, limit: 1000 })).items;
+  const allOfKind = () => loadClipboardItems((params) => backend.call("clipboard.list", params), { kind });
 
   const removeRecent = (minutes: number, label: string) =>
     run("Failed to delete entries", async () => {
@@ -162,7 +165,7 @@ export function ClipboardHistoryView({ props, title, icon }: LauncherViewProps<C
       <ActionPanel title={item.title}>
         <ActionPanel.Section>
           {sequential && <Action title="Paste Sequentially from Here" icon="clipboard-16" onAction={() => pasteSequence(item)} />}
-          {primary === "copy" ? [copyAction, pasteAction] : [pasteAction, copyAction]}
+          {sequential || primary === "copy" ? [copyAction, pasteAction] : [pasteAction, copyAction]}
           {primary === "copy" && <Action title="Copy and Keep Window Open" icon="copy-clipboard-16" shortcut={sc("opt", "return")} onAction={() => copy(item, true)} />}
           {textLike && <Action title={pasteTitle(target, "Paste as Plain Text")} icon={pasteIcon(target)} shortcut={sc("cmd", "ctrl", "return")} onAction={() => paste(item, true)} />}
         </ActionPanel.Section>
@@ -188,7 +191,14 @@ export function ClipboardHistoryView({ props, title, icon }: LauncherViewProps<C
           )}
           {path && <Action.ShowInFinder path={path} shortcut={sc("cmd", "shift", "o")} />}
           {path && <Action title="Quick Look" icon="eye-16" shortcut={sc("cmd", "y")} onAction={() => run("Quick Look failed", () => native.call("open.quickLook", { path }))} />}
-          <Action title={item.pinned ? "Unpin Entry" : "Pin Entry"} icon={item.pinned ? "tack-disabled-16" : "tack-16"} shortcut={sc("cmd", ".")} onAction={() => togglePin(item)} />
+          <Action title={item.pinned ? "Unpin Entry" : "Pin Entry"} icon={item.pinned ? "tack-disabled-16" : "tack-16"} shortcut={sc("cmd", "shift", "p")} onAction={() => togglePin(item)} />
+          {!sequential && <Action title="Paste Sequentially from Here" icon="clipboard-16" onAction={() => pasteSequence(item)} />}
+          {item.kind === "text" && <Action title="Edit Entry" icon="pencil-16" shortcut={sc("cmd", "e")} onAction={() => navigation.push(<ClipboardEditView item={item} />)} />}
+          <Action title="Rename Entry…" icon="text-16" onAction={() => navigation.push(<ClipboardEditView item={item} renameOnly />)} />
+          <Action title="Duplicate Entry" icon="duplicate-16" shortcut={sc("cmd", "d")} onAction={() => run("Failed to duplicate entry", async () => {
+            await backend.call("clipboard.duplicate", { id: item.id });
+            showToast({ style: "success", title: "Duplicated entry" });
+          })} />
         </ActionPanel.Section>
         <ActionPanel.Section>
           {textLike && <Action title="Save as Snippet" icon="snippets-16" shortcut={sc("cmd", "s")} onAction={() => navigation.push(<SnippetFormView initial={{ name: suggestedSnippetName(entryText(item)), text: entryText(item) }} />)} />}

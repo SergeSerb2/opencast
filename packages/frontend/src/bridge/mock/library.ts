@@ -18,6 +18,8 @@ import { RpcError } from "../errors";
 import { QUICKLINKS, tile } from "./fixtures/commands";
 import { CLIPBOARD, NOTES, SNIPPETS } from "./fixtures/content";
 import { CALC_HISTORY, EMOJI, FILES, FREQUENT_EMOJI, RECENT_FILE_PATHS } from "./fixtures/library";
+import { mockCalculate } from "./search";
+import { tokenizeTemplate } from "../../launcher/views/snippets/placeholders";
 
 type Handlers = { [M in BackendMethod]?: (params: BackendParams<M>) => BackendResult<M> | Promise<BackendResult<M>> };
 
@@ -32,25 +34,32 @@ function invalid(message: string): never {
 const matches = (query: string | undefined, ...fields: (string | undefined)[]) => !query?.trim() || fields.join(" ").toLowerCase().includes(query.trim().toLowerCase());
 
 /** Placeholder `{argument name="x" default="y"}` / legacy `{query}` names, in order of appearance. */
+function optionValue(text: string, name: string): string | undefined {
+  const match = new RegExp(`\\b${name}\\s*=\\s*"((?:[^"\\\\]|\\\\.)*)"`, "i").exec(text);
+  return match ? JSON.parse(`"${match[1]}"`) as string : undefined;
+}
+
 function templateArguments(text: string): { name: string; default?: string; options?: string[] }[] {
   const out: { name: string; default?: string; options?: string[] }[] = [];
-  for (const match of text.matchAll(/\{(argument[^}]*|query(?::[^}]*)?)\}/g)) {
-    const body = match[1];
-    const name = body.startsWith("query") ? "query" : (/name="([^"]*)"/.exec(body)?.[1] ?? "argument");
+  for (const token of tokenizeTemplate(text)) {
+    if (token.keyword !== "argument" && token.keyword !== "query") continue;
+    const body = token.text.slice(1, -1);
+    const name = token.keyword === "query" ? "query" : (optionValue(body, "name") ?? "argument");
     if (out.some((a) => a.name === name)) continue;
-    const fallback = body.startsWith("query:") ? body.slice(6) : /default="([^"]*)"/.exec(body)?.[1];
-    const options = /options="([^"]*)"/.exec(body)?.[1]?.split(",").map((o) => o.trim());
+    const fallback = /^query:/i.test(body) ? body.slice(6) : optionValue(body, "default");
+    const options = optionValue(body, "options")?.split(",").map((o) => o.trim());
     out.push({ name, default: fallback, options });
   }
   return out;
 }
 
 /** Enough of the dynamic placeholder grammar for previews in the browser. */
-function renderTemplate(text: string, args: Record<string, string> = {}, encode = false): { text: string; cursorOffset?: number } {
+function renderTemplate(text: string, args: Record<string, string> = {}, encode = false, snippets: Snippet[] = SNIPPETS): { text: string; cursorOffset?: number } {
   const now = new Date();
   let cursor: number | undefined;
-  const replaced = text.replace(/\{([a-z-]+)([^}]*)\}/gi, (whole, keyword: string, rest: string) => {
-    const value = (() => {
+  const replaced = text.replace(/\{([a-z-]+)((?:[^}"\n]|"(?:[^"\\\n]|\\.)*")*)\}/gi, (whole, keyword: string, rest: string) => {
+    const option = (name: string) => optionValue(rest, name);
+    let value = (() => {
       switch (keyword.toLowerCase()) {
         case "clipboard":
           return CLIPBOARD[0]?.text ?? "";
@@ -70,14 +79,37 @@ function renderTemplate(text: string, args: Record<string, string> = {}, encode 
           return "\u0000";
         case "argument":
         case "query": {
-          const name = keyword === "query" ? "query" : (/name="([^"]*)"/.exec(rest)?.[1] ?? "argument");
-          return args[name] ?? /default="([^"]*)"/.exec(rest)?.[1] ?? "";
+          const name = keyword.toLowerCase() === "query" ? "query" : (option("name") ?? "argument");
+          return args[name] ?? option("default") ?? (rest.startsWith(":") ? rest.slice(1) : "");
+        }
+        case "calculator": {
+          const expression = option("expression");
+          const result = expression ? mockCalculate(expression) : null;
+          if (!result) invalid("Enter a valid calculator expression");
+          return result.result;
+        }
+        case "snippet": {
+          const name = option("name");
+          const matches = snippets.filter((snippet) => snippet.name === name);
+          if (matches.length !== 1) invalid("A snippet reference must match one unique name");
+          if (/\{\s*(snippet|argument|ai)\b/i.test(matches[0].text)) invalid("Referenced snippets cannot contain references, arguments or AI placeholders");
+          return renderTemplate(matches[0].text, {}, false, snippets).text;
         }
         default:
           return whole;
       }
     })();
-    return encode && keyword !== "cursor" ? encodeURIComponent(value) : value;
+    // Remove quoted option values before scanning modifiers, so a literal pipe stays literal.
+    const modifiers = [...rest.replace(/"(?:[^"\\]|\\.)*"/g, '""').matchAll(/\|\s*([a-z-]+)/gi)].map((match) => match[1].toLowerCase());
+    for (const modifier of modifiers) {
+      if (modifier === "uppercase") value = value.toUpperCase();
+      else if (modifier === "lowercase") value = value.toLowerCase();
+      else if (modifier === "trim") value = value.trim();
+      else if (modifier === "percent-encode") value = encodeURIComponent(value);
+      else if (modifier === "json-stringify") value = JSON.stringify(value);
+      else if (modifier !== "raw") invalid(`Unknown placeholder modifier: ${modifier}`);
+    }
+    return encode && keyword.toLowerCase() !== "cursor" && !modifiers.includes("raw") ? encodeURIComponent(value) : value;
   });
   const index = replaced.indexOf("\u0000");
   if (index !== -1) cursor = replaced.length - index - 1;
@@ -210,13 +242,32 @@ export function createLibraryHandlers(events: Emitter<BackendEvents>): Handlers 
       item.pinned = pinned;
       events.emit("clipboard.changed", { item });
     },
+    "clipboard.update": ({ id: itemId, patch }) => {
+      const item = clipboardItem(itemId);
+      if (patch.title !== undefined && !patch.title.trim()) invalid("Entry name is required");
+      if (patch.text !== undefined && item.kind !== "text") invalid("Only text entries can be edited");
+      Object.assign(item, patch);
+      if (patch.text !== undefined) {
+        item.characters = [...patch.text].length;
+        item.words = patch.text.trim() ? patch.text.trim().split(/\s+/).length : 0;
+        item.contentHash = id("content");
+      }
+      events.emit("clipboard.changed", { item });
+      return { ...item };
+    },
+    "clipboard.duplicate": ({ id: itemId }) => {
+      const item = { ...clipboardItem(itemId), id: id("clipboard"), pinned: false, createdAt: Date.now(), lastCopiedAt: Date.now(), copyCount: 1 };
+      clipboard.push(item);
+      events.emit("clipboard.changed", { item });
+      return { ...item };
+    },
     "clipboard.delete": ({ id: itemId }) => {
       clipboardItem(itemId);
       removeClipboard([itemId]);
     },
     "clipboard.clear": ({ includePinned }) => removeClipboard(clipboard.filter((c) => includePinned || !c.pinned).map((c) => c.id)),
     "clipboard.pasteSequentially": ({ ids }) => {
-      if (!ids.length) invalid("Select between 1 and 1000 clipboard items");
+      if (!ids.length) invalid("Select at least one clipboard item");
       ids.forEach(clipboardItem);
     },
 
@@ -242,7 +293,7 @@ export function createLibraryHandlers(events: Emitter<BackendEvents>): Handlers 
       if (index !== -1) snippets.splice(index, 1);
       changed("snippets", [snippetId]);
     },
-    "snippets.render": ({ text, arguments: args }) => ({ ...renderTemplate(text, args), arguments: templateArguments(text) }),
+    "snippets.render": ({ text, arguments: args }) => ({ ...renderTemplate(text, args, false, snippets), arguments: templateArguments(text) }),
     "snippets.paste": ({ id: snippetId }) => {
       const current = snippet(snippetId);
       Object.assign(current, { copyCount: (current.copyCount ?? 0) + 1, lastUsedAt: Date.now() });
@@ -263,7 +314,7 @@ export function createLibraryHandlers(events: Emitter<BackendEvents>): Handlers 
           skipped++;
           continue;
         }
-        snippets.push({ id: id("snippet"), name, text: row.text, keyword, tags: Array.isArray(row.tags) ? row.tags.filter((t): t is string => typeof t === "string") : [], createdAt: Date.now(), updatedAt: Date.now() });
+        snippets.push({ id: id("snippet"), name, text: row.text, keyword, icon: typeof row.icon === "string" ? row.icon : undefined, pinned: Boolean(row.pinned), tags: Array.isArray(row.tags) ? row.tags.filter((t): t is string => typeof t === "string") : [], createdAt: Date.now(), updatedAt: Date.now() });
         imported++;
       }
       if (imported) changed("snippets", []);
@@ -297,7 +348,7 @@ export function createLibraryHandlers(events: Emitter<BackendEvents>): Handlers 
       changed("quicklinks", [linkId]);
     },
     "quicklinks.resolve": ({ link, arguments: args, query }) => ({
-      url: renderTemplate(link, { ...args, ...(query !== undefined ? { query } : {}) }, !/^(\/|~\/)/.test(link)).text,
+      url: renderTemplate(link, { ...args, ...(query !== undefined ? { query } : {}) }, !/^(\/|~\/)/.test(link), snippets).text,
       arguments: templateArguments(link),
     }),
     "quicklinks.import": ({ json }) => {
@@ -308,7 +359,7 @@ export function createLibraryHandlers(events: Emitter<BackendEvents>): Handlers 
           skipped++;
           continue;
         }
-        quicklinks.push({ id: id("quicklink"), name: row.name, link: row.link, openWith: row.openWith, tags: row.tags ?? [], createdAt: Date.now(), updatedAt: Date.now() });
+        quicklinks.push({ id: id("quicklink"), name: row.name, link: row.link, icon: row.icon, pinned: Boolean(row.pinned), openWith: row.openWith, tags: row.tags ?? [], createdAt: Date.now(), updatedAt: Date.now() });
         imported++;
       }
       if (imported) changed("quicklinks", []);

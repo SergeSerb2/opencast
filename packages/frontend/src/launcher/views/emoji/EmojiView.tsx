@@ -23,14 +23,14 @@ export function EmojiView({ props, title, icon }: LauncherViewProps<{ query?: st
   const target = usePasteTarget();
   const navigation = useNavigation();
   const category = filter === ALL_CATEGORIES || filter === FREQUENTLY_USED ? undefined : filter;
-  const { data, isLoading } = useBackend("emoji.search", { query, category });
+  const { data, isLoading, refetch } = useBackend("emoji.search", { query, category }, undefined, { onError: (error) => showFailureToast("Failed to load emoji", error) });
   const sections = useMemo(() => visibleSections(data?.sections ?? [], { query, filter, columns }), [data, query, filter, columns]);
   const byKey = useMemo(() => new Map<string, EmojiItem>(sections.flatMap((s) => s.items.map((item, i): [string, EmojiItem] => [`${s.title}/${i}`, item]))), [sections]);
   // The grid selects the first cell for a new query or filter without reporting it.
   useEffect(() => setSelectedKey(null), [query, filter]);
   const selected = (selectedKey ? byKey.get(selectedKey) : undefined) ?? sections[0]?.items[0] ?? null;
 
-  const recordUse = (emoji: string) => void backend.call("emoji.recordUse", { emoji }).catch(() => undefined);
+  const recordUse = (emoji: string) => void backend.call("emoji.recordUse", { emoji }).then(refetch).catch((error) => showFailureToast("Failed to remember emoji", error));
   const paste = async (emoji: string) => {
     try {
       await native.call("input.paste", { content: { kind: "text", text: emoji } });

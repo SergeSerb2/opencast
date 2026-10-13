@@ -172,6 +172,7 @@ export interface Quicklink {
   icon?: ImageLike;
   tags?: string[];
   openCount?: number;
+  pinned?: boolean;
   createdAt: number;
   updatedAt: number;
 }

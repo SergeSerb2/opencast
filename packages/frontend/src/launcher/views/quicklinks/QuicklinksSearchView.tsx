@@ -24,7 +24,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
   const [query, setQuery] = useState(props.query ?? "");
   const [tag, setTag] = useState(ALL_TAGS);
   const [apps, setApps] = useState<AppInfo[]>([]);
-  const { data: quicklinks, isLoading } = useBackend("quicklinks.list", {});
+  const { data: quicklinks, isLoading } = useBackend("quicklinks.list", {}, undefined, { onError: (error) => showFailureToast("Failed to load quicklinks", error) });
   const faviconProvider = useSetting("advanced.faviconProvider");
   const navigation = useNavigation();
   const navTitle = title ?? "Search Quicklinks";
@@ -38,7 +38,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
 
   const tags = useMemo(() => [...new Set((quicklinks ?? []).flatMap((q) => q.tags ?? []))].sort((a, b) => a.localeCompare(b)), [quicklinks]);
   const activeTag = tags.includes(tag) ? tag : ALL_TAGS;
-  const visible = useMemo(() => (quicklinks ?? []).filter((q) => activeTag === ALL_TAGS || q.tags?.includes(activeTag)).sort((a, b) => a.name.localeCompare(b.name)), [quicklinks, activeTag]);
+  const visible = useMemo(() => (quicklinks ?? []).filter((q) => activeTag === ALL_TAGS || q.tags?.includes(activeTag)).sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.name.localeCompare(b.name)), [quicklinks, activeTag]);
   const appName = (id?: string) => (id ? (apps.find((a) => a.bundleId === id || a.path === id)?.name ?? id) : undefined);
 
   const create = (initial?: Parameters<typeof QuicklinkFormView>[0]["initial"], mode: "create" | "duplicate" = "create") => navigation.push(<QuicklinkFormView initial={initial} mode={mode} navigationIcon={icon} />);
@@ -106,6 +106,14 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
           <Action title="Duplicate Quicklink" icon="duplicate-16" shortcut={sc("cmd", "d")} onAction={() => create({ ...quicklink, name: copyName(quicklink.name, (quicklinks ?? []).map((q) => q.name)) }, "duplicate")} />
         </ActionPanel.Section>
         <ActionPanel.Section>
+          <Action title={quicklink.pinned ? "Unpin Quicklink" : "Pin Quicklink"} icon={quicklink.pinned ? "tack-disabled-16" : "tack-16"} shortcut={sc("cmd", "shift", "p")} onAction={async () => {
+            try {
+              await backend.call("quicklinks.update", { id: quicklink.id, patch: { pinned: !quicklink.pinned } });
+              showToast({ style: "success", title: quicklink.pinned ? "Unpinned quicklink" : "Pinned quicklink" });
+            } catch (error) {
+              showFailureToast("Failed to update quicklink", error);
+            }
+          }} />
           <Action.CopyToClipboard title="Copy Name" content={quicklink.name} shortcut={sc("cmd", "opt", "c")} />
           <Action.CopyToClipboard title="Copy Link" content={quicklink.link} shortcut={sc("cmd", "ctrl", "c")} />
         </ActionPanel.Section>
@@ -128,6 +136,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
       filtering
       isLoading={isLoading}
       isShowingDetail={!empty}
+      keepAccessoriesInDetail
       searchBarPlaceholder="Search for Quicklinks…"
       navigationTitle={navTitle}
       navigationIcon={icon}
@@ -161,6 +170,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
               title={quicklink.name}
               icon={rowIcon}
               keywords={[quicklink.link, ...(quicklink.tags ?? [])]}
+              accessories={quicklink.pinned ? [{ icon: "tack-16", tooltip: "Pinned" }] : undefined}
               detail={<QuicklinkDetail quicklink={quicklink} application={appName(quicklink.openWith)} />}
               actions={actionsFor(quicklink, rowIcon)}
             />

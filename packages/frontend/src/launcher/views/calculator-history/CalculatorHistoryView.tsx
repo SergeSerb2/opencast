@@ -37,18 +37,22 @@ function entryIcon(entry: CalculatorResult): string {
 export function CalculatorHistoryView({ props, title, icon }: LauncherViewProps<{ query?: string }>) {
   const [text, setText] = useState(props.query ?? "");
   const [query, setQuery] = useState(text.trim());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const target = usePasteTarget();
   const expression = text.trim();
-  const live = useBackend("calc.evaluate", { expression }, [expression], { enabled: expression.length > 0 });
+  const live = useBackend("calc.evaluate", { expression }, [expression], { enabled: expression.length > 0, keepPreviousData: false });
   const history = useBackend("calc.history", { query, limit: 500 });
-  const liveResult = expression && live.data ? live.data : null;
+  const liveResult = expression && live.data?.input === expression ? live.data : null;
+  useEffect(() => {
+    if (liveResult) setSelectedId(LIVE_ID);
+  }, [liveResult?.input]);
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(text.trim()), 150);
     return () => clearTimeout(timer);
   }, [text]);
 
-  const save = (result: CalculatorResult) => backend.call("calc.saveHistory", { result }).then(history.refetch, () => undefined);
+  const save = (result: CalculatorResult) => backend.call("calc.saveHistory", { result }).then(history.refetch).catch((error) => showFailureToast("Failed to save calculation", error));
 
   // Like Raycast, clearing the search bar keeps the calculation that was showing.
   const changeText = (next: string) => {
@@ -120,6 +124,8 @@ export function CalculatorHistoryView({ props, title, icon }: LauncherViewProps<
       searchText={text}
       onSearchTextChange={changeText}
       filtering={false}
+      selectedItemId={selectedId ?? undefined}
+      onSelectionChange={setSelectedId}
       isLoading={history.isLoading || live.isLoading}
       searchBarPlaceholder="Calculate, convert units, or search past calculations…"
       navigationTitle={title ?? "Calculator History"}

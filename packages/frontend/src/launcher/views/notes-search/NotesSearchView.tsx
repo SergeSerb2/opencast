@@ -27,7 +27,7 @@ async function createNote(content = "") {
 export function NotesSearchView({ props, title, icon }: LauncherViewProps<{ query?: string }>) {
   const [text, setText] = useState(props.query ?? "");
   const [query, setQuery] = useState(text.trim());
-  const { data: notes, isLoading } = useBackend("notes.list", { query });
+  const { data: notes, isLoading } = useBackend("notes.list", { query }, undefined, { onError: (error) => showFailureToast("Failed to load notes", error) });
   const navTitle = title ?? "Search Notes";
 
   // The backend searches titles and full content; debounce keystrokes.
@@ -70,7 +70,13 @@ export function NotesSearchView({ props, title, icon }: LauncherViewProps<{ quer
   };
 
   const removeAll = async () => {
-    const all = notes ?? [];
+    let all: NoteSummary[];
+    try {
+      all = await backend.call("notes.list", {});
+    } catch (error) {
+      showFailureToast("Failed to load notes", error);
+      return;
+    }
     const confirmed = await confirmAlert({ title: "Delete All Notes?", message: `All ${all.length} notes will be deleted. This can’t be undone.`, icon: "trash-16", primaryAction: { title: "Delete All", style: "destructive" } });
     if (!confirmed) return;
     const toast = showToast({ style: "animated", title: "Deleting notes…" });
@@ -91,7 +97,7 @@ export function NotesSearchView({ props, title, icon }: LauncherViewProps<{ quer
         <Action
           title={note.pinned ? "Unpin Note" : "Pin Note"}
           icon={note.pinned ? "tack-disabled-16" : "tack-16"}
-          shortcut={sc("cmd", ".")}
+          shortcut={sc("cmd", "shift", "p")}
           onAction={() =>
             run("Failed to update note", async () => {
               await backend.call("notes.update", { id: note.id, pinned: !note.pinned });

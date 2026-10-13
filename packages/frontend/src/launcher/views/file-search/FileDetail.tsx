@@ -22,7 +22,9 @@ function useTextPreview(file: FileResult): string | null {
     const controller = new AbortController();
     fetch(localFileUrl(file.path), { signal: controller.signal })
       .then((response) => (response.ok ? response.text() : null))
-      .then((content) => setText(content === null ? null : content.split(/\r?\n/).slice(0, TEXT_PREVIEW_LINES).join("\n")))
+      .then((content) => {
+        if (!controller.signal.aborted) setText(content === null ? null : content.split(/\r?\n/).slice(0, TEXT_PREVIEW_LINES).join("\n"));
+      })
       .catch(() => undefined);
     return () => controller.abort();
   }, [file.path, readable]);
@@ -55,7 +57,8 @@ export function FileDetail({ file }: { file: FileResult }) {
   useEffect(() => setDimensions(null), [file.path]);
 
   const created = parseDate(metadata?.created);
-  const modified = parseDate(metadata?.modified) || file.modified;
+  const metadataModified = parseDate(metadata?.modified);
+  const modified = Number.isFinite(metadataModified) ? metadataModified : file.modified;
   const accessed = parseDate(metadata?.lastOpened);
   const size = metadata?.size ?? file.size;
 

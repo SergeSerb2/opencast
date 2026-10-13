@@ -34,7 +34,7 @@ function ImagePreview({ src, onSize }: { src: string; onSize?: (size: { width: n
 function Preview({ item, onImageSize }: { item: ClipboardItem; onImageSize: (size: { width: number; height: number }) => void }) {
   switch (item.kind) {
     case "image":
-      return item.imagePath ? <ImagePreview src={imageUrl(item.imagePath)} /> : null;
+      return item.imagePath ? <ImagePreview src={imageUrl(item.imagePath)} onSize={onImageSize} /> : null;
     case "file": {
       const path = item.filePaths?.[0];
       if (!path) return null;
@@ -60,13 +60,14 @@ function Preview({ item, onImageSize }: { item: ClipboardItem; onImageSize: (siz
 
 /** Preview and "Information" metadata for a clipboard entry. */
 export function ClipboardDetail({ item }: { item: ClipboardItem }) {
-  const [fileImageSize, setFileImageSize] = useState<{ width: number; height: number } | null>(null);
+  const [imageSize, setImageSize] = useState<{ id: string; width: number; height: number } | null>(null);
+  const fileImageSize = imageSize?.id === item.id ? imageSize : null;
   const source: ImageLike | undefined = item.sourceApp ? { fileIcon: item.sourceApp.path } : undefined;
   const width = item.imageWidth ?? fileImageSize?.width;
   const height = item.imageHeight ?? fileImageSize?.height;
   return (
     <ItemDetail
-      preview={<Preview key={item.id} item={item} onImageSize={setFileImageSize} />}
+      preview={<Preview key={item.id} item={item} onImageSize={(size) => setImageSize({ id: item.id, ...size })} />}
       metadata={
         <Metadata>
           {item.sourceApp && <Metadata.Label title="Source" text={item.sourceApp.name} icon={source} />}
