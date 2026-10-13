@@ -305,6 +305,7 @@ export interface AIAttachment {
   path?: string;
   /** Inline text content (selection, small text files, fetched URL text). */
   text?: string;
+  /** Remote URL, or an inline data:image/{png,jpeg,gif,webp};base64 URL for path-less images. */
   url?: string;
   size?: number;
 }

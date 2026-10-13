@@ -4,7 +4,7 @@ import { Button } from "../../components/Button/Button";
 import { ActivityIndicator, type ActivityState } from "../../components/Spinner/Spinner";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";
-import { localFileUrl } from "../../icons/image-source";
+import { attachmentImageUrl } from "../composer/attachments";
 import type { BranchInfo } from "../model/message-tree";
 import { formatThoughtDuration, toolCallLabel } from "../lib/format";
 
@@ -154,18 +154,14 @@ export function ErrorRow({ message, status, onRetry, onOpenSettings }: { message
   );
 }
 
-function isImage(attachment: AIAttachment): boolean {
-  return attachment.kind === "image" || attachment.kind === "screenshot" || Boolean(attachment.mimeType?.startsWith("image/"));
-}
-
 /** Attachments sent with a user message: image previews and document cards. */
 export function AttachmentCards({ attachments }: { attachments: readonly AIAttachment[] }) {
   if (!attachments.length) return null;
   return (
     <div className="sc-ai-sent-attachments">
       {attachments.map((attachment) =>
-        isImage(attachment) && attachment.path ? (
-          <img key={attachment.id} className="sc-ai-sent-image" src={localFileUrl(attachment.path)} alt={attachment.name} draggable={false} />
+        attachmentImageUrl(attachment) ? (
+          <img key={attachment.id} className="sc-ai-sent-image" src={attachmentImageUrl(attachment)} alt={attachment.name} draggable={false} />
         ) : (
           <div key={attachment.id} className="sc-ai-sent-doc" title={attachment.name}>
             <Image source={attachment.kind === "url" ? "globe-01-16" : attachment.kind === "text" || attachment.kind === "selection" ? "quote-block-16" : "blank-document-16"} size={22} />

@@ -3,10 +3,9 @@ import type { AIAttachment, AICommand, AIPreset } from "@surgecast/protocol";
 import { showFailureToast } from "../../components/feedback/toast-store";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";
-import { localFileUrl } from "../../icons/image-source";
 import { fuzzyFilter } from "../../lib/fuzzy";
 import { findTrigger, replaceTrigger, segmentMentions, TOOLSET_KIND_TITLES, type Toolset, type Trigger } from "../model/mentions";
-import { attachmentFromFile, clipboardAttachments, isImageAttachment } from "./attachments";
+import { attachmentFromFile, attachmentImageUrl, clipboardAttachments } from "./attachments";
 import { TriggerMenu, type TriggerSection } from "./TriggerMenu";
 import "./composer.css";
 
@@ -154,7 +153,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     requestAnimationFrame(() => editor.current?.setSelectionRange(trigger.start, trigger.start));
   };
 
-  const canSend = !disabled && (draft.text.trim().length > 0 || draft.attachments.length > 0);
+  const canSend = !disabled && (draft.text.trim().length > 0 || draft.attachments.length > 0 || Boolean(draft.command));
   const submit = () => {
     if (!canSend) return;
     onSubmit(draftRef.current);
@@ -195,6 +194,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       }
     }
     if (onUnhandledKey?.(event)) event.preventDefault();
+    if (event.key === "Enter") event.stopPropagation();
   };
 
   const onPaste = async (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -239,9 +239,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       {draft.attachments.length > 0 && (
         <div className="sc-ai-composer__attachments">
           {draft.attachments.map((attachment) => (
-            <div key={attachment.id} className="sc-ai-chip" data-kind={isImageAttachment(attachment) && attachment.path ? "image" : attachment.text !== undefined ? "text" : "document"} title={attachment.name}>
-              {isImageAttachment(attachment) && attachment.path ? (
-                <img src={localFileUrl(attachment.path)} alt={attachment.name} draggable={false} />
+            <div key={attachment.id} className="sc-ai-chip" data-kind={attachmentImageUrl(attachment) ? "image" : attachment.text !== undefined ? "text" : "document"} title={attachment.name}>
+              {attachmentImageUrl(attachment) ? (
+                <img src={attachmentImageUrl(attachment)} alt={attachment.name} draggable={false} />
               ) : attachment.text !== undefined ? (
                 <>
                   <span className="sc-ai-chip__label">{attachment.name}</span>

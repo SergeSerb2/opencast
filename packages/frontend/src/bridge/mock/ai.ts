@@ -11,7 +11,7 @@ interface Run {
   chatId: string;
   message: AIMessage;
   stopped: boolean;
-  timers: Set<ReturnType<typeof setTimeout>>;
+  timers: Map<ReturnType<typeof setTimeout>, () => void>;
   confirmations: Map<string, (approved: boolean) => void>;
 }
 
@@ -66,7 +66,9 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
 
   const branchOf = (chatId: string, leaf: string | undefined): AIMessage[] => {
     const path: AIMessage[] = [];
-    for (let id = leaf; id; ) {
+    const seen = new Set<string>();
+    for (let id = leaf; id && !seen.has(id); ) {
+      seen.add(id);
       const m = messages.find((x) => x.id === id && x.chatId === chatId);
       if (!m) break;
       path.unshift(m);
@@ -98,6 +100,7 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
 
   const updateChat = (id: string, patch: Partial<AIChat>): AIChat => {
     const chat = chatById(id);
+    if (patch.currentLeafId && !messages.some((m) => m.id === patch.currentLeafId && m.chatId === id)) notFound("Chat branch");
     if (patch.title !== undefined && !patch.title.trim()) throw new RpcError({ code: RpcErrorCode.InvalidParams, message: "Chat title cannot be empty" });
     Object.assign(chat, patch, patch.title !== undefined ? { titleSource: "user" } : {}, { updatedAt: Date.now() });
     changed(id);
@@ -110,7 +113,7 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
         run.timers.delete(timer);
         resolve();
       }, ms);
-      run.timers.add(timer);
+      run.timers.set(timer, resolve);
     });
 
   /** Tool calls the answer makes: web search when enabled, otherwise the first tool of each @mentioned toolset. */
@@ -121,12 +124,13 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
       if (toolset === "web") continue;
       const tools = AI_TOOLS.filter((t) => t.toolset === toolset);
       const tool = (/create|open|new|add|notify/i.test(prompt) ? tools.find((t) => t.requiresConfirmation) : undefined) ?? tools[0];
-      if (tool) calls.push({ id: uid("call"), name: tool.name, title: tool.title, arguments: tool.requiresConfirmation ? { title: titleFrom(prompt) } : { query: prompt.slice(0, 60) }, status: tool.requiresConfirmation ? "awaiting-confirmation" : "running" });
+      if (tool) calls.push({ id: uid("call"), name: tool.name, title: tool.title, arguments: tool.requiresConfirmation ? { title: titleFrom(prompt) } : { query: prompt.slice(0, 60) }, status: tool.requiresConfirmation && !settings["ai.alwaysAllowedTools"].includes(tool.name) ? "awaiting-confirmation" : "running" });
     }
     return calls;
   };
 
   const execute = async (run: Run, prompt: string) => {
+    if (run.stopped) return;
     const chat = chatById(run.chatId);
     const { message } = run;
     const model = modelOf(message.model);
@@ -206,13 +210,13 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
     let user: AIMessage | undefined;
     let prompt = input.content;
     if (input.regenerateMessageId) {
-      const original = messages.find((m) => m.id === input.regenerateMessageId && m.role === "assistant") ?? notFound(`Message ${input.regenerateMessageId}`);
+      const original = messages.find((m) => m.id === input.regenerateMessageId && m.chatId === chat.id && m.role === "assistant") ?? notFound(`Message ${input.regenerateMessageId}`);
       parentId = original.parentId;
       prompt = messages.find((m) => m.id === parentId)?.content ?? "";
     } else {
       let attachments: AIAttachment[] | undefined = input.attachments;
       if (input.editMessageId) {
-        const original = messages.find((m) => m.id === input.editMessageId && m.role === "user") ?? notFound(`Message ${input.editMessageId}`);
+        const original = messages.find((m) => m.id === input.editMessageId && m.chatId === chat.id && m.role === "user") ?? notFound(`Message ${input.editMessageId}`);
         parentId = original.parentId;
         attachments ??= original.attachments;
       }
@@ -224,14 +228,19 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
     const assistant: AIMessage = { id: uid("msg"), chatId: chat.id, parentId, role: "assistant", content: "", toolCalls: [], status: "streaming", model: input.model ?? chat.model, createdAt: Date.now() + 1, updatedAt: Date.now() + 1 };
     messages.push(assistant);
     updateChat(chat.id, { currentLeafId: assistant.id, ...(input.model ? { model: input.model } : {}) });
-    const run: Run = { streamId: uid("stream"), chatId: chat.id, message: assistant, stopped: false, timers: new Set(), confirmations: new Map() };
+    const run: Run = { streamId: uid("stream"), chatId: chat.id, message: assistant, stopped: false, timers: new Map(), confirmations: new Map() };
     runs.set(run.streamId, run);
     const previous = queues.get(chat.id) ?? Promise.resolve();
     const promise = previous
       .then(() => execute(run, prompt))
-      .catch((error: unknown) => console.error("[mock ai] run failed", error))
+      .catch(() => {
+        if (run.stopped) return;
+        Object.assign(assistant, { status: "error", error: "The mock response failed." });
+        emit({ type: "error", streamId: run.streamId, message: "The mock response failed." });
+      })
       .finally(() => runs.delete(run.streamId));
     queues.set(chat.id, promise);
+    void promise.finally(() => { if (queues.get(chat.id) === promise) queues.delete(chat.id); });
     return { streamId: run.streamId, userMessageId: user?.id, assistantMessageId: assistant.id };
   };
 
@@ -258,7 +267,13 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
     "ai.chats.update": ({ id, patch }) => updateChat(id, patch),
     "ai.chats.delete": ({ id }) => {
       chatById(id);
-      for (const run of runs.values()) if (run.chatId === id) run.stopped = true;
+      for (const run of runs.values()) {
+        if (run.chatId !== id) continue;
+        run.stopped = true;
+        for (const [timer, resolve] of run.timers) { clearTimeout(timer); resolve(); }
+        for (const resolve of run.confirmations.values()) resolve(false);
+        emit({ type: "done", streamId: run.streamId, finishReason: "stopped" });
+      }
       chats.splice(chats.findIndex((c) => c.id === id), 1);
       for (let i = messages.length - 1; i >= 0; i--) if (messages[i].chatId === id) messages.splice(i, 1);
       changed(id);
@@ -279,7 +294,8 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
       const run = runs.get(streamId);
       if (!run || run.stopped) return;
       run.stopped = true;
-      for (const timer of run.timers) clearTimeout(timer);
+      for (const [timer, resolve] of run.timers) { clearTimeout(timer); resolve(); }
+      run.timers.clear();
       for (const resolve of run.confirmations.values()) resolve(false);
       Object.assign(run.message, { status: "stopped", updatedAt: Date.now() });
       runs.delete(streamId);

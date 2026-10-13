@@ -53,6 +53,9 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
   const [messages, setMessages] = useState<AIMessage[]>(EMPTY);
   const [isLoading, setLoading] = useState(Boolean(chatId));
   const [missing, setMissing] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const startingRef = useRef(false);
+  const revision = useRef(0);
   const [pending, setPending] = useState<{ content: string; attachments: AIAttachment[] } | null>(null);
   const [leafOverride, setLeafOverride] = useState<string | null>(null);
   const [requestedId, setRequestedId] = useState<string | null>(chatId);
@@ -66,6 +69,9 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
 
   // The caller switched chats. A chat this session created itself is already current.
   if (chatId !== requestedId) {
+    revision.current++;
+    setStarting(false);
+    startingRef.current = false;
     setRequestedId(chatId);
     if (chatId !== currentId) {
       setCurrentId(chatId);
@@ -148,13 +154,21 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
 
   const run = useCallback<ChatSession["run"]>(
     async (optimistic, start) => {
+      // Prevent duplicate submissions before a create/send RPC returns.
+      if (startingRef.current) return null;
+      startingRef.current = true;
+      setStarting(true);
+      const ownRevision = revision.current;
       setPending(optimistic);
       try {
         const started = await start();
         registerStream(started.streamId, { chatId: started.chatId, messageId: started.assistantMessageId });
+        // A response belongs to the original chat even if the user navigated away.
+        if (revision.current !== ownRevision) return started;
         if (started.chatId !== idRef.current) {
           idRef.current = started.chatId;
           setCurrentId(started.chatId);
+          if (onCreated.current) setRequestedId(started.chatId);
           onCreated.current?.(started.chatId);
         }
         await refetch();
@@ -163,7 +177,11 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
         showFailureToast("Could not send message", error);
         return null;
       } finally {
-        setPending(null);
+        if (revision.current === ownRevision) {
+          startingRef.current = false;
+          setStarting(false);
+          setPending(null);
+        }
       }
     },
     [onCreated, refetch],
@@ -208,7 +226,7 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
     transcript,
     isLoading,
     activeStream,
-    isGenerating: Boolean(activeStream) || foreignStreaming || Boolean(pending),
+    isGenerating: Boolean(activeStream) || foreignStreaming || starting,
     missing,
     refetch,
     run,

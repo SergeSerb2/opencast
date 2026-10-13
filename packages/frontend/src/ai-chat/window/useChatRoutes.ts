@@ -40,12 +40,21 @@ export type ChatRoute =
  * a chat id (optionally "chat/<id>"), or a launcher payload { prompt, presetId, aiCommandId }.
  */
 export function parseChatRoute(route: string | undefined, payload: unknown): ChatRoute {
-  const data = (payload && typeof payload === "object" ? payload : {}) as RoutePayload;
-  const path = (route ?? "").replace(/^\/+|\/+$/g, "");
+  const input = (payload && typeof payload === "object" ? payload : {}) as Record<string, unknown>;
+  const data: RoutePayload = {};
+  for (const key of ["text", "filepath", "prompt", "presetId", "aiCommandId"] as const) {
+    if (typeof input[key] === "string") data[key] = input[key];
+  }
+  if (input.arguments && typeof input.arguments === "object" && !Array.isArray(input.arguments)) {
+    data.arguments = Object.fromEntries(Object.entries(input.arguments).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+  }
+  let path: string;
+  try { path = decodeURIComponent(route ?? "").replace(/^\/+|\/+$/g, "").replace(/^ai-chat\//, ""); }
+  catch { return { kind: "none" }; }
   if (path === "add-text" || path === "append-text") return data.text?.trim() ? { kind: "text", text: data.text } : { kind: "none" };
   if (path === "add-attachment") return data.filepath ? { kind: "attachment", path: data.filepath } : { kind: "none" };
   if (path === "new") return { kind: "new", presetId: data.presetId };
-  if (path) return { kind: "chat", chatId: decodeURIComponent(path.replace(/^chat\//, "")) };
+  if (path) return { kind: "chat", chatId: path.replace(/^chat\//, "") };
   if (data.aiCommandId) return { kind: "command", commandId: data.aiCommandId, arguments: data.arguments };
   if (data.prompt?.trim()) return { kind: "prompt", prompt: data.prompt.trim(), presetId: data.presetId };
   if (data.presetId) return { kind: "new", presetId: data.presetId };
@@ -95,7 +104,7 @@ export function useChatRoutes(handlers: ChatRouteHandlers): void {
 
   // In a browser, other windows open this page with the route in the hash.
   useEffect(() => {
-    const hash = decodeURIComponent(window.location.hash.slice(1));
+    const hash = window.location.hash.slice(1);
     if (hash) apply(parseChatRoute(hash, Object.fromEntries(new URLSearchParams(window.location.search))));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on load
   }, []);

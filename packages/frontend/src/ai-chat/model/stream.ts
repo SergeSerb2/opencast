@@ -46,7 +46,7 @@ function endReasoning(stream: LiveStream, now: number): LiveStream {
  */
 export function reduceStream(previous: LiveStream | undefined, event: AIStreamEvent, now: number): LiveStream {
   const stream = previous ?? { ...createLiveStream(event.streamId, now), partial: event.type !== "start" };
-  if (stream.status !== "streaming" && event.type !== "start") return stream;
+  if (stream.status !== "streaming") return stream;
   switch (event.type) {
     case "start":
       return { ...stream, status: "streaming", chatId: event.chatId ?? stream.chatId, messageId: event.messageId ?? stream.messageId, model: event.model || stream.model };
@@ -82,7 +82,14 @@ const STATUS: Record<LiveStream["status"], AIMessage["status"]> = { streaming: "
  * while it is longer; once the stored copy has caught up it wins.
  */
 export function withLiveStream(message: AIMessage, live: LiveStream | undefined): AIMessage {
-  if (!live || live.messageId !== message.id || live.partial) return message;
+  if (!live || live.messageId !== message.id) return message;
+  if (live.partial) return {
+    ...message,
+    toolCalls: live.toolCalls.length ? [...new Map([...(message.toolCalls ?? []), ...live.toolCalls].map((call) => [call.id, call])).values()] : message.toolCalls,
+    status: live.status === "streaming" ? message.status : STATUS[live.status],
+    error: live.error?.message ?? message.error,
+    usage: live.usage ?? message.usage,
+  };
   const storedDone = message.status !== "streaming";
   if (storedDone && live.status !== "streaming" && message.content.length >= live.text.length) return message;
   return {
