@@ -6,7 +6,7 @@ import { useEvent, useLatest } from "../../bridge/hooks";
 import { showFailureToast } from "../../components/feedback/toast-store";
 import { branchInfo, buildMessageTree, resolveLeaf, visibleBranch, type BranchInfo, type MessageTree } from "../model/message-tree";
 import { withLiveStream, type LiveStream } from "../model/stream";
-import { installStreamListener, registerStream, streamsForChat, useStreams } from "./streams";
+import { installStreamListener, reconcileStreams, registerStream, streamsForChat, useStreams } from "./streams";
 
 export type TranscriptItem =
   | { kind: "message"; message: AIMessage; branch: BranchInfo; live?: LiveStream; isLast: boolean }
@@ -96,6 +96,7 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
     try {
       const result = await backend.call("ai.chats.get", { id }, { signal: controller.signal });
       if (controller.signal.aborted || idRef.current !== id) return;
+      reconcileStreams(result?.messages ?? EMPTY);
       setChat(result?.chat ?? null);
       setMessages(result?.messages ?? EMPTY);
       setMissing(result === null);

@@ -79,10 +79,11 @@ const STATUS: Record<LiveStream["status"], AIMessage["status"]> = { streaming: "
 /**
  * Overlay a live stream on the stored assistant message it writes to. The
  * backend persists streaming messages in batches, so the live text is newer
- * while it is longer; once the stored copy has caught up it wins.
+ * while it is longer; a terminal stored copy always wins.
  */
 export function withLiveStream(message: AIMessage, live: LiveStream | undefined): AIMessage {
   if (!live || live.messageId !== message.id) return message;
+  if (message.status !== "streaming") return message;
   if (live.partial) return {
     ...message,
     toolCalls: live.toolCalls.length ? [...new Map([...(message.toolCalls ?? []), ...live.toolCalls].map((call) => [call.id, call])).values()] : message.toolCalls,
@@ -90,15 +91,13 @@ export function withLiveStream(message: AIMessage, live: LiveStream | undefined)
     error: live.error?.message ?? message.error,
     usage: live.usage ?? message.usage,
   };
-  const storedDone = message.status !== "streaming";
-  if (storedDone && live.status !== "streaming" && message.content.length >= live.text.length) return message;
   return {
     ...message,
     content: live.text.length >= message.content.length ? live.text : message.content,
     reasoning: live.reasoning.length >= (message.reasoning?.length ?? 0) ? live.reasoning || message.reasoning : message.reasoning,
     toolCalls: live.toolCalls.length ? live.toolCalls : message.toolCalls,
     model: live.model ?? message.model,
-    status: live.status === "streaming" ? "streaming" : storedDone ? message.status : STATUS[live.status],
+    status: STATUS[live.status],
     error: live.error?.message ?? message.error,
     usage: live.usage ?? message.usage,
   };

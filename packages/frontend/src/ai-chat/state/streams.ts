@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AIStreamEvent } from "@surgecast/protocol";
+import type { AIMessage, AIStreamEvent } from "@surgecast/protocol";
 import { backend } from "../../bridge/backend";
 import { createLiveStream, reasoningDurationMs, reduceStream, type LiveStream } from "../model/stream";
 import { rememberReasoningDuration } from "./reasoning-durations";
@@ -75,6 +75,25 @@ export function registerStream(streamId: string, init: Partial<Pick<LiveStream, 
     const existing = state.streams[streamId];
     const stream = existing ? { ...existing, chatId: existing.chatId ?? init.chatId, messageId: existing.messageId ?? init.messageId, model: existing.model ?? init.model } : createLiveStream(streamId, Date.now(), init);
     return { streams: { ...state.streams, [streamId]: stream } };
+  });
+}
+
+/** A refetch can observe completion even if its stream event was lost during a disconnect. */
+export function reconcileStreams(messages: AIMessage[]): void {
+  const terminal = new Map(messages.filter((m) => m.role === "assistant" && m.status !== "streaming").map((m) => [m.id, m]));
+  useStreams.setState((state) => {
+    let streams = state.streams;
+    for (const stream of Object.values(state.streams)) {
+      const message = stream.messageId ? terminal.get(stream.messageId) : undefined;
+      if (stream.status !== "streaming" || !message || message.chatId !== stream.chatId) continue;
+      if (streams === state.streams) streams = { ...streams };
+      streams[stream.streamId] = {
+        ...stream,
+        status: message.status === "complete" ? "done" : message.status === "error" ? "error" : "stopped",
+        endedAt: Date.now(),
+      };
+    }
+    return streams === state.streams ? state : { streams };
   });
 }
 

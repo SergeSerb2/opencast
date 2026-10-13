@@ -1,9 +1,9 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AIChat } from "@surgecast/protocol";
+import type { AIChat, AIMessage } from "@surgecast/protocol";
 import { backend } from "../../bridge/backend";
 import { useChatSession } from "./useChatSession";
-import { useStreams } from "./streams";
+import { registerStream, receiveStreamEvent, useStreams } from "./streams";
 
 vi.mock("../../bridge/backend", () => ({ backend: { call: vi.fn(), on: vi.fn(() => () => {}), onStateChange: vi.fn(() => () => {}) } }));
 vi.mock("../../components/feedback/toast-store", () => ({ showFailureToast: vi.fn() }));
@@ -22,6 +22,25 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe("chat session navigation during sends", () => {
+  it.each(["complete", "error", "stopped"] as const)("reconciles a missed %s event on reconnect", async (status) => {
+    let message: AIMessage = { id: "m", chatId: "a", role: "assistant", content: "Hello", status: "streaming", createdAt: 0, updatedAt: 0 };
+    vi.mocked(backend.call).mockImplementation(async () => ({ chat: chat("a"), messages: [message] }) as never);
+    registerStream("s", { chatId: "a", messageId: "m" });
+    const { result } = renderHook(() => useChatSession("a"));
+    await waitFor(() => expect(result.current.transcript).toHaveLength(1));
+    expect(result.current.isGenerating).toBe(true);
+    message = { ...message, status, content: "Hello world", error: status === "error" ? "Failed" : undefined };
+    const reconnect = vi.mocked(backend.onStateChange).mock.calls.at(-1)![0];
+    await act(async () => { reconnect("open"); });
+    await waitFor(() => expect(result.current.isGenerating).toBe(false));
+    expect(result.current.activeStream).toBeUndefined();
+    expect(result.current.transcript[0]).toMatchObject({ message });
+    const stops = vi.mocked(backend.call).mock.calls.filter(([method]) => method === "ai.stop").length;
+    act(() => { result.current.stop(); receiveStreamEvent({ type: "text", streamId: "s", delta: " late" }); });
+    expect(vi.mocked(backend.call).mock.calls.filter(([method]) => method === "ai.stop")).toHaveLength(stops);
+    expect(useStreams.getState().streams.s.status).not.toBe("streaming");
+  });
+
   it("does not select the old chat when its send returns after navigation", async () => {
     const created = vi.fn();
     const start = deferred<{ chatId: string; streamId: string }>();

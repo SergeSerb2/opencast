@@ -60,6 +60,12 @@ describe("withLiveStream", () => {
     expect(withLiveStream(stored, done)).toMatchObject({ content: "Hello", status: "complete" });
   });
 
+  it("trusts terminal stored messages even if the completion event was missed", () => {
+    const complete = { ...stored, status: "complete" as const };
+    expect(withLiveStream(complete, live)).toBe(complete);
+    expect(withLiveStream(complete, { ...live, partial: true })).toBe(complete);
+  });
+
   it("ignores streams for other messages and partial streams", () => {
     expect(withLiveStream({ ...stored, id: "other" }, live).content).toBe("Hel");
     expect(withLiveStream(stored, { ...live, partial: true }).content).toBe("Hel");
