@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { extname } from "node:path";
 import { inflateSync } from "node:zlib";
-import type { AIModel, AIProvider } from "@surgecast/protocol";
+import type { AIAttachment, AIModel, AIProvider } from "@surgecast/protocol";
 import type { AIChatTurn } from "../../context";
 import { httpUrl } from "./common";
 import { readPage } from "./web";
@@ -18,6 +18,25 @@ const imageTypes: Record<string, string> = {
   ".webp": "image/webp",
   ".gif": "image/gif",
 };
+function fileMimeType(attachment: AIAttachment): string {
+  const extension = extname(attachment.path ?? attachment.name).toLowerCase();
+  return attachment.mimeType ?? imageTypes[extension] ?? (extension === ".pdf" ? "application/pdf" : "text/plain");
+}
+async function localFile(attachment: AIAttachment, signal?: AbortSignal): Promise<Buffer> {
+  const info = await stat(attachment.path!);
+  if (!info.isFile() || info.size > 20 * 1024 * 1024)
+    throw new Error(`Attachment ${attachment.name} must be a file smaller than 20 MiB`);
+  const data = await readFile(attachment.path!, { signal });
+  if (data.length > 20 * 1024 * 1024) throw new Error(`Attachment ${attachment.name} must be smaller than 20 MiB`);
+  return data;
+}
+export async function snapshotAttachments(attachments: AIAttachment[], signal?: AbortSignal): Promise<AIAttachment[]> {
+  return Promise.all(attachments.map(async attachment => {
+    if (!attachment.path || attachment.text !== undefined || attachment.snapshot) return attachment;
+    const data = await localFile(attachment, signal);
+    return { ...attachment, snapshot: { data: data.toString("base64"), mimeType: fileMimeType(attachment) } };
+  }));
+}
 /** Only decode trivial text PDFs; never pretend a scanned/encrypted document was read. */
 export function trivialPdfText(data: Buffer): string {
   const source = data.toString("latin1");
@@ -94,7 +113,7 @@ export async function prepareTurns(
           });
           continue;
         }
-        if (attachment.kind === "image" && attachment.url && !attachment.path) {
+        if (attachment.kind === "image" && attachment.url && !attachment.path && !attachment.snapshot) {
           if (!model.capabilities.vision)
             throw new Error(`Model ${model.name} does not support image attachments`);
           let mimeType: string, data: string;
@@ -131,22 +150,12 @@ export async function prepareTurns(
           parts.push({ type: "image", mimeType, data, name: attachment.name });
           continue;
         }
-        if (!attachment.path)
-          throw new Error(
-            `Attachment ${attachment.name} has no content or local path`,
-          );
-        const info = await stat(attachment.path);
-        if (!info.isFile() || info.size > 20 * 1024 * 1024)
-          throw new Error(
-            `Attachment ${attachment.name} must be a file smaller than 20 MiB`,
-          );
-        const data = await readFile(attachment.path, { signal });
-        const mimeType =
-          attachment.mimeType ??
-          imageTypes[extname(attachment.path).toLowerCase()] ??
-          (extname(attachment.path).toLowerCase() === ".pdf"
-            ? "application/pdf"
-            : "text/plain");
+        if (!attachment.path && !attachment.snapshot)
+          throw new Error(`Attachment ${attachment.name} has no content or local path`);
+        if (attachment.snapshot && attachment.snapshot.data.length > Math.ceil(20 * 1024 * 1024 / 3) * 4)
+          throw new Error(`Attachment ${attachment.name} snapshot exceeds 20 MiB`);
+        const data = attachment.snapshot ? Buffer.from(attachment.snapshot.data, "base64") : await localFile(attachment, signal);
+        const mimeType = attachment.snapshot?.mimeType ?? fileMimeType(attachment);
         if (mimeType.startsWith("image/")) {
           if (!model.capabilities.vision)
             throw new Error(

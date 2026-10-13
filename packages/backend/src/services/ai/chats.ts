@@ -14,6 +14,7 @@ import type {
   AppContext,
 } from "../../context";
 import { CompletionEngine } from "./engine";
+import { snapshotAttachments } from "./attachments";
 import { MCP } from "./mcp";
 import {
   ProviderError,
@@ -391,6 +392,14 @@ export class Chats {
           ? ctx.entities.get<AIPreset>("aiPresets", chat.presetId)?.data
           : undefined;
       const branch = visibleBranch(this.messages(chat.id), assistant.parentId);
+      for (const message of branch) {
+        if (!message.attachments?.some(a => a.path && a.text === undefined && !a.snapshot)) continue;
+        const attachments = await snapshotAttachments(message.attachments, run.controller.signal);
+        run.controller.signal.throwIfAborted();
+        if (!ctx.entities.get("aiMessages", message.id)) throw new Error("Chat message was deleted");
+        ctx.entities.patch<AIMessage>("aiMessages", message.id, { attachments });
+        message.attachments = attachments;
+      }
       const messages: AIChatTurn[] = branch.flatMap<AIChatTurn>(replayMessage);
       const toolsets = [
         ...new Set([

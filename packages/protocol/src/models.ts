@@ -316,6 +316,8 @@ export interface AIAttachment {
   mimeType?: string;
   /** Local path (images/files) — the backend reads it when sending. */
   path?: string;
+  /** Immutable base64 snapshot of a submitted local file. Older attachments may have only a path. */
+  snapshot?: { data: string; mimeType: string };
   /** Inline text content (selection, small text files, fetched URL text). */
   text?: string;
   /** Remote URL, or an inline data:image/{png,jpeg,gif,webp};base64 URL for path-less images. */
