@@ -1,0 +1,139 @@
+# Surgecast native macOS host
+
+Swift Package Manager executable, macOS 14+, Swift 5 language mode, system frameworks
+only. The host owns AppKit windows and macOS services; Node owns application data and
+extension execution. Both stdio and WKWebView calls use `Bridge/NativeRouter.swift`.
+
+## Structure
+
+- `Sources/Surgecast/App`: accessory application, instance lock, URL delivery,
+  application menus and launcher status item.
+- `Backend`: supervised Node process, NDJSON requests/responses and native events.
+- `Bridge` and `Web`: shared router, document-start config/listeners, trusted-origin
+  bridge, asset/icon/file schemes, appearance updates and page reloads.
+- `Windows`: nonactivating launcher and autosaved AI Chat, Notes, Settings windows.
+- `Services`: hotkeys, applications/FSEvents, clipboard, input/snippets, AX windows
+  and menus, system actions, permissions, Keychain, EventKit, files, capture, speech,
+  login items, extension status items.
+- `Overlays`: HUD, confetti, native alerts.
+- `SurgecastCore` / `SurgecastSelfTest`: pure window geometry and virtual key mappings.
+- `Resources`: bundle metadata and generated icon. `DevStub`: independent IPC/page
+  fixture and repeatable read-only smoke test.
+
+## Build and run
+
+From the repository root:
+
+```sh
+swift build -c release --package-path apps/macos
+./scripts/build-app.sh --skip-web
+codesign -v build/Surgecast.app
+swift run -c release --package-path apps/macos SurgecastSelfTest
+```
+
+For the complete bundle, run `./scripts/build-app.sh` (requires pnpm). Packages whose
+build fails before they have any `dist` output are omitted with a warning while the
+other teams implement them. A failed build with existing output stops assembly to
+avoid shipping stale files. `--skip-web` assembles Swift and native resources only;
+it is useful with the stub or development overrides. The script stages and signs
+before replacing `build/Surgecast.app`.
+
+Flags: `--debug`, `--bundle-node`, `--skip-web`, `--open`. Node must be 22.13 or newer.
+Without bundled Node, the host resolves Node from the user's login-shell PATH, then
+Homebrew's usual paths. `--bundle-node` copies the resolved executable; distribution
+should use a standalone Node binary whose library dependencies are available on the
+minimum supported OS. The current signature is ad hoc; public distribution requires
+Developer ID signing and notarization.
+
+`./scripts/make-icon.sh` regenerates `Resources/AppIcon.icns` from `assets/icon.svg`
+using Quick Look, sips and iconutil.
+
+Run the complete app with `open build/Surgecast.app`, or invoke its executable directly
+when setting environment overrides. Option-Space toggles the launcher. The status
+menu opens AI Chat, Notes and Settings. Standard Edit shortcuts work in the web views.
+Notes can be pinned via `window.setFloating`. The app stays running when windows close.
+Launching another instance asks the existing process to show the launcher and exits.
+
+## Development stub
+
+After `--skip-web` assembly:
+
+```sh
+python3 apps/macos/DevStub/smoke-test.py
+python3 apps/macos/DevStub/smoke-test.py --restart
+```
+
+Each test creates temporary frontend resources under `.build/dev-resources`, launches
+for approximately 15 seconds, verifies native results and web bridge reports, tests
+single-instance handling, and terminates the host and its backend. `--restart` kills
+only the spawned stub backend once and checks that the restarted frontend reports
+again. Tests do not ask for permissions, post keyboard events, read clipboard contents,
+or run system actions. Native/backend logs append to `~/Library/Logs/Surgecast`.
+
+For interactive use:
+
+```sh
+mkdir -p apps/macos/.build/manual-resources/frontend
+cp apps/macos/DevStub/main.html apps/macos/.build/manual-resources/frontend/main.html
+SURGECAST_BACKEND_ENTRY="$PWD/apps/macos/DevStub/stub-backend.mjs" \
+SURGECAST_RESOURCES="$PWD/apps/macos/.build/manual-resources" \
+SURGECAST_SHOW_ON_START=1 \
+build/Surgecast.app/Contents/MacOS/Surgecast
+```
+
+The page includes search, height controls, Hide, HUD, Confetti and Applications buttons.
+The stub implements only native health checks and a minimal authenticated WebSocket
+report channel; it is not a substitute for the actual backend.
+
+## Debugging and environment
+
+WKWebViews have `isInspectable = true`. Enable Safari's developer features, then use
+Safari's **Develop → this Mac → Surgecast** menu to inspect each page. Inspect
+`window.__SURGECAST__` for its window kind, backend URL and per-process token (do not
+share the token). Listen with `window.__surgecastNative.on(topic, handler)`; it returns
+an unsubscribe function. Call native with
+`webkit.messageHandlers.native.postMessage({ method, params })`, which resolves to
+`{ result }` or `{ error: { code, message, data? } }`.
+
+| Variable | Purpose |
+| --- | --- |
+| `SURGECAST_NODE` | First Node executable candidate |
+| `SURGECAST_BACKEND_ENTRY` | Absolute or cwd-relative backend `index.mjs` override |
+| `SURGECAST_RESOURCES` | Resources root containing `frontend/`, optionally backend/runtime/Node |
+| `SURGECAST_DEV_URL` | Vite base URL, e.g. `http://localhost:5173` |
+| `SURGECAST_KEEP_OPEN=1` | Keep launcher visible after losing key status |
+| `SURGECAST_SHOW_ON_START=1` | Show launcher immediately for development |
+
+Native bridge access is limited to the main frame on `surgecast-app://app` or the exact
+configured development origin. External links open in the default browser. Asset
+paths are canonicalized to prevent traversal and symlink escapes. Configuration is
+injected only after `backend.ready`; every restart replaces the token/port scripts and
+reloads all existing pages. Stdio stdout is reserved for JSON-RPC. Backend failures
+restart after 1, 2, 4, 8, 16, then 30 seconds; requests have a timeout and are rejected
+on disconnect. A periodic `backend.ping` checks responsiveness.
+
+## Permissions and data
+
+The app is not sandboxed. Permissions are requested only by explicit native calls.
+
+- Accessibility: synthetic typing/pasting, selected text, snippet expansion, AX
+  window/menu commands and Notification Center dismissal.
+- Input Monitoring: listen-only snippet event tap where required by macOS.
+- Screen Recording: screenshot capture.
+- Calendar full access: reading calendars, events and conference links.
+- Automation: Finder selections and requested AppleScript/system actions; grants
+  are specific to each receiving app.
+- Contacts, Reminders, Location, Microphone: explicit extension permission requests.
+- Full Disk Access and folder grants: protected file access selected by the user;
+  there is no general public Full Disk Access status query.
+- Notifications: requested when delivering a notification. Login items use
+  `SMAppService.mainApp`, and may need confirmation in System Settings.
+
+Missing required permissions produce `-32002` with `{ permission }`. See
+`PROTOCOL_NOTES.md` for unsupported OS operations and proposed type clarifications.
+
+Data lives under `~/Library/Application Support/Surgecast`; clipboard images are
+content-addressed PNGs under `clipboard/`, Finder icon cache under `icon-cache/`.
+Keychain generic passwords use service `app.surgecast`. Clipboard events include
+privacy markers and source app; ignored bundle IDs produce no events. Temporary
+clipboard restoration only runs if a newer copy has not replaced the inserted content.

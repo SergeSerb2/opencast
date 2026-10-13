@@ -1,0 +1,81 @@
+import CoreGraphics
+import Foundation
+import SurgecastCore
+
+func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
+  if !condition() {
+    fputs("FAIL: \(message)\n", stderr)
+    exit(1)
+  }
+}
+let primary = CGRect(x: 0, y: 0, width: 1440, height: 900)
+let secondary = CGRect(x: -1920, y: 300, width: 1920, height: 1080)
+for screen in [primary, secondary] {
+  let left = Geometry.layout(Geometry.fraction("leftHalf")!, screen: screen)
+  let right = Geometry.layout(Geometry.fraction("rightHalf")!, screen: screen)
+  expect(abs(left.maxX - right.minX) < 0.001, "Halves join")
+  expect(left.union(right) == screen, "Halves fill each display")
+  let thirds = ["firstThird", "centerThird", "lastThird"].map {
+    Geometry.layout(Geometry.fraction($0)!, screen: screen)
+  }
+  expect(abs(thirds.reduce(0) { $0 + $1.width } - screen.width) < 0.001, "Thirds fill width")
+  for (index, r) in thirds.enumerated() {
+    expect(
+      abs(r.minX - (screen.minX + CGFloat(index) * screen.width / 3)) < 0.001,
+      "Thirds have ordered positions")
+  }
+  let sixths = [
+    "topLeftSixth", "topCenterSixth", "topRightSixth", "bottomLeftSixth", "bottomCenterSixth",
+    "bottomRightSixth",
+  ].map { Geometry.layout(Geometry.fraction($0)!, screen: screen) }
+  expect(
+    abs(sixths.reduce(0) { $0 + $1.width * $1.height } - screen.width * screen.height) < 0.001,
+    "Sixths fill area")
+  expect(
+    sixths[0].minY == screen.midY && sixths[3].maxY == screen.midY,
+    "Top/bottom use Cocoa coordinates")
+  for r in sixths {
+    let ax = Geometry.ax(r, desktopTop: 900)
+    expect(Geometry.cocoa(ax, desktopTop: 900) == r, "AX transform round trip")
+  }
+  let gap = Geometry.layout(CGRect(x: 0, y: 0, width: 1, height: 1), screen: screen, gap: 8)
+  expect(gap.width == screen.width - 16 && gap.minX == screen.minX + 8, "Gap applied inside")
+}
+let moved = Geometry.moved(
+  CGRect(x: 360, y: 225, width: 720, height: 450), from: primary, to: secondary)
+expect(
+  moved == CGRect(x: -1440, y: 570, width: 960, height: 540),
+  "Display movement preserves fractions with negative origin")
+expect(
+  Geometry.ax(secondary, desktopTop: 900).minY == -480, "Screen above primary has negative AX y")
+for (key, code) in [
+  ("space", 49), ("a", 0), ("1", 18), ("f5", 96), ("return", 36), ("arrowUp", 126), ("comma", 43),
+  ("bracketLeft", 33), ("escape", 53),
+] { expect(KeyMap.code(key) == UInt16(code), "Key code for \(key)") }
+expect(KeyMap.code("not-a-key") == nil, "Invalid key rejected")
+print(
+  "PASS: geometry on two displays, halves/thirds/sixths, AX transforms, gaps, display movement, key mappings"
+)
+let home = URL(fileURLWithPath: "/Users/surgecast-policy-check")
+let keychains = home.appendingPathComponent("Library/Keychains")
+expect(
+  FileAccessPolicy.allows(
+    home.appendingPathComponent("Documents/image.png"), roots: [home], forbidden: [keychains]),
+  "Home asset allowed")
+expect(
+  !FileAccessPolicy.allows(
+    keychains.appendingPathComponent("login.keychain-db"), roots: [home], forbidden: [keychains]),
+  "Keychain denied")
+expect(
+  !FileAccessPolicy.allows(
+    home.appendingPathComponent("library/KEYCHAINS/login.keychain-db"), roots: [home],
+    forbidden: [keychains]), "Keychain case variant denied")
+expect(
+  !FileAccessPolicy.allows(
+    URL(fileURLWithPath: home.path + "-other/secret"), roots: [home], forbidden: [keychains]),
+  "Sibling prefix does not bypass root")
+expect(
+  !FileAccessPolicy.allows(
+    home.appendingPathComponent("../outside/file"), roots: [home], forbidden: [keychains]),
+  "Traversal outside root denied")
+print("PASS: file allow-list boundaries, traversal, Keychain exclusion including case variants")
