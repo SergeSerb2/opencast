@@ -1,5 +1,6 @@
 import type { ImageLike, KeyboardShortcut, UINode } from "@surgecast/protocol";
 import type { ActionModel, ActionPanelModel, ActionSectionModel } from "../components/actions/model";
+import { pickDate } from "../components/feedback/date-picker";
 import { pasteTitle } from "../bridge/frontmost-app";
 import { serializeFormValues } from "../components/Form/serialize";
 import { callback, isHandler, isNode, str, type Dispatch } from "./props";
@@ -59,7 +60,12 @@ export function mapAction(node: UINode, context: ActionMappingContext): ActionMo
     shortcut: isShortcut(p.shortcut) ? p.shortcut : undefined,
     style: p.style === "destructive" ? "destructive" : defaults.style,
     onAction: isHandler(handler)
-      ? () => {
+      ? async () => {
+          if (node.type === "Action.PickDate") {
+            const date = await pickDate(p.type === "date" ? "date" : "datetime");
+            if (date) context.dispatch(handler, [{ date: date.toISOString() }]);
+            return;
+          }
           const values = context.getFormValues?.();
           context.dispatch(handler, [values ? { formValues: serializeFormValues(values) } : {}]);
         }

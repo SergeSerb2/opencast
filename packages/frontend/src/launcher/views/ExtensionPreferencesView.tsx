@@ -8,7 +8,10 @@ import { launchCommand } from "../launch";
 import type { LauncherViewProps } from "./registry";
 
 export interface ExtensionPreferencesProps {
-  extensionName: string;
+  extensionName?: string;
+  name?: string;
+  command?: string;
+  missingRequired?: string[];
   commandName?: string;
   /** Relaunch this command after saving (onboarding for commands with required preferences). */
   launchCommandId?: string;
@@ -21,7 +24,9 @@ function isEmpty(value: unknown): boolean {
 /** Preferences form generated from an extension's (and command's) preference manifest. */
 export function ExtensionPreferencesView({ props, title, icon }: LauncherViewProps<ExtensionPreferencesProps>) {
   const navigation = useNavigation();
-  const { extensionName, commandName, launchCommandId } = props;
+  const extensionName = props.extensionName ?? props.name ?? "";
+  const commandName = props.commandName ?? props.command;
+  const launchCommandId = props.launchCommandId ?? (props.missingRequired?.length && commandName ? `ext:${extensionName}.${commandName}` : undefined);
   const { data: extensions, isLoading: loadingManifest } = useBackend("extensions.list", undefined);
   const { data: stored, isLoading: loadingValues } = useBackend("extensions.getPreferences", { name: extensionName, command: commandName });
   const [errors, setErrors] = useState<Record<string, string>>({});
