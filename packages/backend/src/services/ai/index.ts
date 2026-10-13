@@ -22,6 +22,18 @@ export const aiService: Service = {
     const chats = new Chats(ctx, engine, mcp);
     chats.register();
     new Commands(ctx, chats).register();
+    const searchAccount = (provider: string) => {
+      if (!["tavily", "brave", "exa", "searxng", "jina"].includes(provider))
+        throw new Error("Unknown web search provider");
+      return `ai.websearch:${provider}:apiKey`;
+    };
+    ctx.rpc.handle("ai.webSearch.hasApiKey", ({ provider }) => ctx.secrets.has(searchAccount(provider)));
+    ctx.rpc.handle("ai.webSearch.setApiKey", async ({ provider, apiKey }) => {
+      const account = searchAccount(provider);
+      if (apiKey !== null && typeof apiKey !== "string") throw new Error("Invalid API key");
+      if (apiKey) await ctx.secrets.set(account, apiKey);
+      else await ctx.secrets.delete(account);
+    });
     ctx.rpc.handle("ai.tools.list", async () => {
       // Explicit catalog discovery connects enabled servers; chat execution connects only selected ones.
       await Promise.all(

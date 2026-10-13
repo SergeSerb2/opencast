@@ -126,3 +126,9 @@ it("rejects binary attachments instead of treating bytes as text", async () => {
     ),
   ).rejects.toThrow("binary");
 });
+it("accepts bounded inline images and rejects unsupported models and oversized text", async () => {
+  const turns = [{ role: "user" as const, content: "Image", attachments: [{ id: "inline", kind: "image" as const, name: "pasted.png", url: `data:image/png;base64,${Buffer.from("image bytes").toString("base64")}` }] }];
+  expect((await prepareTurns(turns, provider, model))[0].parts[1]).toMatchObject({ type: "image", mimeType: "image/png" });
+  await expect(prepareTurns(turns, provider, { ...model, capabilities: { vision: false } })).rejects.toThrow("does not support image");
+  await expect(prepareTurns([{ role: "user", content: "", attachments: [{ id: "large", kind: "file", name: "large.txt", text: "x".repeat(512 * 1024 + 1) }] }], provider, model)).rejects.toThrow("512 KiB");
+});

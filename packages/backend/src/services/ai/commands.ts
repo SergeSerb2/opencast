@@ -240,6 +240,14 @@ export class Commands {
       }),
       "ai.presets.list": () => this.presets(),
       "ai.presets.upsert": (p) => this.preset(p),
+      "ai.presets.reset": ({ id }) => {
+        const seed = builtinPresets().find((preset) => preset.id === id);
+        if (!seed) throw new Error("Only a built-in preset can be reset");
+        const old = this.ctx.entities.get<AIPreset>("aiPresets", id)?.data;
+        const preset = { ...seed, createdAt: old?.createdAt ?? seed.createdAt };
+        this.ctx.entities.put("aiPresets", id, preset);
+        return preset;
+      },
       "ai.presets.delete": (p) => {
         if (!ctx.entities.get("aiPresets", p.id))
           throw new Error("AI preset was not found");

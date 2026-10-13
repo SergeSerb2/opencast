@@ -15,7 +15,7 @@ export class SecretsService {
 
   async get(account: string): Promise<string | null> {
     if (this.cache.has(account)) return this.cache.get(account) ?? null;
-    const value = await this.native.call("keychain.get", { account });
+    const value = (await this.native.call("keychain.get", { account })) ?? null;
     this.cache.set(account, value);
     return value;
   }

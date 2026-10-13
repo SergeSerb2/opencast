@@ -77,6 +77,8 @@ export async function prepareTurns(
       for (const attachment of turn.attachments ?? []) {
         signal?.throwIfAborted();
         if (attachment.text !== undefined) {
+          if (Buffer.byteLength(attachment.text) > 512 * 1024)
+            throw new Error("Text attachments must be smaller than 512 KiB");
           parts.push({
             type: "text",
             text: `\n--- ${attachment.name} ---\n${attachment.text}`,
@@ -89,6 +91,18 @@ export async function prepareTurns(
             type: "text",
             text: `\n--- ${page.title}\n${attachment.url} ---\n${page.content}`,
           });
+          continue;
+        }
+        if (attachment.kind === "image" && attachment.url && !attachment.path) {
+          if (!model.capabilities.vision)
+            throw new Error(`Model ${model.name} does not support image attachments`);
+          const match = /^data:(image\/(?:png|jpeg|gif|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(attachment.url);
+          if (!match || match[2].length > Math.ceil(10 * 1024 * 1024 / 3) * 4)
+            throw new Error("Image attachments require a PNG, JPEG, GIF or WebP data URL smaller than 10 MiB");
+          const bytes = Buffer.from(match[2], "base64");
+          if (!bytes.length || bytes.length > 10 * 1024 * 1024 || bytes.toString("base64") !== match[2])
+            throw new Error("Invalid image attachment data");
+          parts.push({ type: "image", mimeType: match[1], data: match[2], name: attachment.name });
           continue;
         }
         if (!attachment.path)
