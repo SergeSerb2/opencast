@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -69,6 +70,20 @@ afterEach(async () => {
 });
 async function make(name: string) { const app = backend(join(root, name)); instances.push(app); await app.start(); return app; }
 describe("two independent backend stores through the production worker handler", () => {
+  it("publishes valid records past oversized dirty records and recovers after editing them", async () => {
+    const a = await make("A"), b = await make("B"); await connect(a); await connect(b);
+    a.ctx.entities.put("notes", "large-0", { content: randomBytes(1100 * 1024).toString("base64") });
+    a.ctx.entities.put("quicklinks", "valid", { link: "https://example.com" });
+    const status = await sync(a);
+    expect(status.lastError).toContain("1 record");
+    await sync(b);
+    expect(b.ctx.entities.get("quicklinks", "valid")).toBeDefined();
+    expect(a.ctx.entities.get("notes", "large-0")?.syncDirty).toBe(true);
+    a.ctx.entities.patch("notes", "large-0", { content: "small" });
+    await sync(a); await sync(b);
+    expect(b.ctx.entities.get<any>("notes", "large-0")?.data.content).toBe("small");
+  });
+
   it("creates, merges conflicting edits with a preserved note copy, and propagates tombstones", async () => {
     const a = await make("A"), b = await make("B");
     expect((await connect(a)).phase).toBe("online"); expect((await connect(b)).phase).toBe("online");

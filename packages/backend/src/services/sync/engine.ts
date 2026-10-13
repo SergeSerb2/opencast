@@ -44,13 +44,13 @@ export class SyncEngine {
   }
   private disabled(): string[] { return this.ctx.settings.get("sync.disabledCategories"); }
   private eligible(record: { collection: string; id: string }): boolean { return isEnabled(record.collection, record.id, this.disabled()); }
-  private dirty(limit = SYNC_MAX_RECORDS): EntityRecord<unknown>[] {
+  private dirty(limit = SYNC_MAX_RECORDS, excluded = new Set<string>()): EntityRecord<unknown>[] {
     const out: EntityRecord<unknown>[] = [];
     // Page over excluded rows too: a disabled category must never starve enabled records.
     for (let offset = 0; out.length < limit; offset += 200) {
       const rows = this.ctx.db.all<{ collection: string; id: string }>("SELECT collection, id FROM entities WHERE sync_dirty = 1 ORDER BY updated_at, collection, id LIMIT 200 OFFSET ?", offset);
       for (const row of rows) {
-        if (!this.eligible(row)) continue;
+        if (!this.eligible(row) || excluded.has(`${row.collection}/${row.id}`)) continue;
         const record = this.ctx.entities.get(row.collection, row.id, { includeDeleted: true });
         if (record) out.push(record);
         if (out.length === limit) break;
@@ -228,18 +228,27 @@ export class SyncEngine {
     this.assertSession(session);
     if (remoteVault.vaultId !== session.vault.vaultId || remoteVault.keyEpoch !== session.vault.keyEpoch) throw new SyncHttpError(409, "vault_changed");
     await this.pull(session);
+    const rejected = new Set<string>();
     for (let attempt = 0; attempt < 1000; attempt++) {
-      const dirty = this.dirty();
+      const dirty = this.dirty(SYNC_MAX_RECORDS, rejected);
       if (!dirty.length) break;
       const records: SyncPushRecord[] = [], originals: EntityRecord<unknown>[] = [];
       let bytes = 16;
       for (const record of dirty) {
-        const encrypted = encryptRecord(session.keys, session.vault, { v: 1, collection: record.collection, id: record.id,
-          createdAt: record.createdAt, updatedAt: record.updatedAt, deleted: record.deleted, data: record.data }, record.syncSeq);
+        let encrypted: SyncPushRecord;
+        try {
+          encrypted = encryptRecord(session.keys, session.vault, { v: 1, collection: record.collection, id: record.id,
+            createdAt: record.createdAt, updatedAt: record.updatedAt, deleted: record.deleted, data: record.data }, record.syncSeq);
+        } catch {
+          // Leave rejected rows dirty for a later edit/retry, without starving other rows.
+          rejected.add(`${record.collection}/${record.id}`);
+          continue;
+        }
         const size = Buffer.byteLength(JSON.stringify(encrypted)) + 1;
         if (bytes + size > SYNC_MAX_REQUEST_BYTES) break;
         records.push(encrypted); originals.push(record); bytes += size;
       }
+      if (!records.length) continue;
       let response: { results: SyncPushResult[] };
       try { response = await session.http.request("/v1/push", "POST", { records }, { "If-Match": session.vault.vaultId }); }
       catch (e) {
@@ -271,7 +280,9 @@ export class SyncEngine {
     }
     this.ctx.entities.purgeTombstones(Date.now() - 30 * 86400000);
     this.setState("lastSyncedAt", String(Date.now()));
-    this.phase = "online"; this.lastError = undefined; this.failures = 0;
+    this.phase = rejected.size ? "error" : "online";
+    this.lastError = rejected.size ? `${rejected.size} record(s) could not be serialized or exceeded the encrypted size limit; other changes were synced. Edit these records and retry.` : undefined;
+    this.failures = 0;
     return this.emit();
   }
   private async pull(session: Session): Promise<void> {
