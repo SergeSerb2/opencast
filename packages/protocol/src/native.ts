@@ -304,6 +304,11 @@ export interface NativeEvents {
   /** A deeplink such as surgecast://extensions/... or raycast://... was opened. */
   "url.opened": { url: string };
   "permissions.changed": { kind: PermissionKind; status: PermissionStatus };
+  /**
+   * Sent only to the addressed web view when `window.show` passes a route/payload
+   * (e.g. "command:<id>" for the launcher, "ai" for settings, a chat or note id).
+   */
+  "window.route": { kind: WindowKind; route?: string; payload?: unknown };
   "system.willSleep": Record<string, never>;
   "system.didWake": Record<string, never>;
 }
