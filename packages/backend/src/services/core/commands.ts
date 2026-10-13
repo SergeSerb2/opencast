@@ -76,6 +76,13 @@ export async function openDeeplink(
     .filter(Boolean)
     .map((p) => decodeURIComponent(p));
   const args = decodeArguments(url.searchParams.get("arguments"));
+  if (!url.host) {
+    // surgecast:// (and raycast://) with no route just shows the launcher.
+    await ctx.native.call("window.show", { kind: "main" });
+    return { kind: "done", closeWindow: false };
+  }
+  if (url.host === "extensions" && parts.length === 2)
+    return { kind: "view", view: { id: "store.extension", props: { id: `${parts[0]}/${parts[1]}` } } };
   if (url.host === "extensions" && parts.length === 3) {
     const [owner, extension, command] = parts;
     const group = EXTENSION_ALIASES[extension] ?? extension;

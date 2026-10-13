@@ -1,3 +1,4 @@
+import { RpcErrorCode } from "@surgecast/protocol";
 import type { Snippet } from "@surgecast/protocol";
 import type { AppContext, Service } from "../../context";
 import {
@@ -94,15 +95,32 @@ function validateSnippet(value: Snippet): void {
 export const snippetsService: Service = {
   name: "core.snippets",
   register(ctx) {
-    const keywords = () =>
-      ctx.native.call("snippets.setKeywords", {
-        enabled: ctx.settings.get("snippets.autoExpansionEnabled"),
-        ignoredBundleIds: ctx.settings.get("snippets.disabledApplications"),
-        keywords: list<Snippet>(ctx, "snippets")
-          .filter((s) => !!s.keyword)
-          .map((s) => ({ id: s.id, keyword: s.keyword! })),
-      });
+    const keywords = async () => {
+      const items = list<Snippet>(ctx, "snippets")
+        .filter((s) => !!s.keyword)
+        .map((s) => ({ id: s.id, keyword: s.keyword! }));
+      try {
+        await ctx.native.call("snippets.setKeywords", {
+          // No keywords → no keyboard monitoring (and no Accessibility prompt).
+          enabled: ctx.settings.get("snippets.autoExpansionEnabled") && items.length > 0,
+          ignoredBundleIds: ctx.settings.get("snippets.disabledApplications"),
+          keywords: items,
+        });
+      } catch (error) {
+        if (error instanceof RpcError && error.code === RpcErrorCode.PermissionDenied) {
+          ctx.log.info("Snippet expansion is waiting for the Accessibility permission");
+          return;
+        }
+        throw error;
+      }
+    };
     ctx.onReady(keywords);
+    ctx.onShutdown(
+      ctx.native.on("permissions.changed", ({ kind, status }) => {
+        if (kind === "accessibility" && status === "granted")
+          background(ctx, keywords(), "Snippet keywords");
+      }),
+    );
     observeCollection(ctx, "snippets", () =>
       background(ctx, keywords(), "Snippet keywords"),
     );
