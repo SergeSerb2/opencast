@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { CommandArgument, RootSearchItem } from "@surgecast/protocol";
+import { errorMessage } from "../../bridge/errors";
 import { useBackend } from "../../bridge/hooks";
+import { EmptyView } from "../../components/EmptyView/EmptyView";
 import { native } from "../../bridge/native";
 import { useSetting } from "../../bridge/settings";
 import { QuickAiHint, type SearchBarHandle } from "../../components/SearchBar/SearchBar";
@@ -48,8 +50,9 @@ export function RootSearch() {
     setArgs({});
   }, [resetToken, setQuery]);
 
-  const { data, isLoading } = useBackend("search.root", { query }, [query]);
+  const { data, isLoading, error } = useBackend("search.root", { query }, [query]);
   const resultQuery = data?.query ?? "";
+
   const { sections, rows } = useMemo(() => buildRootSections(data, resultQuery), [data, resultQuery]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -73,23 +76,32 @@ export function RootSearch() {
   const favorites = useMemo(() => [...rows.values()].filter((r) => r.item.favorite && !r.fallback).map((r) => r.item.id), [rows]);
   const searchBarRef = useRef<SearchBarHandle>(null);
 
-  const actions = useMemo(() => {
-    if (selectedId === CALCULATOR_ID && data?.calculator) return calculatorActions(data.calculator);
-    if (!selectedRow) return null;
-    return rootActions(selectedRow, {
-      query: resultQuery,
-      arguments: args,
-      favoriteIndex: favorites.indexOf(selectedRow.item.id),
-      favoriteCount: favorites.length,
-      validateArguments: () => {
-        const fields = searchBarRef.current?.arguments;
-        if (!commandArgs || !fields) return true;
-        const missing = fields.validate();
-        if (missing >= 0) fields.focus(missing);
-        return missing < 0;
-      },
-    });
-  }, [selectedId, selectedRow, data?.calculator, resultQuery, args, favorites, commandArgs]);
+  /** Actions for any row; inline arguments belong to the selected command only. */
+  const actionsFor = useCallback(
+    (id: string | null) => {
+      if (id === CALCULATOR_ID && data?.calculator) return calculatorActions(data.calculator);
+      const row = id ? rows.get(id) : undefined;
+      if (!row) return null;
+      const ownsArgs = id === selectedId && Boolean(commandArgs);
+      return rootActions(row, {
+        // Fallbacks always use what is typed now, even while results for it are loading.
+        query,
+        arguments: ownsArgs ? args : {},
+        favoriteIndex: favorites.indexOf(row.item.id),
+        favoriteCount: favorites.length,
+        validateArguments: () => {
+          if (!ownsArgs) return !row.item.arguments?.some((a) => a.required);
+          const fields = searchBarRef.current?.arguments;
+          if (!fields) return true;
+          const missing = fields.validate();
+          if (missing >= 0) fields.focus(missing);
+          return missing < 0;
+        },
+      });
+    },
+    [data?.calculator, rows, selectedId, commandArgs, query, args, favorites],
+  );
+  const actions = useMemo(() => actionsFor(selectedId), [actionsFor, selectedId]);
 
   const listSections = useMemo<ListSectionModel[]>(
     () =>
@@ -156,13 +168,16 @@ export function RootSearch() {
         sections={listSections}
         selectedId={selectedId}
         onSelectedIdChange={setSelectedId}
-        onActivate={() => {
-          const { primary } = primaryActions(actions);
-          primary?.onAction?.();
+        onActivate={(item) => {
+          // A command with required arguments gets selected first so its fields appear.
+          const row = rows.get(item.id);
+          if (row && !row.fallback && item.id !== selectedId && row.item.arguments?.some((a) => a.required)) return;
+          primaryActions(actionsFor(item.id)).primary?.onAction?.();
         }}
         activateOnClick
         numberHints
         aria-label="Search results"
+        emptyView={error && !data ? <EmptyView title="Search Unavailable" description={errorMessage(error)} icon="warning-16" /> : undefined}
       />
     </ViewFrame>
   );

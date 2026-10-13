@@ -39,6 +39,8 @@ export interface DropdownProps {
   "aria-label"?: string;
   /** Called when the menu opens/closes (e.g. to pause list keyboard handling). */
   onOpenChange?: (open: boolean) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 /** Popup button with a searchable menu (§5.3 Dropdown, §5.6 search-bar accessory). */
@@ -58,6 +60,8 @@ export function Dropdown({
   validation,
   id,
   onOpenChange,
+  onFocus,
+  onBlur,
   ...aria
 }: DropdownProps) {
   const [open, setOpenState] = useState(false);
@@ -98,6 +102,8 @@ export function Dropdown({
         aria-expanded={open}
         aria-label={aria["aria-label"]}
         onMouseDown={(e) => e.preventDefault()}
+        onFocus={onFocus}
+        onBlur={() => !open && onBlur?.()}
         onClick={() => setOpen(!open)}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown" || e.key === " ") {

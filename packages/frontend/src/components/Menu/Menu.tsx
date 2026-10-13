@@ -4,6 +4,7 @@ import { Image } from "../../icons/Image";
 import { Icon } from "../../icons/Icon";
 import { fuzzyFilter } from "../../lib/fuzzy";
 import { eventKey, matchesShortcut } from "../../lib/keyboard";
+import { scaled, useZoom } from "../../lib/zoom";
 import { HighlightedText } from "../HighlightedText/HighlightedText";
 import { Shortcut } from "../Keycap/Keycap";
 import { Spinner } from "../Spinner/Spinner";
@@ -130,8 +131,10 @@ export function Menu({
   ...aria
 }: MenuProps) {
   const [query, setQuery] = useState("");
+  const zoom = useZoom();
   const rows = useMemo(() => buildMenuRows(sections, query, { filtering, preserveSections: preserveSectionsOnSearch, title }), [sections, query, filtering, preserveSectionsOnSearch, title]);
-  const heights = useMemo(() => rows.map(rowHeight), [rows]);
+  const heights = useMemo(() => rows.map((row, i) => scaled(rowHeight(row, i), zoom)), [rows, zoom]);
+  const listPadding = scaled(LIST_PADDING, zoom);
   const selectable = useMemo(() => rows.map((r, i) => (r.kind === "item" && !r.item.disabled ? i : -1)).filter((i) => i >= 0), [rows]);
   const [selected, setSelected] = useState<number>(() => {
     const initial = initialSelectedId ? rows.findIndex((r) => r.kind === "item" && r.item.id === initialSelectedId) : -1;
@@ -139,6 +142,7 @@ export function Menu({
   });
   const listRef = useRef<VirtualListHandle>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
   useEffect(() => {
@@ -151,12 +155,12 @@ export function Menu({
   }, [selected]);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    (inputRef.current ?? rootRef.current)?.focus({ preventScroll: true });
   }, []);
 
-  const contentHeight = heights.reduce((a, b) => a + b, 0) + LIST_PADDING * 2;
-  const searchHeight = showSearch ? 40 : 0;
-  const listHeight = Math.min(contentHeight, maxHeight - searchHeight);
+  const contentHeight = heights.reduce((a, b) => a + b, 0) + listPadding * 2;
+  const searchHeight = showSearch ? scaled(40, zoom) : 0;
+  const listHeight = Math.min(contentHeight, scaled(maxHeight, zoom) - searchHeight);
 
   const activate = (index: number) => {
     const row = rows[index];
@@ -171,6 +175,7 @@ export function Menu({
   };
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     const key = eventKey(event.nativeEvent);
     const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
     if (key === "arrowDown" || (event.ctrlKey && (key === "n" || key === "j"))) {
@@ -276,7 +281,7 @@ export function Menu({
   );
 
   return (
-    <div className="sc-menu" data-layout={layout} onKeyDown={showSearch ? undefined : onKeyDown} tabIndex={showSearch ? undefined : -1} aria-label={aria["aria-label"]}>
+    <div ref={rootRef} className="sc-menu" data-layout={layout} onKeyDown={showSearch ? undefined : onKeyDown} tabIndex={showSearch ? undefined : -1} aria-label={aria["aria-label"]}>
       {layout === "down" && search}
       <div className="sc-menu__list" style={{ height: listHeight }}>
         <VirtualList
@@ -289,10 +294,10 @@ export function Menu({
             return r.kind === "item" ? `i:${r.item.id}` : `${r.kind}:${i}`;
           }}
           renderRow={renderRow}
-          paddingTop={LIST_PADDING}
-          paddingBottom={LIST_PADDING}
-          scrollPaddingStart={LIST_PADDING}
-          scrollPaddingEnd={LIST_PADDING}
+          paddingTop={listPadding}
+          paddingBottom={listPadding}
+          scrollPaddingStart={listPadding}
+          scrollPaddingEnd={listPadding}
         />
       </div>
       {layout === "up" && search}

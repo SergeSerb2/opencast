@@ -10,7 +10,7 @@
   min-width: 0;
 }
 .sc-detail__inner {
-  padding: var(--window-header-height) var(--space-8) calc(var(--window-footer-height) + var(--space-8));
+  padding: calc(var(--window-header-height) - var(--space-8)) 0 calc(var(--window-footer-height) + var(--space-8));
 }
 .sc-detail__metadata {
   position: relative;

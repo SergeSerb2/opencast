@@ -1,5 +1,6 @@
 import type { ImageLike, KeyboardShortcut, UINode } from "@surgecast/protocol";
 import type { ActionModel, ActionPanelModel, ActionSectionModel } from "../components/actions/model";
+import { pasteTitle } from "../bridge/frontmost-app";
 import { serializeFormValues } from "../components/Form/serialize";
 import { callback, isHandler, isNode, str, type Dispatch } from "./props";
 
@@ -49,7 +50,7 @@ export function mapAction(node: UINode, context: ActionMappingContext): ActionMo
     };
   }
   if (node.type !== "Action" && !node.type.startsWith("Action.")) return null;
-  const defaults = DEFAULTS[node.type] ?? {};
+  const defaults = node.type === "Action.Paste" ? { ...DEFAULTS[node.type], title: pasteTitle() } : (DEFAULTS[node.type] ?? {});
   const handler = p.onAction;
   return {
     id: node.id,

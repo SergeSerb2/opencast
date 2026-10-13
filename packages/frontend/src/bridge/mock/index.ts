@@ -117,12 +117,15 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "commands.list": ({ includeDisabled }) => commands.filter((c) => includeDisabled || c.enabled),
     "commands.get": ({ id }) => commands.find((c) => c.id === id) ?? null,
     "commands.launch": ({ id, arguments: args, fallbackText }) => launch(id, args, fallbackText),
-    "commands.setPrefs": ({ id, prefs }) => {
+    "commands.setPrefs": ({ id, prefs, unset = [] }) => {
       const command = commandById(id);
-      if ("alias" in prefs) command.alias = prefs.alias || undefined;
-      if ("hotkey" in prefs) command.hotkey = prefs.hotkey;
-      if ("enabled" in prefs) command.enabled = prefs.enabled ?? true;
-      if ("favoriteOrder" in prefs) command.favorite = prefs.favoriteOrder !== undefined;
+      if (prefs.alias !== undefined) command.alias = prefs.alias || undefined;
+      if (prefs.hotkey !== undefined) command.hotkey = prefs.hotkey;
+      if (prefs.enabled !== undefined) command.enabled = prefs.enabled;
+      if (prefs.favoriteOrder !== undefined) command.favorite = true;
+      if (unset.includes("alias")) command.alias = undefined;
+      if (unset.includes("hotkey")) command.hotkey = undefined;
+      if (unset.includes("favoriteOrder")) command.favorite = false;
       changedCommands("prefs");
       return { ...command };
     },

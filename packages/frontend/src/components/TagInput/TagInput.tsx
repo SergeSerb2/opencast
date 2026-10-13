@@ -23,11 +23,13 @@ export interface TagInputProps {
   validation?: FieldValidation;
   id?: string;
   autoFocus?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
   "aria-label"?: string;
 }
 
 /** Token field (§5.3): 20px tokens wrapping inside a 32px+ field; suggestions menu for options. */
-export function TagInput({ value, onChange, options, placeholder, validation, id, autoFocus, ...aria }: TagInputProps) {
+export function TagInput({ value, onChange, options, placeholder, validation, id, autoFocus, onFocus, onBlur, ...aria }: TagInputProps) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState<number | null>(null);
@@ -117,7 +119,11 @@ export function TagInput({ value, onChange, options, placeholder, validation, id
             setText(e.currentTarget.value);
             if (options) setOpen(true);
           }}
-          onFocus={() => options && setOpen(true)}
+          onFocus={() => {
+            onFocus?.();
+            if (options) setOpen(true);
+          }}
+          onBlur={onBlur}
           onKeyDown={onKeyDown}
         />
         {options && <Icon name="chevron-down-small-16" size={16} className="sc-tag-input__chevron" />}

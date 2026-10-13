@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useLatest } from "../../bridge/hooks";
 import { useSetting } from "../../bridge/settings";
 import { eventKey, navigationIntent } from "../../lib/keyboard";
+import { scaled, useZoom } from "../../lib/zoom";
 import { VirtualList, type VirtualListHandle } from "../ScrollArea/VirtualList";
 import { useOptionalViewController } from "../View/contexts";
 import { ListItemRow, type ListRowSize } from "./ListItemRow";
@@ -62,8 +63,8 @@ export function ListBox({
   size = "large",
   activateOnClick = false,
   numberHints = false,
-  paddingTop = 64,
-  paddingBottom = 52,
+  paddingTop: paddingTopProp,
+  paddingBottom: paddingBottomProp,
   emptyView,
   onNearEnd,
   className,
@@ -71,11 +72,14 @@ export function ListBox({
 }: ListBoxProps) {
   const view = useOptionalViewController();
   const bindings = useSetting("keyboard.navigationBindings");
+  const zoom = useZoom();
+  const paddingTop = paddingTopProp ?? scaled(64, zoom);
+  const paddingBottom = paddingBottomProp ?? scaled(52, zoom);
   const listRef = useRef<VirtualListHandle>(null);
   const rows = useMemo(() => buildRows(sections), [sections]);
   const heights = useMemo(
-    () => rows.map((row, i) => (row.kind === "header" ? (row.first && i === 0 ? FIRST_HEADER : HEADER) : (row.item.height ?? SIZE_HEIGHT[size]))),
-    [rows, size],
+    () => rows.map((row, i) => scaled(row.kind === "header" ? (row.first && i === 0 ? FIRST_HEADER : HEADER) : (row.item.height ?? SIZE_HEIGHT[size]), zoom)),
+    [rows, size, zoom],
   );
   const selectable = useMemo(() => rows.map((r) => r.kind === "item" && !r.item.disabled), [rows]);
   const ids = useMemo(() => rows.map((r) => (r.kind === "item" ? r.item.id : null)), [rows]);
@@ -132,7 +136,7 @@ export function ListBox({
       const s = state.current;
       const intent = navigationIntent(event, s.bindings);
       if (intent === "up" || intent === "down" || intent === "pageUp" || intent === "pageDown") {
-        const pageSize = listRef.current?.pageSize(SIZE_HEIGHT[size]) ?? 8;
+        const pageSize = listRef.current?.pageSize(scaled(SIZE_HEIGHT[size], zoom)) ?? 8;
         const next = moveSelection(s.selectable, s.selectedIndex, intent, pageSize);
         if (next >= 0) select(next);
         return true;
@@ -151,7 +155,7 @@ export function ListBox({
       }
       return false;
     });
-  }, [view, state, select, size, numberHints, onActivate]);
+  }, [view, state, select, size, numberHints, onActivate, zoom]);
 
   // ⌘ held for 400ms shows number hints (CSS handles the delay).
   useEffect(() => {
@@ -221,7 +225,7 @@ export function ListBox({
       paddingBottom={paddingBottom}
       scrollPaddingStart={paddingTop}
       scrollPaddingEnd={paddingBottom}
-      fade={{ top: paddingTop + 32, bottom: paddingBottom + 20 }}
+      fade={{ top: paddingTop + scaled(32, zoom), bottom: paddingBottom + scaled(20, zoom) }}
       thumbInset={{ top: paddingTop, bottom: paddingBottom }}
       aria-label={aria["aria-label"]}
       onScrollTop={numberHints ? setViewportTop : undefined}

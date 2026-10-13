@@ -31,9 +31,10 @@ export function flattenElements(children: ReactNode): ReactElement[] {
   return out;
 }
 
+/** Explicit `id` props are kept; React keys and positions are namespaced by section (keys may repeat across sections). */
 function itemFrom(element: ReactElement, index: number, prefix: string): ListItemModel {
   const props = element.props as ListItemProps;
-  const id = props.id ?? (element.key !== null ? String(element.key) : `${prefix}${index}`);
+  const id = props.id ?? `${prefix}${element.key !== null ? String(element.key) : `#${index}`}`;
   return { ...props, id };
 }
 
@@ -50,7 +51,7 @@ export function collectListChildren(children: ReactNode): { sections: ListSectio
     loose = [];
   };
   flattenElements(children).forEach((child, index) => {
-    if (child.type === ListItem) loose.push(itemFrom(child, index, "item-"));
+    if (child.type === ListItem) loose.push(itemFrom(child, index, "~/"));
     else if (child.type === ListSection) {
       flush();
       const props = child.props as ListSectionProps;

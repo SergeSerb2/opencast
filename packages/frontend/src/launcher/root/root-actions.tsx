@@ -21,9 +21,9 @@ export interface RootActionContext {
   validateArguments: () => boolean;
 }
 
-async function setPrefs(item: RootSearchItem, prefs: Partial<CommandPrefs>, success?: string): Promise<void> {
+async function setPrefs(item: RootSearchItem, prefs: Partial<CommandPrefs>, success?: string, unset?: (keyof CommandPrefs)[]): Promise<void> {
   try {
-    await backend.call("commands.setPrefs", { id: item.id, prefs });
+    await backend.call("commands.setPrefs", { id: item.id, prefs, unset });
     if (success) showToast({ style: "success", title: success });
   } catch (error) {
     showFailureToast("Could not update the command", error);
@@ -69,7 +69,7 @@ export function rootActions(row: RootRow, context: RootActionContext): ActionPan
   const favorites: ActionModel[] = [];
   if (!row.fallback) {
     if (item.favorite) {
-      favorites.push({ id: "unfavorite", title: "Remove from Favorites", icon: "star-disabled-16", shortcut: sc("cmd", "shift", "f"), onAction: () => setPrefs(item, { favoriteOrder: undefined }, "Removed from Favorites") });
+      favorites.push({ id: "unfavorite", title: "Remove from Favorites", icon: "star-disabled-16", shortcut: sc("cmd", "shift", "f"), onAction: () => setPrefs(item, {}, "Removed from Favorites", ["favoriteOrder"]) });
       if (context.favoriteIndex > 0)
         favorites.push({ id: "move-up", title: "Move Up in Favorites", icon: "arrow-up-16", shortcut: sc("opt", "cmd", "arrowUp"), onAction: () => backend.call("commands.moveFavorite", { id: item.id, toIndex: context.favoriteIndex - 1 }) });
       if (context.favoriteIndex >= 0 && context.favoriteIndex < context.favoriteCount - 1)

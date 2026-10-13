@@ -84,7 +84,7 @@ export function useLauncherBehavior(setVisible: (visible: boolean) => void): voi
     if (reason === "popToRoot") nav.popToRoot({ clearSearch: true });
     else {
       const entry = nav.stack.find((e) => e.kind === "extension" && e.sessionId === sessionId);
-      if (entry) nav.remove(entry.key);
+      if (entry) nav.remove(entry.key, { sessionClosed: true });
     }
     if (reason === "error") showToast({ style: "failure", title: "Command failed", message: error });
   });
@@ -100,6 +100,10 @@ export function useLauncherBehavior(setVisible: (visible: boolean) => void): voi
     const since = hiddenAt.current;
     hiddenAt.current = null;
     if (since !== null && shouldPopToRoot(getSetting("launcher.popToRootTimeout"), Date.now() - since)) useNavigationStore.getState().popToRoot({ clearSearch: true });
+    else {
+      // Kept text is selected so typing replaces it.
+      requestAnimationFrame(() => document.querySelector<HTMLInputElement>(".sc-launcher-entry[data-active] .sc-search-bar__input")?.select());
+    }
     setVisible(true);
   });
   useNativeEvent("window.route", (event) => {

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ClipboardContent, ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import { pasteTitle } from "../../bridge/frontmost-app";
 import { native } from "../../bridge/native";
 import { showHUD } from "../feedback/hud";
 import { showFailureToast } from "../feedback/toast-store";
@@ -54,7 +55,7 @@ export interface PasteProps extends CommonProps {
 
 const Paste = defineAction<PasteProps>("Action.Paste", (p) => ({
   id: p.id ?? "paste",
-  title: p.title ?? "Paste to Active App",
+  title: p.title ?? pasteTitle(),
   icon: p.icon ?? "clipboard-16",
   shortcut: p.shortcut,
   style: p.style,

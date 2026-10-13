@@ -7,6 +7,8 @@ export interface NavigationApi {
   push: (view: ReactNode, options?: { title?: string }) => void;
   pop: () => void;
   popToRoot: () => void;
+  /** Esc in this view (defaults to `pop`); the launcher applies `keyboard.escapeKeyBehavior`. */
+  escape?: () => void;
   /** Number of views above root search (0 = root). */
   depth: number;
   /** True when this view is the visible top of the stack. */
