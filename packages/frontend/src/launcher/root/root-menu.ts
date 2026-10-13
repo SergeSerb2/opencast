@@ -26,8 +26,8 @@ export function rootMenu(): ActionPanelModel {
       {
         actions: [
           { id: "about", title: "About Surgecast", icon: "info-01-16", onAction: () => showWindow("settings", "about") },
-          { id: "docs", title: "Documentation", icon: "book-16", onAction: () => native.call("open.url", { url: "https://github.com/surgecast/surgecast#readme" }).then(hideLauncher) },
-          { id: "feedback", title: "Report an Issue", icon: "bug-16", onAction: () => native.call("open.url", { url: "https://github.com/surgecast/surgecast/issues/new" }).then(hideLauncher) },
+          { id: "docs", title: "Documentation", icon: "book-16", onAction: () => native.call("open.url", { url: "https://github.com/SergeSerb2/surgecast#readme" }).then(hideLauncher) },
+          { id: "feedback", title: "Report an Issue", icon: "bug-16", onAction: () => native.call("open.url", { url: "https://github.com/SergeSerb2/surgecast/issues/new" }).then(hideLauncher) },
         ],
       },
       {

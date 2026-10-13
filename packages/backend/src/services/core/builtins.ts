@@ -319,7 +319,7 @@ export function builtinCatalog(): Builtin[] {
     await ctx.native.call("open.url", {
       url:
         process.env.SURGECAST_DOCS_URL ??
-        "https://github.com/sergeserbinenko/surgecast/tree/main/docs",
+        "https://github.com/SergeSerb2/surgecast/tree/main/docs",
     });
     return done();
   });
