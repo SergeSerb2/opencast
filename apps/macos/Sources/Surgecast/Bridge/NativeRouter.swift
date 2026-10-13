@@ -50,6 +50,9 @@ import AppKit
       tidyMenuBar.set(settings["advanced.tidyMenuBar"] as? Bool ?? false)
       hotkeys.hyperEnabled = (settings["keyboard.hyperKey"] as? String ?? "none") != "none"
       hotkeys.hyperIncludeShift = settings["keyboard.hyperKeyIncludeShift"] as? Bool ?? true
+      setMenuBar?(settings["general.showInMenuBar"] as? Bool ?? true)
+      LoginItem.sync(settings["general.openAtLogin"] as? Bool ?? true)
+      // Last: Hyper Key throws without Accessibility, which must not skip the settings above.
       try hyperKey.configure(settings)
     case "system.onBattery": return try Power.onBattery()
     case "system.setIdleSleepPrevented": try power.set(p)
