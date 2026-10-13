@@ -51,6 +51,8 @@ import AppKit
       hotkeys.hyperEnabled = (settings["keyboard.hyperKey"] as? String ?? "none") != "none"
       hotkeys.hyperIncludeShift = settings["keyboard.hyperKeyIncludeShift"] as? Bool ?? true
       try hyperKey.configure(settings)
+      setMenuBar?(settings["general.showInMenuBar"] as? Bool ?? true)
+      LoginItem.sync(settings["general.openAtLogin"] as? Bool ?? true)
     case "system.onBattery": return try Power.onBattery()
     case "system.setIdleSleepPrevented": try power.set(p)
     case "app.info":
