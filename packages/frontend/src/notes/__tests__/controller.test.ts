@@ -76,6 +76,21 @@ describe("NotesController", () => {
     await controller.session.flush();
   });
 
+  it("saves edits made to the outgoing note while the next note loads", async () => {
+    const { controller, api, notes, editor } = setup();
+    await controller.open("a", { focus: false });
+    let complete!: (note: Note) => void;
+    api.get.mockImplementationOnce(() => new Promise((resolve) => { complete = resolve as (note: Note) => void; }));
+    const opening = controller.open("b", { focus: false });
+    await vi.waitFor(() => expect(api.get).toHaveBeenCalledWith("b"));
+    editor.commands.insertContent("late edit");
+    const content = editor.getMarkdown();
+    complete(notes.get("b")!);
+    await opening;
+    expect(notes.get("a")?.content).toBe(content);
+    expect(controller.session.noteId).toBe("b");
+  });
+
   it("ignores an older open response after a newer route", async () => {
     const { controller, api, notes } = setup();
     let complete!: (note: Note) => void;
