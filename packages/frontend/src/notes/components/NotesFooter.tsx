@@ -2,6 +2,8 @@ import type { Editor } from "@tiptap/core";
 import { Shortcut } from "../../components/Keycap/Keycap";
 import { Tooltip } from "../../components/Tooltip/Tooltip";
 import { Icon } from "../../icons/Icon";
+import { showFailureToast } from "../../components/feedback/toast-store";
+import { setSetting, useSetting } from "../../bridge/settings";
 import { setNotesPreference, useNotesPreferences } from "../lib/preferences";
 import { NOTES_SHORTCUTS as S } from "../lib/shortcuts";
 import { pluralize } from "../lib/text";
@@ -13,6 +15,7 @@ import { FormatBar } from "./FormatBar";
  * unit), or the formatting pill, and the format-bar toggle at the right.
  */
 export function NotesFooter({ editor }: { editor: Editor | null }) {
+  const alwaysOnTop = useSetting("notes.alwaysOnTop");
   const formatBarVisible = useNotesPreferences((state) => state.formatBarVisible);
   const countMode = useNotesPreferences((state) => state.countMode);
   const characters = useNotesStore((state) => state.characters);
@@ -20,7 +23,18 @@ export function NotesFooter({ editor }: { editor: Editor | null }) {
   const label = countMode === "words" ? pluralize(words, "word") : pluralize(characters, "character");
   return (
     <div className="sc-notes-footer">
-      <div />
+      <Tooltip content={<span className="sc-notes-tooltip">Always on Top<Shortcut shortcut={S.alwaysOnTop} /></span>}>
+        <button
+          type="button"
+          className="sc-notes-footer__toggle sc-notes-footer__pin sc-glass-control"
+          aria-label="Always on Top"
+          aria-pressed={alwaysOnTop}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => void setSetting("notes.alwaysOnTop", !alwaysOnTop).catch((error: unknown) => showFailureToast("Could not change Always on Top", error))}
+        >
+          <Icon name="pin-16" size={16} />
+        </button>
+      </Tooltip>
       {formatBarVisible && editor ? (
         <FormatBar editor={editor} />
       ) : (

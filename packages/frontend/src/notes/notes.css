@@ -3,10 +3,10 @@
  * the native window's glass is the background.
  */
 
-/* Notes uses the brand color as its accent and keeps the 26px window radius on macOS 27. */
+/* Notes keeps the reference editor accent and 26px window radius on macOS 27. */
 :root.theme-root.active-theme[data-window="notes"],
 .theme-root[data-window="notes"] {
-  --theme-accent: var(--color-brand);
+  --theme-accent: #ff6363;
   --radius-window: 26px;
   --window-header-height: var(--default-window-header-height);
 }
@@ -128,7 +128,7 @@
   padding: var(--window-header-height) 0 var(--notes-scroll-bottom);
 }
 .sc-notes[data-find-open] .sc-notes__content {
-  padding-top: calc(var(--window-header-height) + var(--space-48));
+  padding-top: calc(var(--window-header-height) + var(--notes-find-offset, 48px));
 }
 
 /* ---- footer ------------------------------------------------------------------------ */
@@ -181,6 +181,14 @@
   content: "";
   position: absolute;
   inset: calc(-1 * var(--space-2));
+}
+.sc-notes-footer__pin {
+  justify-self: start;
+}
+.sc-notes-footer__pin[aria-pressed="true"] {
+  color: var(--accent);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Formatting pill (§7.2 formatting mode). */

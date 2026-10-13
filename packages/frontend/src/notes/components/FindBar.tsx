@@ -20,8 +20,10 @@ function IconAction({ icon, label, disabled, onClick }: { icon: string; label: s
 }
 
 /** Find & replace panel (§7.5): glass card under the header, match counter, previous/next, replace one/all. */
-export function FindBar({ editor }: { editor: Editor }) {
+export function FindBar({ editor, onHeightChange }: { editor: Editor; onHeightChange: (height: number) => void }) {
   const findOpen = useNotesStore((state) => state.findOpen);
+  const docVersion = useNotesStore((state) => state.docVersion);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [replacement, setReplacement] = useState("");
   const [replaceOpen, setReplaceOpen] = useState(false);
@@ -59,6 +61,23 @@ export function FindBar({ editor }: { editor: Editor }) {
     window.addEventListener("sc-notes-focus-find", onFocusRequest);
     return () => window.removeEventListener("sc-notes-focus-find", onFocusRequest);
   }, []);
+
+  useEffect(() => {
+    if (findOpen) setFindQuery(editor, query);
+  }, [docVersion, findOpen, editor, query]);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!findOpen || !panel) {
+      onHeightChange(0);
+      return;
+    }
+    const measure = () => onHeightChange(panel.offsetHeight + 8);
+    const observer = new ResizeObserver(measure);
+    observer.observe(panel);
+    measure();
+    return () => observer.disconnect();
+  }, [findOpen, onHeightChange]);
 
   if (!findOpen) return null;
 
@@ -107,7 +126,7 @@ export function FindBar({ editor }: { editor: Editor }) {
   const hasMatches = count > 0;
   const canReplace = query.length > 0 && hasMatches;
   return (
-    <div className="sc-notes-find sc-glass-panel" role="search" aria-label="Find in Note">
+    <div ref={panelRef} className="sc-notes-find sc-glass-panel" role="search" aria-label="Find in Note">
       <div className="sc-notes-find__row">
         <button
           type="button"

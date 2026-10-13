@@ -198,6 +198,13 @@ function BrowsePanel({ controller }: { controller: NotesController }) {
       close();
       return;
     }
+    if (matchesShortcut(event.nativeEvent, S.newNote)) {
+      event.preventDefault();
+      event.stopPropagation();
+      close(false);
+      void controller.newNote();
+      return;
+    }
     if (!selected) return;
     for (const section of actionModel(selected).sections) {
       for (const action of section.actions) {
@@ -229,6 +236,7 @@ function BrowsePanel({ controller }: { controller: NotesController }) {
         className="sc-notes-browse__item"
         role="option"
         aria-selected={isSelected}
+        title={note.preview}
         data-selected={isSelected || undefined}
         onMouseMove={() => !isSelected && setSelectedId(note.id)}
         onMouseDown={(event) => event.preventDefault()}

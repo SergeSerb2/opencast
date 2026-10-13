@@ -3,6 +3,7 @@ import { Editor } from "@tiptap/core";
 import { createNoteExtensions } from "../editor/extensions";
 import { highlightCode, languageLabel, tokensFromHighlightHtml } from "../editor/code-highlight";
 import { findMatches, getFindState, replaceActiveMatch, replaceAllMatches, setFindQuery, stepFindMatch } from "../editor/find-replace";
+import { showVirtualSelection } from "../editor/virtual-selection";
 
 const editors: Editor[] = [];
 function editorWith(markdown: string): Editor {
@@ -12,6 +13,20 @@ function editorWith(markdown: string): Editor {
 }
 afterEach(() => {
   while (editors.length) editors.pop()?.destroy();
+});
+
+describe("virtual selection", () => {
+  it("paints selected text and retains the range while a popover is focused", () => {
+    const editor = editorWith("Select this text");
+    editor.commands.setTextSelection({ from: 1, to: 7 });
+    expect(editor.view.dom.querySelector(".sc-notes-virtual-selection")?.textContent).toBe("Select");
+    showVirtualSelection(editor, { from: 8, to: 12 });
+    expect(editor.view.dom.querySelector(".sc-notes-virtual-selection")?.textContent).toBe("this");
+    showVirtualSelection(editor, null);
+    expect(editor.view.dom.querySelector(".sc-notes-virtual-selection")?.textContent).toBe("Select");
+    editor.commands.setTextSelection(1);
+    expect(editor.view.dom.querySelector(".sc-notes-virtual-selection")).toBeNull();
+  });
 });
 
 describe("find & replace", () => {

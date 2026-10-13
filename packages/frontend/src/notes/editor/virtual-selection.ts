@@ -1,12 +1,21 @@
 import { Extension, type Editor } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { NodeSelection, Plugin, PluginKey, type Selection } from "@tiptap/pm/state";
+import type { Node } from "@tiptap/pm/model";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 const key = new PluginKey<DecorationSet>("notesVirtualSelection");
 
+function selectionDecorations(doc: Node, selection: Selection): DecorationSet {
+  if (selection.empty) return DecorationSet.empty;
+  const decoration = selection instanceof NodeSelection
+    ? Decoration.node(selection.from, selection.to, { class: "sc-notes-virtual-block-selection" })
+    : Decoration.inline(selection.from, selection.to, { class: "sc-notes-virtual-selection" });
+  return DecorationSet.create(doc, [decoration]);
+}
+
 /**
- * Keeps a selection visible while focus is in a popover (link editor), the way
- * Raycast paints its "virtual selection" with --accent-40 (§7.5).
+ * Paint the editor's selection with --accent-40 (§7.5) while the browser's
+ * native highlight is transparent. Popovers can retain an explicit range.
  */
 export const VirtualSelection = Extension.create({
   name: "notesVirtualSelection",
@@ -15,12 +24,13 @@ export const VirtualSelection = Extension.create({
       new Plugin<DecorationSet>({
         key,
         state: {
-          init: () => DecorationSet.empty,
+          init: (_, state) => selectionDecorations(state.doc, state.selection),
           apply(tr, decorations) {
             const range = tr.getMeta(key) as { from: number; to: number } | null | undefined;
-            if (range === null) return DecorationSet.empty;
+            if (range === null) return selectionDecorations(tr.doc, tr.selection);
             if (range) return DecorationSet.create(tr.doc, [Decoration.inline(range.from, range.to, { class: "sc-notes-virtual-selection" })]);
-            return decorations.map(tr.mapping, tr.doc);
+            if (tr.docChanged || tr.selectionSet) return selectionDecorations(tr.doc, tr.selection);
+            return decorations;
           },
         },
         props: {

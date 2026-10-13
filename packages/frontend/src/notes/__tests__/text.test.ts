@@ -66,7 +66,7 @@ describe("timeAgo", () => {
 
 describe("looksLikeMarkdown", () => {
   it("recognizes Markdown structure", () => {
-    for (const text of ["# Heading", "- item", "* item", "1. first", "- [ ] task", "> quote", "```js\ncode\n```", "---", "see [link](https://x.y)", "**bold** text", "use `code`"]) {
+    for (const text of ["# Heading", "- item", "* item", "1. first", "- [ ] task", "> quote", "```js\ncode\n```", "---", "see [link](https://x.y)", "**bold** text", "*italic* text", "++underlined++ text", "use `code`"]) {
       expect(looksLikeMarkdown(text), text).toBe(true);
     }
   });

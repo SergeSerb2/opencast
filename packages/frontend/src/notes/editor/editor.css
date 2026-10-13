@@ -37,12 +37,13 @@
 }
 .sc-notes-editor .tiptap ::selection,
 .sc-notes-editor .tiptap::selection {
-  background: var(--accent-40);
+  background: transparent;
 }
 .sc-notes-editor .ProseMirror-selectednode {
   outline: none;
 }
-.sc-notes-editor .sc-notes-virtual-selection {
+.sc-notes-editor .sc-notes-virtual-selection,
+.sc-notes-editor .sc-notes-virtual-block-selection {
   background: var(--accent-40);
 }
 

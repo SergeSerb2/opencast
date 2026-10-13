@@ -95,6 +95,7 @@ function formatSubmenu(ctx: NotesActionContext): ActionModel {
           actions: [
             { id: "format-code-block", title: "Code Block", icon: "code-block-16", shortcut: S.codeBlock, onAction: run((e) => e.chain().focus().toggleCodeBlock().run()) },
             { id: "format-blockquote", title: "Blockquote", icon: "quote-block-16", shortcut: S.blockquote, onAction: run((e) => e.chain().focus().toggleBlockquote().run()) },
+            { id: "format-rule", title: "Horizontal Rule", icon: "minus-16", onAction: run((e) => e.chain().focus().setHorizontalRule().run()) },
           ],
         },
         {

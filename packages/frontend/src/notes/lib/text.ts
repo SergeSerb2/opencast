@@ -85,7 +85,8 @@ const MARKDOWN_SIGNALS = [
   /^\s*(```|~~~)/m, // fence
   /^\s*([-*_])(\s*\1){2,}\s*$/m, // rule
   /\[[^\]]+\]\([^)\s]+\)/, // link
-  /(\*\*|__|~~)\S(.*?\S)?\1/, // strong / strike
+  /(\*\*|__|~~|\+\+)\S(.*?\S)?\1/, // strong / strike / underline
+  /(^|[^\w*_])([*_])[^\s*_](?:[^\n]*?[^\s*_])?\2(?=$|[^\w*_])/m, // italic
   /`[^`\n]+`/, // inline code
 ];
 

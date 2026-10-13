@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { getEnv } from "../../bridge/env";
-import { useEvent, useLatest, useNativeEvent } from "../../bridge/hooks";
+import { useConnectionState, useEvent, useLatest, useNativeEvent } from "../../bridge/hooks";
 import { native } from "../../bridge/native";
 import { getSetting, useSetting } from "../../bridge/settings";
 import { useAlertStore } from "../../components/feedback/alert-store";
+import { showFailureToast } from "../../components/feedback/toast-store";
 import { actionsWithShortcuts, type ActionPanelModel } from "../../components/actions/model";
 import { eventKey, matchesShortcut } from "../../lib/keyboard";
 import { runAction, setNotesZoom } from "../actions";
@@ -38,15 +39,16 @@ export function useWindowHover(): boolean {
 export function useAlwaysOnTop(): void {
   const floating = useSetting("notes.alwaysOnTop");
   useEffect(() => {
-    void native.call("window.setFloating", { kind: "notes", floating }).catch(() => undefined);
+    void native.call("window.setFloating", { kind: "notes", floating }).catch((error: unknown) => showFailureToast("Could not change Always on Top", error));
   }, [floating]);
 }
 
 /** Native window events, routes and backend note changes. */
 export function useNotesEvents(controller: NotesController): void {
+  const refresh = (task: Promise<void>) => void task.catch((error: unknown) => showFailureToast("Could not refresh notes", error));
   useNativeEvent("window.route", (event) => {
     if (event.kind !== "notes") return;
-    void controller.route(parseNotesRoute(event.route, event.payload));
+    refresh(controller.route(parseNotesRoute(event.route, event.payload)));
   });
   useNativeEvent("window.didShow", ({ kind }) => {
     if (kind !== "notes") return;
@@ -62,7 +64,14 @@ export function useNotesEvents(controller: NotesController): void {
   useNativeEvent("window.didHide", ({ kind }) => {
     if (kind === "notes") void controller.windowDeactivated();
   });
-  useEvent("notes.changed", ({ id, deleted }) => void controller.handleRemoteChange(id, Boolean(deleted)));
+  useEvent("notes.changed", ({ id, deleted }) => refresh(controller.handleRemoteChange(id, Boolean(deleted))));
+  useEvent("entities.changed", ({ collection, ids }) => {
+    if (collection === "notes") refresh(controller.handleCollectionChange(ids));
+  });
+  const connection = useConnectionState();
+  useEffect(() => {
+    if (connection === "open") refresh(controller.windowActivated());
+  }, [connection, controller]);
   useEffect(() => {
     const flush = () => void controller.windowDeactivated();
     window.addEventListener("pagehide", flush);
@@ -96,13 +105,19 @@ export function useNotesKeyboard(controller: NotesController, model: ActionPanel
 
       if (matchesShortcut(event, S.actions)) {
         event.preventDefault();
-        if (state.panel?.kind === "actions") closePanel();
+        if (state.panel?.kind === "actions") {
+          closePanel();
+          controller.focus();
+        }
         else openPanel({ kind: "actions" });
         return;
       }
       if (matchesShortcut(event, S.browse)) {
         event.preventDefault();
-        if (state.panel?.kind === "browse") closePanel();
+        if (state.panel?.kind === "browse") {
+          closePanel();
+          controller.focus();
+        }
         else openPanel({ kind: "browse" });
         return;
       }
@@ -169,7 +184,11 @@ const PANEL_HEIGHT = 442;
  * 860pt. A resize the window did not ask for is a manual resize and turns
  * auto-sizing off, as in Raycast ("Enable Window Auto-Sizing" restores it).
  */
-export function useAutoSize(contentRef: RefObject<HTMLElement | null>, chromeHeight: number): void {
+export function autoSizeHeight(contentHeight: number, scale: number, panelOpen: boolean): number {
+  return Math.round(Math.min(MAX_HEIGHT * scale, Math.max(MIN_HEIGHT * scale, panelOpen ? PANEL_HEIGHT * scale : 0, contentHeight)));
+}
+
+export function useAutoSize(contentRef: RefObject<HTMLElement | null>): void {
   const enabled = useNotesPreferences((state) => state.autoSize);
   const panelOpen = useNotesStore((state) => state.panel !== null);
   const uiZoom = useSetting("general.uiZoom");
@@ -180,7 +199,8 @@ export function useAutoSize(contentRef: RefObject<HTMLElement | null>, chromeHei
     if (!enabled || !content || !getEnv().native) return;
     const scale = Number.isFinite(uiZoom) && uiZoom > 0 ? uiZoom : 1;
     const fit = () => {
-      const target = Math.round(Math.min(MAX_HEIGHT * scale, Math.max(MIN_HEIGHT * scale, panelOpen ? PANEL_HEIGHT * scale : 0, content.offsetHeight + chromeHeight)));
+      // The measured content already includes header, find and footer padding.
+      const target = autoSizeHeight(content.offsetHeight, scale, panelOpen);
       if (Math.abs(target - window.innerHeight) < 1) return;
       requested.current = { height: target, at: Date.now() };
       void native.call("window.setSize", { kind: "notes", width: window.innerWidth, height: target }).catch(() => undefined);
@@ -190,14 +210,14 @@ export function useAutoSize(contentRef: RefObject<HTMLElement | null>, chromeHei
     fit();
     const onResize = () => {
       const last = requested.current;
-      if (!last || Math.abs(window.innerHeight - last.height) <= 2) return;
+      if (last && Math.abs(window.innerHeight - last.height) <= 2) return;
       // The host settles our own request within a moment; later changes come from the user.
-      if (Date.now() - last.at > 500) setNotesPreference("autoSize", false);
+      if (!last || Date.now() - last.at > 500) setNotesPreference("autoSize", false);
     };
     window.addEventListener("resize", onResize);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", onResize);
     };
-  }, [enabled, panelOpen, uiZoom, chromeHeight, contentRef]);
+  }, [enabled, panelOpen, uiZoom, contentRef]);
 }

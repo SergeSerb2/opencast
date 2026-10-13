@@ -27,8 +27,6 @@ const HEADER_HEIGHT = 52;
 /** Footer reservation: 44pt on macOS 26, 48pt on macOS 27 (§7.1). */
 const FOOTER_HEIGHT = getEnv().macOSMajor >= 27 ? 48 : 44;
 const SCROLL_BOTTOM = FOOTER_HEIGHT + 8;
-/** Find panel height pushes the content down while it is open. */
-const FIND_OFFSET = 48;
 
 /** ⌘K panel anchor: under the header's glass group, right-aligned with it. */
 const ACTIONS_ANCHOR = (root: DOMRect) => ({ x: root.width - 8, y: 46 });
@@ -36,6 +34,7 @@ const ACTIONS_ANCHOR = (root: DOMRect) => ({ x: root.width - 8, y: 46 });
 export function NotesApp() {
   const [controller] = useState(() => new NotesController());
   const contentRef = useRef<HTMLDivElement>(null);
+  const [findOffset, setFindOffset] = useState(0);
   const zoom = clampZoom(useSetting("notes.zoom"));
   const alwaysOnTop = useSetting("notes.alwaysOnTop");
   const formatBarVisible = useNotesPreferences((state) => state.formatBarVisible);
@@ -105,7 +104,7 @@ export function NotesApp() {
   useNotesEvents(controller);
   useNotesKeyboard(controller, model);
   useAlwaysOnTop();
-  useAutoSize(contentRef, HEADER_HEIGHT + SCROLL_BOTTOM + (findOpen ? FIND_OFFSET : 0));
+  useAutoSize(contentRef);
 
   const closeActions = () => {
     closePanel();
@@ -123,7 +122,7 @@ export function NotesApp() {
     controller.focus("end");
   };
 
-  const style = { "--notes-scroll-bottom": `${SCROLL_BOTTOM}px` } as CSSProperties;
+  const style = { "--notes-scroll-bottom": `${SCROLL_BOTTOM}px`, "--notes-find-offset": `${findOffset}px` } as CSSProperties;
   return (
     <div className="sc-notes" data-hovered={hovered || undefined} data-find-open={findOpen || undefined} style={style}>
       <div className="sc-notes__editor-area" onMouseDown={onEditorAreaMouseDown}>
@@ -147,7 +146,7 @@ export function NotesApp() {
         onBrowse={() => (panel?.kind === "browse" ? closePanel() : openPanel({ kind: "browse" }))}
         onCreate={() => void controller.newNote()}
       />
-      {editor && <FindBar editor={editor} />}
+      {editor && <FindBar editor={editor} onHeightChange={setFindOffset} />}
       <NotesFooter editor={editor} />
       {editor && <LinkPopover editor={editor} />}
       <BrowseNotes controller={controller} />
