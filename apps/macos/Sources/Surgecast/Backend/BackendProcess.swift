@@ -1,4 +1,5 @@
 import AppKit
+import SurgecastCore
 
 @MainActor final class BackendProcess {
   private var process: Process?
@@ -8,6 +9,7 @@ import AppKit
   private var generation = 0
   private var health: Timer?
   var router: RpcChannel.Handler?
+  var disconnected: (() -> Void)?
   var ready: (([String: Any]) -> Void)?
   private let hub: EventHub
   init(hub: EventHub) {
@@ -74,12 +76,16 @@ import AppKit
       p.standardError = stderr
       let rpc = RpcChannel(input: input.fileHandleForWriting, output: output.fileHandleForReading)
       rpc.handler = router
-      rpc.onClosed = { [weak self, weak p] in if self?.stopping == false { p?.terminate() } }
-      rpc.onReady = { [weak self, weak p] info in
-        guard let self, let port = info["port"] as? Int, (1...65535).contains(port),
+      rpc.onClosed = { [weak self, weak p] in
+        guard let self, self.generation == current else { return }
+        self.disconnected?()
+        self.recover(p, generation: current)
+      }
+      rpc.onReady = { [weak self, weak p, weak rpc] info in
+        guard let self, let rpc, let port = info["port"] as? Int, (1...65535).contains(port),
           let token = info["token"] as? String, !token.isEmpty
         else {
-          p?.terminate()
+          self?.recover(p, generation: current)
           return
         }
         self.ready?(info)
@@ -90,20 +96,21 @@ import AppKit
             _ = try await rpc.request("backend.ping")
           } catch {
             Environment.log("Backend initial ping failed")
-            p?.terminate()
+            self.recover(p, generation: current)
           }
         }
         self.health?.invalidate()
         self.health = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) {
-          [weak self, weak p] _ in
+          [weak self, weak p, weak rpc] _ in
           Task { @MainActor in
+            guard let self, self.generation == current, let rpc else { return }
             do {
               _ = try await rpc.request("backend.ping")
-              self?.failures = 0
+              self.failures = 0
             } catch {
               Environment.log("Backend health check failed; restarting")
-              self?.health?.invalidate()
-              p?.terminate()
+              self.health?.invalidate()
+              self.recover(p, generation: current)
             }
           }
         }
@@ -128,11 +135,18 @@ import AppKit
       DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self, weak p] in
         guard let self, self.generation == current, self.health == nil else { return }
         Environment.log("Backend ready timeout")
-        p?.terminate()
+        self.recover(p, generation: current)
       }
     } catch {
       Environment.log(error.localizedDescription)
       scheduleRestart()
+    }
+  }
+  private func recover(_ child: Process?, generation current: Int) {
+    guard let child else { return }
+    ProcessRecovery.terminate(child) { [weak self, weak child] in
+      guard let self, let child else { return false }
+      return !self.stopping && self.generation == current && self.process === child
     }
   }
   private func scheduleRestart() {

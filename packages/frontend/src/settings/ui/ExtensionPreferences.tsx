@@ -1,4 +1,5 @@
 import type { ExtensionPreference } from "@surgecast/protocol";
+import { applicationPreferenceValue } from "../../lib/application-preference";
 import { backend } from "../../bridge/backend";
 import { useBackend } from "../../bridge/hooks";
 import { Button } from "../../components/Button/Button";
@@ -22,7 +23,7 @@ export interface ExtensionPreferencesFormProps {
 
 function PreferenceControl({ preference, value, onChange }: { preference: ExtensionPreference; value: unknown; onChange: (value: unknown) => void }) {
   const apps = useInstalledApps(preference.type === "appPicker");
-  const text = typeof value === "string" ? value : value === undefined || value === null ? "" : String(value);
+  const text = preference.type === "appPicker" ? applicationPreferenceValue(value) : typeof value === "string" ? value : value === undefined || value === null ? "" : String(value);
   switch (preference.type) {
     case "checkbox":
       return <Checkbox checked={value === true} onChange={onChange} label={preference.label} />;

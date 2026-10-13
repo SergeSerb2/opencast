@@ -11,8 +11,9 @@ import AppKit
     if p["path"] != nil {
       url = URL(fileURLWithPath: try p.string("path"))
     } else {
-      url = FileManager.default.temporaryDirectory.appendingPathComponent(
-        "surgecast-\(UUID().uuidString).png")
+      let directory = Environment.dataDir.appendingPathComponent("captures")
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      url = directory.appendingPathComponent("\(UUID().uuidString).png")
     }
     var args = ["-x", "-t", "png"]
     if mode == "interactive" { args += ["-i"] }

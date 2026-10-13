@@ -53,6 +53,10 @@ import Carbon
       guard let router = self?.router else { throw RpcError.failure("Native router unavailable") }
       return try await router.call(method, p)
     }
+    backend.disconnected = { [weak self] in
+      self?.router.power.stop()
+      self?.backendIsReady = false
+    }
     backend.ready = { [weak self] info in
       guard let self else { return }
       self.factory.backendReady(info)

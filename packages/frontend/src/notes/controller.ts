@@ -221,6 +221,9 @@ export class NotesController {
       showToast({ style: "failure", title: "Note not found" });
       return false;
     }
+    // The outgoing note remains editable while notes.get is in flight.
+    if (!(await this.session.flush())) return false;
+    if (sequence !== this.openSequence) return true;
     this.show(note, focus);
     if (recordHistory) this.history.visit(note.id);
     this.syncHistory();
@@ -251,6 +254,8 @@ export class NotesController {
     const blank = (await this.api.list().catch(() => [])).find((summary) => summary.characters === 0);
     if (sequence !== this.openSequence) return;
     if (blank && (await this.open(blank.id))) return;
+    if (!(await this.session.flush())) return;
+    if (sequence !== this.openSequence) return;
     this.show(null, true);
   }
 

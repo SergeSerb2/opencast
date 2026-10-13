@@ -1,6 +1,7 @@
 import AppKit
 import CryptoKit
 import Vision
+import SurgecastCore
 
 @MainActor final class Pasteboard {
   private var timer: Timer?
@@ -34,16 +35,17 @@ import Vision
     guard board.changeCount != count else { return }
     count = board.changeCount
     if !captureUniversal && (board.types ?? []).contains(where: { $0.rawValue == "com.apple.is-remote-clipboard" }) { return }
+    guard !ClipboardImageStore.isPrivate((board.types ?? []).map(\.rawValue)) else { return }
     let source = NSWorkspace.shared.frontmostApplication
     if ignored.contains(source?.bundleIdentifier ?? "") || ignored.contains(source?.bundleURL?.path ?? "") { return }
     Task {
-      if var snapshot = try? await read() {
+      if var snapshot = try? await read(persistImages: true) {
         snapshot["sourceApp"] = source?.bundleURL.map(Applications.info)
         hub.emit("clipboard.changed", snapshot)
       }
     }
   }
-  func read() async throws -> [String: Any]? {
+  func read(persistImages: Bool = false) async throws -> [String: Any]? {
     let pb = NSPasteboard.general
     let types = (pb.types ?? []).map(\.rawValue)
     guard !types.isEmpty else { return nil }
@@ -70,10 +72,8 @@ import Vision
       let file = Environment.dataDir.appendingPathComponent("clipboard/\(hash).png")
       let width = bitmap.pixelsWide
       let height = bitmap.pixelsHigh
-      try await Task.detached {
-        if !FileManager.default.fileExists(atPath: file.path) {
-          try png.write(to: file, options: .atomic)
-        }
+      primary = try await Task.detached {
+        try ClipboardImageStore.content(png: png, file: file, width: width, height: height, types: types, persist: persistImages)
       }.value
       if recognizeText && o["concealed"] as? Bool != true && o["transient"] as? Bool != true {
         let accurate = recognitionMode != "fast"
@@ -85,9 +85,6 @@ import Vision
           return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
         }.value
       }
-      primary = [
-        "kind": "image", "path": file.path, "uti": "public.png", "width": width, "height": height,
-      ]
     } else if let color = NSColor(from: pb)?.usingColorSpace(.deviceRGB) {
       primary = [
         "kind": "color",

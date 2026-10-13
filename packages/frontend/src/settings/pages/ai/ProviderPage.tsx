@@ -520,6 +520,7 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
   }, [baseline]);
 
   const setDraft = (patch: Partial<ProviderDraft>) => {
+    if (saving) return;
     setDraftState((current) => (current ? { ...current, ...patch } : current));
     setErrors({});
     setSaveError(null);
@@ -569,7 +570,7 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
   const headerActions =
     dirty || isNew ? (
       <Controls>
-        <Button size="small" variant="ghost" onClick={() => (isNew ? navigate("ai/models", { replace: true }) : setDraftState(baseline))}>
+        <Button size="small" variant="ghost" disabled={saving} onClick={() => (isNew ? navigate("ai/models", { replace: true }) : setDraftState(baseline))}>
           {isNew ? "Cancel" : "Revert"}
         </Button>
         <Button size="small" onClick={() => void save()} disabled={saving}>
@@ -598,7 +599,9 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
           {hint}
         </Callout>
       )}
-      <ConnectionSection draft={draft} setDraft={setDraft} errors={errors} template={template} hasSavedKey={provider?.hasApiKey ?? false} isNew={isNew} version={provider?.updatedAt} />
+      <fieldset disabled={saving} className="sc-s-provider-fields">
+        <ConnectionSection draft={draft} setDraft={setDraft} errors={errors} template={template} hasSavedKey={provider?.hasApiKey ?? false} isNew={isNew} version={provider?.updatedAt} />
+      </fieldset>
       {provider && (
         <>
           <Section anchor="test">

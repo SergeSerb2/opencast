@@ -8,6 +8,7 @@ import "../theme/glass.css";
 import { getEnv } from "../bridge/env";
 import { installNativeReceiver } from "../bridge/native";
 import { applyRootAttributes, ThemeProvider } from "../theme/ThemeProvider";
+import { DatePickerHost } from "../components/feedback/date-picker";
 import { AlertHost } from "../components/AlertDialog/AlertDialog";
 import { OverlayRoot } from "../components/Popover/Popover";
 import { DevBackdrop } from "./DevBackdrop";
@@ -39,12 +40,14 @@ export function mountWindow(app: ReactNode, options: { backdrop?: boolean } = {}
             {app}
             <OverlayRoot />
             <AlertHost />
+            <DatePickerHost />
           </DevBackdrop>
         ) : (
           <>
             {app}
             <OverlayRoot />
             <AlertHost />
+            <DatePickerHost />
           </>
         )}
       </ThemeProvider>
