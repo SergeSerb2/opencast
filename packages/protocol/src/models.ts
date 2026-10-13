@@ -156,6 +156,8 @@ export interface Snippet {
   /** Text with dynamic placeholders, e.g. "Hi {clipboard}, {date format=\"yyyy-MM-dd\"}{cursor}". */
   text: string;
   keyword?: string;
+  /** Icon enum value shown next to the snippet (default "blank-document-16"). */
+  icon?: string;
   pinned?: boolean;
   tags?: string[];
   copyCount?: number;
@@ -175,6 +177,7 @@ export interface Quicklink {
   icon?: ImageLike;
   tags?: string[];
   openCount?: number;
+  pinned?: boolean;
   createdAt: number;
   updatedAt: number;
 }

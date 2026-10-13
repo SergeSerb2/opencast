@@ -41,6 +41,8 @@ export interface ListProps {
   detailWidth?: "small" | "large";
   /** Surgecast: footer label for the primary action. */
   primaryActionTitle?: string;
+  /** Surgecast: keep row accessories while the detail pane is open (built-in snippet/quicklink rows show their keyword). */
+  keepAccessoriesInDetail?: boolean;
 }
 
 /** `<List.Item.Detail>`: rendered in the detail pane of a list with `isShowingDetail`. */
@@ -110,7 +112,7 @@ export function List(props: ListProps) {
   );
 }
 
-function ListContent({ children, searchText = "", onSearchTextChange, filtering, isLoading, actions, isShowingDetail, selectedItemId, onSelectionChange, pagination, size = "large", detailWidth = "large" }: ListProps) {
+function ListContent({ children, searchText = "", onSearchTextChange, filtering, isLoading, actions, isShowingDetail, selectedItemId, onSelectionChange, pagination, size = "large", detailWidth = "large", keepAccessoriesInDetail = false }: ListProps) {
   const view = useOptionalViewController();
   const actionContext = useActionContext();
   const { sections: allSections, emptyView } = useMemo(() => collectListChildren(children), [children]);
@@ -119,8 +121,8 @@ function ListContent({ children, searchText = "", onSearchTextChange, filtering,
   const sections = useMemo(() => {
     const filtered = filterEnabled && searchText.trim() ? filterSections(allSections, searchText, keepOrder) : allSections;
     // Like Raycast, rows only show icon and title while the detail pane is open.
-    return isShowingDetail ? filtered.map((s) => ({ ...s, items: s.items.map((item) => ({ ...item, subtitle: undefined, accessories: undefined })) })) : filtered;
-  }, [allSections, filterEnabled, searchText, keepOrder, isShowingDetail]);
+    return isShowingDetail ? filtered.map((s) => ({ ...s, items: s.items.map((item) => ({ ...item, subtitle: undefined, accessories: keepAccessoriesInDetail ? item.accessories : undefined })) })) : filtered;
+  }, [allSections, filterEnabled, searchText, keepOrder, isShowingDetail, keepAccessoriesInDetail]);
 
   const [selectedId, setSelectedId] = useState<string | null>(selectedItemId ?? null);
   const lastQuery = useRef(searchText);

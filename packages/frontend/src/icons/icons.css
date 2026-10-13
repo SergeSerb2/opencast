@@ -97,3 +97,13 @@
 .sc-tile > .sc-icon {
   filter: drop-shadow(0 0.5px 0.6px rgb(0 0 0 / 0.28));
 }
+.sc-tile--flat {
+  border-radius: 27%;
+  box-shadow: none;
+}
+.sc-tile--flat::before {
+  content: none;
+}
+.sc-tile--flat > .sc-icon {
+  filter: none;
+}

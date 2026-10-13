@@ -69,6 +69,8 @@ export interface TileImage {
     /** One color or a [top, bottom] gradient. */
     background: string | [string, string];
     foreground?: string;
+    /** Flat content tile (no gloss, 6/22 radius, larger glyph), as Raycast draws clipboard and snippet rows. */
+    flat?: boolean;
   };
 }
 

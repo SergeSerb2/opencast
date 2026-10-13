@@ -1,7 +1,9 @@
 import { useLayoutEffect, useMemo, useState } from "react";
 import { Menu, type MenuSection } from "../Menu/Menu";
 import { Popover, type PopoverAnchor } from "../Popover/Popover";
-import type { ActionModel, ActionPanelModel, ActionSectionModel, ActionSubmenuModel } from "../actions/model";
+import type { KeyboardShortcut } from "@surgecast/protocol";
+import { sc } from "../../lib/keyboard";
+import { primaryActions, type ActionModel, type ActionPanelModel, type ActionSectionModel, type ActionSubmenuModel } from "../actions/model";
 import "./action-panel.css";
 
 export interface ActionPanelPopoverProps {
@@ -14,6 +16,8 @@ export interface ActionPanelPopoverProps {
   /** Defaults to the window's bottom-right corner, inset 8px (§4). */
   anchor?: PopoverAnchor;
   align?: "start" | "end";
+  /** Show the ↵ / ⌘↵ keycaps the frame binds to the first two actions ("cmd-enter": forms, ⌘↵ only). */
+  primaryShortcut?: "enter" | "cmd-enter" | null;
 }
 
 interface Level {
@@ -41,7 +45,7 @@ export function resolveLevels(model: ActionPanelModel | null, path: string[]): L
   return levels;
 }
 
-function toMenuSections(sections: ActionSectionModel[]): { menu: MenuSection[]; byId: Map<string, ActionModel> } {
+function toMenuSections(sections: ActionSectionModel[], implicit: Map<ActionModel, KeyboardShortcut>): { menu: MenuSection[]; byId: Map<string, ActionModel> } {
   const byId = new Map<string, ActionModel>();
   const menu = sections.map((section, si) => ({
     id: section.id ?? `section-${si}`,
@@ -49,14 +53,14 @@ function toMenuSections(sections: ActionSectionModel[]): { menu: MenuSection[]; 
     items: section.actions.map((action, ai) => {
       const id = `${si}:${ai}:${action.id}`;
       byId.set(id, action);
-      return { id, title: action.title, icon: action.icon, shortcut: action.shortcut, style: action.style, disabled: action.disabled, keywords: action.keywords, hasSubmenu: Boolean(action.submenu) };
+      return { id, title: action.title, icon: action.icon, shortcut: implicit.get(action) ?? action.shortcut, style: action.style, disabled: action.disabled, keywords: action.keywords, hasSubmenu: Boolean(action.submenu) };
     }),
   }));
   return { menu, byId };
 }
 
 /** The ⌘K panel: 350×≤280 glass card opening upward from the footer's right pill, search at the bottom. */
-export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, anchor = BOTTOM_RIGHT, align = "end" }: ActionPanelPopoverProps) {
+export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, anchor = BOTTOM_RIGHT, align = "end", primaryShortcut = null }: ActionPanelPopoverProps) {
   const [path, setPath] = useState<string[]>([]);
 
   // Reset only when the panel opens; model updates while open keep the submenu path.
@@ -67,7 +71,18 @@ export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, a
 
   const levels = useMemo(() => resolveLevels(model, path), [model, path]);
   const level = levels[levels.length - 1];
-  const { menu, byId } = useMemo(() => toMenuSections(level?.sections ?? []), [level]);
+  const { menu, byId } = useMemo(() => {
+    const implicit = new Map<ActionModel, KeyboardShortcut>();
+    if (primaryShortcut && level && levels.length === 1) {
+      const { primary, secondary } = primaryActions({ sections: level.sections });
+      // ↵ always runs the primary action; an explicit shortcut on the secondary stays visible.
+      if (primaryShortcut === "enter") {
+        if (primary && !primary.submenu) implicit.set(primary, sc("return"));
+        if (secondary && !secondary.submenu && !secondary.shortcut) implicit.set(secondary, sc("cmd", "return"));
+      } else if (primary && !primary.submenu) implicit.set(primary, sc("cmd", "return"));
+    }
+    return toMenuSections(level?.sections ?? [], implicit);
+  }, [level, levels.length, primaryShortcut]);
 
   const select = (id: string) => {
     const action = byId.get(id);

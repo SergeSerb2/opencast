@@ -1,0 +1,51 @@
+.sc-quicklink-form__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  flex-shrink: 0;
+}
+.sc-quicklink-form__tool {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-6);
+  color: var(--color-text-secondary);
+}
+.sc-quicklink-form__tool:hover {
+  background: var(--fg-10);
+  color: var(--color-text-primary);
+}
+.sc-quicklink-form__help {
+  margin: var(--space-8) 0 0;
+  font-size: var(--font-size-11);
+  line-height: 14px;
+  color: var(--color-text-secondary);
+}
+.sc-quicklink-form__help a {
+  color: var(--color-text-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sc-quicklink-form__help a:hover {
+  text-decoration: underline;
+}
+
+/* Detail preview: the link template with its placeholders as chips. */
+.sc-quicklink-preview {
+  margin: 0;
+  padding: var(--space-16);
+  font-size: var(--font-size-13);
+  line-height: 20px;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.sc-quicklink-preview__chip {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--accent-20);
+  color: var(--color-text-primary);
+}

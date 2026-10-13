@@ -88,6 +88,9 @@ export interface BackendMethods {
   "clipboard.paste": { params: { id: string; plainText?: boolean }; result: Void };
   "clipboard.copy": { params: { id: string; plainText?: boolean }; result: Void };
   "clipboard.pin": { params: { id: string; pinned: boolean }; result: Void };
+  /** Edit a display title or textual content without replacing other representations. */
+  "clipboard.update": { params: { id: string; patch: { title?: string; text?: string } }; result: ClipboardItem };
+  "clipboard.duplicate": { params: { id: string }; result: ClipboardItem };
   "clipboard.delete": { params: { id: string }; result: Void };
   "clipboard.clear": { params: { includePinned?: boolean }; result: Void };
   /** Paste each item in order on successive ⌘V (Raycast "Paste Sequentially"). */
@@ -100,7 +103,7 @@ export interface BackendMethods {
   "snippets.update": { params: { id: string; patch: Partial<Omit<Snippet, "id" | "createdAt" | "updatedAt">> }; result: Snippet };
   "snippets.delete": { params: { id: string }; result: Void };
   /** Expand placeholders without side effects (preview). */
-  "snippets.render": { params: { text: string; arguments?: Record<string, string> }; result: { text: string; cursorOffset?: number; arguments: { name: string; default?: string }[] } };
+  "snippets.render": { params: { text: string; arguments?: Record<string, string> }; result: { text: string; cursorOffset?: number; arguments: { name: string; default?: string; options?: string[] }[] } };
   "snippets.paste": { params: { id: string; arguments?: Record<string, string> }; result: Void };
   "snippets.copy": { params: { id: string; arguments?: Record<string, string> }; result: Void };
   "snippets.import": { params: { json: string }; result: { imported: number; skipped: number } };

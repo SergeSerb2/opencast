@@ -7,18 +7,16 @@ import {
   type BackendMethod,
   type BackendParams,
   type BackendResult,
-  type ClipboardItem,
   type CommandInfo,
   type LaunchResult,
-  type Note,
   type SettingsValues,
-  type Snippet,
 } from "@surgecast/protocol";
 import type { BackendClient, CallArgs, CallOptions } from "../backend";
 import type { Emitter } from "../emitter";
 import { cancelledError, RpcError } from "../errors";
-import { ALL_COMMANDS, QUICKLINKS } from "./fixtures/commands";
-import { CHATS, CLIPBOARD, EXTENSIONS, MESSAGES, NOTES, PROVIDERS, SNIPPETS } from "./fixtures/content";
+import { ALL_COMMANDS } from "./fixtures/commands";
+import { CHATS, EXTENSIONS, MESSAGES, PROVIDERS } from "./fixtures/content";
+import { createLibraryHandlers, LIBRARY_COMMANDS, libraryView } from "./library";
 import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
 
@@ -51,10 +49,7 @@ function settingsFromUrl(search: string): Partial<Record<string, unknown>> {
 
 export function createMockBackend(events: Emitter<BackendEvents>): BackendClient {
   const settings: SettingsValues = { ...defaultSettings(), ...settingsFromUrl(typeof location === "undefined" ? "" : location.search) } as SettingsValues;
-  const commands: CommandInfo[] = ALL_COMMANDS.map((c) => ({ ...c }));
-  const clipboard: ClipboardItem[] = CLIPBOARD.map((c) => ({ ...c }));
-  const snippets: Snippet[] = SNIPPETS.map((s) => ({ ...s }));
-  const notes: Note[] = NOTES.map((n) => ({ ...n }));
+  const commands: CommandInfo[] = [...ALL_COMMANDS, ...LIBRARY_COMMANDS].map((c) => ({ ...c }));
   const chats: AIChat[] = CHATS.map((c) => ({ ...c }));
   const sessions = new Map<string, MockSession>();
   const extensionPrefs = new Map<string, Record<string, unknown>>();
@@ -93,9 +88,12 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
         return { kind: "done", closeWindow: true };
       case "builtin:notes.createNote":
         return { kind: "done", closeWindow: true };
-      default:
+      default: {
+        const view = libraryView(id, fallbackText);
+        if (view) return { kind: "view", view: { ...view, title: command.title } };
         if (command.mode === "no-view") return { kind: "done", closeWindow: true, hud: command.title };
         return { kind: "view", view: { id: id.replace(/^builtin:/, ""), title: command.title } };
+      }
     }
   };
 
@@ -142,63 +140,6 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     },
 
     "calc.evaluate": ({ expression }) => mockCalculate(expression) ?? null,
-    "calc.history": () => [],
-    "calc.saveHistory": () => undefined,
-    "calc.clearHistory": () => undefined,
-
-    "clipboard.list": ({ query, kind, limit = 100, offset = 0 }) => {
-      const q = query?.toLowerCase() ?? "";
-      const items = clipboard.filter((c) => (!kind || kind === "all" || c.kind === kind) && (!q || c.title.toLowerCase().includes(q) || c.text?.toLowerCase().includes(q)));
-      return { items: items.slice(offset, offset + limit), total: items.length };
-    },
-    "clipboard.get": ({ id }) => clipboard.find((c) => c.id === id) ?? null,
-    "clipboard.paste": () => undefined,
-    "clipboard.copy": () => undefined,
-    "clipboard.pin": ({ id, pinned }) => {
-      const item = clipboard.find((c) => c.id === id) ?? notFound(`Clipboard item ${id}`);
-      item.pinned = pinned;
-      events.emit("clipboard.changed", { item });
-    },
-    "clipboard.delete": ({ id }) => {
-      const index = clipboard.findIndex((c) => c.id === id);
-      if (index === -1) notFound(`Clipboard item ${id}`);
-      const [item] = clipboard.splice(index, 1);
-      events.emit("clipboard.changed", { item });
-    },
-    "clipboard.clear": ({ includePinned }) => {
-      for (let i = clipboard.length - 1; i >= 0; i--) if (includePinned || !clipboard[i].pinned) clipboard.splice(i, 1);
-      if (clipboard[0]) events.emit("clipboard.changed", { item: clipboard[0] });
-    },
-
-    "snippets.list": ({ query }) => snippets.filter((s) => !query || s.name.toLowerCase().includes(query.toLowerCase())),
-    "snippets.get": ({ id }) => snippets.find((s) => s.id === id) ?? null,
-    "snippets.create": (params) => {
-      const snippet: Snippet = { ...params, id: `s${Date.now()}`, createdAt: Date.now(), updatedAt: Date.now() };
-      snippets.unshift(snippet);
-      events.emit("entities.changed", { collection: "snippets", ids: [snippet.id], source: "local" });
-      return snippet;
-    },
-    "snippets.update": ({ id, patch }) => {
-      const snippet = snippets.find((s) => s.id === id) ?? notFound(`Snippet ${id}`);
-      Object.assign(snippet, patch, { updatedAt: Date.now() });
-      events.emit("entities.changed", { collection: "snippets", ids: [id], source: "local" });
-      return snippet;
-    },
-    "snippets.delete": ({ id }) => {
-      const index = snippets.findIndex((s) => s.id === id);
-      if (index !== -1) snippets.splice(index, 1);
-      events.emit("entities.changed", { collection: "snippets", ids: [id], source: "local" });
-    },
-    "snippets.render": ({ text }) => ({ text: text.replace(/\{date[^}]*\}/g, new Date().toISOString().slice(0, 10)).replace(/\{cursor\}/g, ""), arguments: [] }),
-
-    "quicklinks.list": () => QUICKLINKS,
-
-    "notes.list": ({ query }) =>
-      notes
-        .filter((n) => !query || n.content.toLowerCase().includes(query.toLowerCase()))
-        .map((n) => ({ id: n.id, title: n.title, preview: n.content.split("\n").slice(1).join(" ").trim().slice(0, 120), pinned: n.pinned, characters: n.content.length, words: n.content.split(/\s+/).filter(Boolean).length, createdAt: n.createdAt, updatedAt: n.updatedAt })),
-    "notes.get": ({ id }) => notes.find((n) => n.id === id) ?? null,
-    "notes.recent": () => notes[0] ?? null,
 
     "ai.providers.list": () => PROVIDERS,
     "ai.models.list": () =>
@@ -241,6 +182,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "themes.list": () => [],
     "sync.status": () => ({ phase: "disabled", deviceId: "mock-device", deviceName: "This Mac", pendingChanges: 0, counts: {} }),
     "hud.show": () => undefined,
+    ...createLibraryHandlers(events),
   };
 
   return {
