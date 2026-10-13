@@ -34,6 +34,7 @@ import type {
   Note,
   NoteSummary,
   Quicklink,
+  ProcessInfo,
   RootSearchResult,
   ScriptCommand,
   Snippet,
@@ -70,7 +71,7 @@ export interface BackendMethods {
     params: { id: CommandId; arguments?: Record<string, string>; fallbackText?: string; launchContext?: Record<string, unknown>; source?: "root" | "hotkey" | "deeplink" | "fallback" | "alias" };
     result: LaunchResult;
   };
-  "commands.setPrefs": { params: { id: CommandId; prefs: Partial<CommandPrefs> }; result: CommandInfo };
+  "commands.setPrefs": { params: { id: CommandId; prefs: Partial<CommandPrefs>; unset?: (keyof CommandPrefs)[] }; result: CommandInfo };
   "commands.resetRanking": { params: { id?: CommandId }; result: Void };
   "commands.moveFavorite": { params: { id: CommandId; toIndex: number }; result: Void };
 
@@ -129,10 +130,12 @@ export interface BackendMethods {
   "emoji.recordUse": { params: { emoji: string }; result: Void };
   "files.search": { params: { query: string; limit?: number; scope?: string[] }; result: FileResult[] };
   "files.recent": { params: { limit?: number }; result: FileResult[] };
+  "system.processes": { params: Void; result: ProcessInfo[] };
+  "system.killProcess": { params: { pid: number; force?: boolean }; result: Void };
   "system.run": { params: { action: string; value?: unknown }; result: Void };
   "windows.run": { params: { command: WindowCommand }; result: Void };
   "windows.layouts.list": { params: Void; result: WindowLayout[] };
-  "windows.layouts.upsert": { params: Omit<WindowLayout, "createdAt" | "updatedAt"> & { id?: string }; result: WindowLayout };
+  "windows.layouts.upsert": { params: Omit<WindowLayout, "createdAt" | "updatedAt"> & { id?: string } | Omit<WindowLayout, "id" | "createdAt" | "updatedAt"> & { id?: string }; result: WindowLayout };
   "windows.layouts.delete": { params: { id: string }; result: Void };
   "windows.layouts.apply": { params: { id: string }; result: Void };
   "calendar.events": { params: { from: string; to: string }; result: CalendarEvent[] };
@@ -141,7 +144,7 @@ export interface BackendMethods {
 
   // ---- AI: providers & models -------------------------------------------------------------------
   "ai.providers.list": { params: Void; result: (AIProvider & { hasApiKey: boolean })[] };
-  "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
+  "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; supportedApis?: AIProvider["api"][]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
   "ai.providers.upsert": { params: { provider: Partial<AIProvider> & { name: string; template: string; api: AIProvider["api"]; baseUrl: string }; apiKey?: string | null }; result: AIProvider };
   "ai.providers.delete": { params: { id: string }; result: Void };
   "ai.providers.test": { params: { id: string }; result: { ok: boolean; message: string; latencyMs?: number } };
@@ -152,7 +155,7 @@ export interface BackendMethods {
   "ai.chats.list": { params: { query?: string; includeArchived?: boolean; source?: AIChat["source"] }; result: AIChat[] };
   "ai.chats.get": { params: { id: string }; result: { chat: AIChat; messages: AIMessage[] } | null };
   "ai.chats.create": { params: { presetId?: string; model?: ModelRef; source?: AIChat["source"]; title?: string }; result: AIChat };
-  "ai.chats.update": { params: { id: string; patch: Partial<Pick<AIChat, "title" | "pinned" | "archived" | "model" | "presetId" | "creativity" | "webSearch" | "tools" | "folderId" | "currentLeafId">> }; result: AIChat };
+  "ai.chats.update": { params: { id: string; patch: Partial<Pick<AIChat, "title" | "pinned" | "archived" | "model" | "presetId" | "creativity" | "webSearch" | "tools" | "folderId" | "currentLeafId" | "source" | "reasoningEffort" | "systemInstructions">> }; result: AIChat };
   "ai.chats.delete": { params: { id: string }; result: Void };
   "ai.chats.export": { params: { id: string; format: "markdown" | "json" }; result: { content: string; fileName: string } };
   /**
@@ -174,7 +177,7 @@ export interface BackendMethods {
   "ai.commands.delete": { params: { id: string }; result: Void };
   "ai.commands.reset": { params: { id: string }; result: AICommand };
   /** Expand placeholders (selection, clipboard, arguments) and run. Output mode decides where the text goes. */
-  "ai.commands.run": { params: { id: string; arguments?: Record<string, string>; selection?: string }; result: { streamId: string; chatId?: string; prompt: string } };
+  "ai.commands.run": { params: { id: string; arguments?: Record<string, string>; selection?: string; input?: { selectedText?: string } }; result: { streamId: string; chatId?: string; prompt: string } };
   "ai.commands.import": { params: { json: string }; result: { imported: number } };
   "ai.commands.export": { params: Void; result: { json: string } };
   "ai.presets.list": { params: Void; result: AIPreset[] };
@@ -184,6 +187,7 @@ export interface BackendMethods {
   "ai.mcp.list": { params: Void; result: (MCPServer & { status: "connected" | "disconnected" | "error"; toolCount: number; error?: string })[] };
   "ai.mcp.upsert": { params: Partial<MCPServer> & { name: string; transport: MCPServer["transport"] }; result: MCPServer };
   "ai.mcp.delete": { params: { id: string }; result: Void };
+  "ai.mcp.import": { params: { json: string }; result: { imported: number } };
   "ai.mcp.test": { params: { id: string }; result: { ok: boolean; message: string; tools: string[] } };
 
   // ---- extensions ---------------------------------------------------------------------------------
@@ -200,6 +204,7 @@ export interface BackendMethods {
   "extensions.develop": { params: { path: string }; result: InstalledExtension };
 
   // ---- extension sessions (view commands) -----------------------------------------------------------
+  "ext.session.start": { params: { name: string; command: string; arguments?: Record<string, string>; fallbackText?: string; launchContext?: Record<string, unknown>; draftValues?: Record<string, unknown>; launchType?: "userInitiated" | "background" }; result: LaunchResult };
   "ext.session.dispatch": { params: { sessionId: string; handlerId: string; args?: unknown[] }; result: unknown };
   /** User pressed Esc / back: pop the extension's own stack, or close the session at depth 1. */
   "ext.session.pop": { params: { sessionId: string }; result: { closed: boolean } };
@@ -211,6 +216,9 @@ export interface BackendMethods {
   "ext.toast.action": { params: { sessionId: string; toastId: string; action: "primary" | "secondary" }; result: Void };
 
   // ---- script commands -----------------------------------------------------------------------------
+  "scripts.reload": { params: Void; result: Void };
+  "scripts.start": { params: { path: string; arguments?: string[] }; result: { executionId: string } };
+  "scripts.cancel": { params: { executionId: string }; result: Void };
   "scripts.list": { params: Void; result: ScriptCommand[] };
   "scripts.directories.add": { params: { path: string }; result: Void };
   "scripts.directories.remove": { params: { path: string }; result: Void };
@@ -236,6 +244,7 @@ export interface BackendMethods {
   // ---- import / export --------------------------------------------------------------------------------
   /** Import a Raycast .rayconfig export (v3 container, older JSON wrapper, or classic). */
   "data.importRayconfig": { params: { path: string; password?: string; categories?: string[] }; result: { results: { category: string; imported: number; error?: string }[] } };
+  "data.storage": { params: Void; result: { totalBytes: number; databaseBytes: number; clipboardBytes: number; entities: Record<string, number>; clipboardItems: number } };
   "data.export": { params: { path: string; password?: string; categories?: string[] }; result: { path: string } };
   "data.import": { params: { path: string; password?: string }; result: { results: { category: string; imported: number; error?: string }[] } };
 
@@ -255,6 +264,7 @@ export interface BackendEvents {
   "entities.changed": { collection: string; ids: string[]; source: "local" | "sync" };
   "commands.changed": { reason: string };
   "clipboard.changed": { item: ClipboardItem };
+  "clipboard.itemsChanged": { ids: string[]; deleted?: boolean };
   "notes.changed": { id: string; deleted?: boolean };
   "ai.stream": AIStreamEvent;
   "ai.chats.changed": { chatId: string };
@@ -266,11 +276,14 @@ export interface BackendEvents {
   "ext.session.closed": { sessionId: string; reason: "completed" | "error" | "user" | "popToRoot"; error?: string };
   "ext.toast": { sessionId?: string; toast: ToastState | null };
   "ext.alert": { sessionId: string; alertId: string; options: AlertOptions };
+  "ext.ui.control": { sessionId: string; action: "focus" | "reset" | "shake" | "clearSearchBar"; itemId?: string };
   /** The backend or an extension asks the launcher to navigate. */
   "launcher.navigate": { action: "popToRoot" | "close" | "show" | "launch"; result?: LaunchResult; clearSearchBar?: boolean };
   "launcher.toast": { toast: ToastState | null };
   "sync.status": SyncStatus;
   "themes.changed": Record<string, never>;
+  "scripts.output": { executionId: string; stream: "stdout" | "stderr"; chunk: string };
+  "scripts.completed": { executionId: string; exitCode: number; output: string; lastLine: string; durationMs: number; error?: string };
 }
 
 export type BackendEventTopic = keyof BackendEvents;

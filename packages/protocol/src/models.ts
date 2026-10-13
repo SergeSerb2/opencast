@@ -7,7 +7,7 @@
  */
 
 import type { Hotkey, ImageLike, KeyboardShortcut, UINode } from "./ui";
-import type { AppInfo } from "./native";
+import type { AppInfo, RunningAppInfo } from "./native";
 
 // ---------------------------------------------------------------------------
 // Commands and root search
@@ -27,7 +27,7 @@ import type { AppInfo } from "./native";
  */
 export type CommandId = string;
 
-export type CommandKind = "builtin" | "app" | "extension" | "script" | "quicklink" | "snippet" | "ai-command" | "ai-preset" | "window-layout";
+export type CommandKind = "builtin" | "app" | "extension" | "script" | "quicklink" | "snippet" | "ai-command" | "ai-preset" | "window-layout" | "file";
 
 export type CommandMode = "view" | "no-view" | "menu-bar";
 
@@ -36,6 +36,7 @@ export interface CommandArgument {
   type: "text" | "password" | "dropdown";
   placeholder: string;
   required?: boolean;
+  default?: string;
   data?: { title: string; value: string }[];
 }
 
@@ -82,6 +83,10 @@ export interface CommandInfo {
   acceptsFallbackText?: boolean;
   /** Command needs setup (missing required preferences). */
   needsPreferences?: boolean;
+  /** Higher values fill unused slots in empty-root Suggestions first. */
+  suggestionPriority?: number;
+  /** Installation time in epoch milliseconds, for temporary new-item suggestions. */
+  installedAt?: number;
 }
 
 export interface RootSearchItem extends CommandInfo {
@@ -238,7 +243,7 @@ export interface ClipboardItem {
 // ---------------------------------------------------------------------------
 
 /** How Surgecast talks to a provider. */
-export type AIProviderApi = "openai" | "anthropic" | "google" | "ollama";
+export type AIProviderApi = "openai" | "openai-responses" | "anthropic" | "google" | "ollama";
 
 /** (entity: aiProviders) API keys are in the Keychain at "ai.provider:<id>:apiKey". */
 export interface AIProvider {
@@ -253,6 +258,9 @@ export interface AIProvider {
   enabled: boolean;
   /** Fetch the model list from the provider (GET /models) and merge with manual models. */
   autoFetchModels: boolean;
+  modelFetchError?: string;
+  /** Header values held in Keychain rather than in synced provider metadata. */
+  secretHeaders?: string[];
   models: AIModel[];
   createdAt: number;
   updatedAt: number;
@@ -265,6 +273,8 @@ export interface AIModelCapabilities {
   webSearch?: boolean;
   pdf?: boolean;
   imageGeneration?: boolean;
+  system?: boolean;
+  temperature?: boolean;
 }
 
 export interface AIModel {
@@ -317,6 +327,8 @@ export interface AIToolCall {
   arguments: Record<string, unknown>;
   status: "pending" | "awaiting-confirmation" | "running" | "done" | "error" | "rejected";
   result?: unknown;
+  /** Opaque provider parts needed to replay signed thinking/function calls. */
+  providerMetadata?: Record<string, unknown>;
   error?: string;
 }
 
@@ -332,6 +344,8 @@ export interface AIMessage {
   attachments?: AIAttachment[];
   toolCalls?: AIToolCall[];
   model?: ModelRef;
+  /** Provider-neutral assistant/tool turns for faithful tool-loop replay. */
+  completedTurns?: { role: "assistant" | "tool"; content: string; toolCalls?: AIToolCall[]; toolCallId?: string; name?: string }[];
   status: "complete" | "streaming" | "error" | "stopped";
   error?: string;
   usage?: { inputTokens?: number; outputTokens?: number; reasoningTokens?: number };
@@ -343,11 +357,14 @@ export interface AIMessage {
 export interface AIChat {
   id: string;
   title: string;
+  titleSource?: "automatic" | "user";
   /** Leaf message id of the visible branch. */
   currentLeafId?: string;
   presetId?: string;
   model?: ModelRef;
   creativity?: Creativity;
+  reasoningEffort?: "none" | "low" | "medium" | "high";
+  systemInstructions?: string;
   webSearch?: boolean;
   /** Enabled tool sets for this chat ("web", "ext:<name>", "mcp:<serverId>"). */
   tools?: string[];
@@ -368,6 +385,7 @@ export interface AIPreset {
   instructions: string;
   model?: ModelRef;
   creativity: Creativity;
+  reasoningEffort?: "none" | "low" | "medium" | "high";
   webSearch: boolean;
   tools: string[];
   builtin?: boolean;
@@ -387,6 +405,9 @@ export interface AICommand {
   model?: ModelRef;
   creativity: Creativity;
   output: AICommandOutput;
+  reasoningEffort?: "none" | "low" | "medium" | "high";
+  highlightEdits?: boolean;
+  tags?: string[];
   webSearch?: boolean;
   /** Built-in commands ship with Surgecast; they can be edited and reset. */
   builtin?: boolean;
@@ -432,7 +453,7 @@ export type AIStreamEvent =
   | { type: "text"; streamId: string; delta: string }
   | { type: "reasoning"; streamId: string; delta: string }
   | { type: "tool-call"; streamId: string; call: AIToolCall }
-  | { type: "tool-result"; streamId: string; call: AIToolCall }
+  | { type: "tool-result"; streamId: string; call: AIToolCall; completedTurns?: AIMessage["completedTurns"] }
   | { type: "title"; streamId: string; chatId: string; title: string }
   | { type: "done"; streamId: string; usage?: AIMessage["usage"]; finishReason?: string }
   | { type: "error"; streamId: string; message: string; status?: number };
@@ -468,6 +489,8 @@ export interface ExtensionCommandManifest {
 }
 
 export interface ExtensionToolManifest {
+  input?: Record<string, unknown>;
+  confirmation?: boolean;
   name: string;
   title: string;
   description: string;
@@ -581,6 +604,7 @@ export interface Theme {
   colors: {
     background: string;
     backgroundSecondary: string;
+    accent?: string;
     text: string;
     selection: string;
     loader: string;
@@ -655,4 +679,14 @@ export interface FooterToast {
   title: string;
   message?: string;
   primaryAction?: { title: string; shortcut?: KeyboardShortcut };
+}
+
+/** A running process; arguments are omitted to avoid exposing credentials. */
+export interface ProcessInfo {
+  pid: number;
+  name: string;
+  executable: string;
+  cpuPercent: number;
+  memoryBytes: number;
+  app?: RunningAppInfo;
 }

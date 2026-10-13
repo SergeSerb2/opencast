@@ -149,6 +149,7 @@ export interface MenuBarExtraItem {
   kind: "item" | "separator" | "section" | "submenu";
   enabled?: boolean;
   children?: MenuBarExtraItem[];
+  alternate?: MenuBarExtraItem;
 }
 
 export interface NativeMethods {
@@ -193,6 +194,8 @@ export interface NativeMethods {
   // --- clipboard & input ---------------------------------------------------
   "clipboard.read": { params: void; result: ClipboardSnapshot | null };
   "clipboard.write": { params: { content: ClipboardContent; concealed?: boolean; transient?: boolean }; result: void };
+  /** Queue items for successive physical Cmd-V presses; native consumes one item per press. */
+  "clipboard.setSequentialPaste": { params: { contents: ClipboardContent[] }; result: void };
   "clipboard.clear": { params: void; result: void };
   /** Start/stop emitting `clipboard.changed`. Poll interval in ms (default 300). */
   "clipboard.setMonitoring": { params: { enabled: boolean; intervalMs?: number; ignoredBundleIds?: string[] }; result: void };
@@ -228,7 +231,7 @@ export interface NativeMethods {
   "windows.applyLayout": { params: { rect: WindowLayoutRect; gap?: number }; result: void };
   "windows.undo": { params: void; result: void };
   "windows.screens": { params: void; result: ScreenInfo[] };
-  "windows.focused": { params: void; result: { app: AppInfo; title: string; frame: WindowLayoutRect } | null };
+  "windows.focused": { params: void; result: { app: AppInfo; title: string; frame: WindowLayoutRect; screenId?: number } | null };
 
   // --- system ------------------------------------------------------------------
   "system.run": {
@@ -299,10 +302,11 @@ export interface NativeEvents {
   "clipboard.changed": ClipboardSnapshot;
   "window.didShow": { kind: WindowKind };
   /**
-   * A window was asked to show a route (hotkey or deeplink launch, `window.show({ route })`).
-   * Launcher routes: "command:<CommandId>", "root", "quick-ai".
+   * Sent only to the addressed web view when `window.show` passes a route/payload
+   * (hotkey or deeplink launch). Launcher routes: "command:<CommandId>", "root",
+   * "quick-ai"; other windows: a settings page ("ai"), a chat id, a note id.
    */
-  "window.route": { kind: WindowKind; route: string; payload?: unknown };
+  "window.route": { kind: WindowKind; route?: string; payload?: unknown };
   "window.didHide": { kind: WindowKind };
   "window.didBecomeKey": { kind: WindowKind };
   "window.didResignKey": { kind: WindowKind };

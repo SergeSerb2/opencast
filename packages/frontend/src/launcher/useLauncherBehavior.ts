@@ -103,7 +103,7 @@ export function useLauncherBehavior(setVisible: (visible: boolean) => void): voi
     setVisible(true);
   });
   useNativeEvent("window.route", (event) => {
-    if (event.kind !== kind) return;
+    if (event.kind !== kind || !event.route) return;
     const nav = useNavigationStore.getState();
     const [scheme, ...rest] = event.route.split(":");
     const target = rest.join(":");
