@@ -74,6 +74,9 @@ const fallbacks: Fallback = {
   "permissions.status": () => Object.fromEntries(PERMISSIONS.map((p) => [p, "granted" as PermissionStatus])) as Record<PermissionKind, PermissionStatus>,
   "permissions.request": () => "granted",
   "permissions.openSettings": () => undefined,
+  // No open panel in a browser: answer with a plausible pick so file and folder fields can be exercised.
+  "dialog.openFiles": ({ canChooseFiles = true, canChooseDirectories = false, allowedTypes }) =>
+    canChooseDirectories && !canChooseFiles ? ["/Users/me/Downloads"] : [`/Users/me/Downloads/${allowedTypes?.length ? `Export.${allowedTypes[0]}` : "Document.pdf"}`],
 };
 
 export async function browserNativeCall<M extends NativeMethod>(method: M, params: NativeParams<M> | undefined, events: Emitter<NativeEvents>): Promise<NativeResult<M>> {

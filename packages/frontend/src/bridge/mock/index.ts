@@ -52,8 +52,9 @@ function settingsFromUrl(search: string): Partial<Record<string, unknown>> {
 
 export function createMockBackend(events: Emitter<BackendEvents>): BackendClient {
   const settings: SettingsValues = { ...defaultSettings(), ...settingsFromUrl(typeof location === "undefined" ? "" : location.search) } as SettingsValues;
-  const teamB = createTeamBMock({ events });
-  const commands: CommandInfo[] = [...ALL_COMMANDS, ...teamB.commands].map((c) => ({ ...c }));
+  const commands: CommandInfo[] = [];
+  const teamB = createTeamBMock({ events, commands });
+  commands.push(...[...ALL_COMMANDS, ...teamB.commands].map((c) => ({ ...c })));
   const clipboard: ClipboardItem[] = CLIPBOARD.map((c) => ({ ...c }));
   const snippets: Snippet[] = SNIPPETS.map((s) => ({ ...s }));
   const notes: Note[] = NOTES.map((n) => ({ ...n }));

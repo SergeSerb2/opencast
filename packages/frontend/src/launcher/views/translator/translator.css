@@ -1,0 +1,141 @@
+/*
+ * Translator: source pane (left) and translation pane (right), split at the
+ * window's center. The header holds the two language pickers, each aligned
+ * with its pane; the swap button sits on the divider.
+ */
+.sc-translator {
+  --sc-translator-inset: var(--space-20);
+  --sc-translator-gutter: var(--space-32);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding: var(--window-header-height) 0 var(--window-footer-height);
+}
+
+/* ---- header: the content box starts after the back chevron (16 + 22 + 12px) ---- */
+.sc-translator__langs {
+  --sc-translator-center: calc(50% - round(calc(17 * var(--spx)), 1px));
+  flex: 1 1 auto;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: var(--sc-translator-center) minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+}
+.sc-translator__lang {
+  display: flex;
+  min-width: 0;
+  margin-left: calc(-1 * var(--space-4));
+}
+.sc-translator__lang--target {
+  margin-left: calc(var(--space-32) - var(--space-12) - round(calc(1 * var(--spx)), 1px));
+}
+.sc-translator__lang .sc-dropdown {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-14);
+}
+
+/* ---- panes ---- */
+.sc-translator__pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-8) var(--sc-translator-gutter) var(--space-4) var(--sc-translator-inset);
+}
+.sc-translator__pane--target {
+  padding: var(--space-8) var(--sc-translator-inset) var(--space-4) var(--sc-translator-gutter);
+}
+.sc-translator__pane--target::before {
+  content: "";
+  position: absolute;
+  top: var(--space-40);
+  bottom: var(--space-8);
+  left: 0;
+  width: 1px;
+  background: var(--color-border-separator);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0% 85%, #0000 100%);
+  mask-image: linear-gradient(to bottom, #000 0% 85%, #0000 100%);
+}
+.sc-translator__swap {
+  position: absolute;
+  top: calc(var(--window-header-height) + var(--space-4));
+  left: 50%;
+  translate: -50% 0;
+  color: var(--color-text-secondary);
+}
+.sc-translator__swap:hover:enabled {
+  color: var(--color-text-primary);
+}
+
+.sc-translator__input,
+.sc-translator__output-text {
+  font-size: var(--font-size-24);
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sc-translator__input {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  caret-color: var(--accent);
+  scrollbar-width: none;
+}
+.sc-translator__input::placeholder {
+  color: var(--color-text-placeholder);
+}
+.sc-translator__output {
+  flex: 1 1 auto;
+}
+.sc-translator__output-text {
+  min-height: 100%;
+  -webkit-user-select: text;
+  user-select: text;
+  transition: opacity 0.2s ease;
+}
+.sc-translator__output-text[data-stale] {
+  opacity: 0.6;
+}
+.sc-translator__placeholder {
+  color: var(--color-text-placeholder);
+}
+.sc-translator__error {
+  font-size: var(--font-size-14);
+  line-height: 1.4;
+  color: var(--red-contrast);
+}
+
+.sc-translator__pane-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: var(--space-32);
+  margin-left: calc(-1 * var(--space-6));
+}
+.sc-translator__pane-footer .sc-icon-button {
+  color: var(--color-text-secondary);
+}
+.sc-translator__pane-footer .sc-icon-button:disabled {
+  color: var(--color-text-quaternary);
+}
+.sc-translator__count {
+  margin-left: auto;
+  font-size: var(--font-size-11);
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-translator__empty {
+  position: absolute;
+  inset: 0;
+  padding: var(--window-header-height) 0 var(--window-footer-height);
+}

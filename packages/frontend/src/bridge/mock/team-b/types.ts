@@ -6,6 +6,12 @@ export type MockHandlers = { [M in BackendMethod]?: (params: BackendParams<M>) =
 
 export interface MockContext {
   events: Emitter<BackendEvents>;
+  /**
+   * The mock's live command list (root search, `commands.list`). Filled after
+   * the areas are created; areas may add or remove entries at runtime (then
+   * emit `commands.changed`).
+   */
+  commands?: CommandInfo[];
 }
 
 /** Returns a LaunchResult for commands this area owns, or undefined to fall through. */

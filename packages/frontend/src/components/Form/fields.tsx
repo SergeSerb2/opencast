@@ -334,13 +334,15 @@ export interface FilePickerProps extends FieldBase<string[]> {
   canChooseDirectories?: boolean;
   canChooseFiles?: boolean;
   showHiddenFiles?: boolean;
+  /** Surgecast: file extensions or UTIs the open panel accepts (e.g. `["rayconfig"]`). */
+  allowedTypes?: string[];
 }
 
-export function FilePicker({ id, title, info, error, value, defaultValue, onChange, allowMultipleSelection = true, canChooseDirectories = false, canChooseFiles = true }: FilePickerProps) {
+export function FilePicker({ id, title, info, error, value, defaultValue, onChange, allowMultipleSelection = true, canChooseDirectories = false, canChooseFiles = true, allowedTypes }: FilePickerProps) {
   const field = useFormField<string[]>(id, { value, defaultValue, fallback: [], onChange });
   const pick = async () => {
     try {
-      const paths = await native.call("dialog.openFiles", { canChooseFiles, canChooseDirectories, allowMultipleSelection });
+      const paths = await native.call("dialog.openFiles", { canChooseFiles, canChooseDirectories, allowMultipleSelection, allowedTypes });
       if (paths) field.setValue(allowMultipleSelection ? [...new Set([...field.value, ...paths])] : paths.slice(0, 1));
     } catch (err) {
       showFailureToast("Could not open the file picker", err);

@@ -1,6 +1,6 @@
 import type { Theme } from "@surgecast/protocol";
 
-/** A full palette: the Theme colors plus the accent (themes have no accent field; the system accent wins). */
+/** A full palette: the Theme colors with a resolved accent (themes may omit it; a system accent still wins in CSS). */
 export interface Palette {
   id: string;
   name: string;
@@ -67,7 +67,7 @@ export function paletteFromTheme(theme: Theme): Palette {
     id: theme.id,
     name: theme.name,
     appearance: theme.appearance,
-    colors: { ...theme.colors, accent: theme.appearance === "light" ? "#138AF2" : DEFAULT_ACCENT },
+    colors: { ...theme.colors, accent: theme.colors.accent ?? (theme.appearance === "light" ? "#138AF2" : DEFAULT_ACCENT) },
   };
 }
 
