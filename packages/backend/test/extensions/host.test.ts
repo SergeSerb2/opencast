@@ -13,6 +13,20 @@ function setup() { const h = harness(); contexts.push(h); return h; }
 afterEach(async () => { for (const h of contexts.splice(0)) await h.close(); });
 function treeNodes(node: any): any[] { return [node, ...node.children.flatMap(treeNodes), ...Object.values(node.props).filter((x: any) => x?.type && x?.children).flatMap(treeNodes)]; }
 describe("extension host", () => {
+  it("isolates command passwords while sharing inherited extension passwords", async () => {
+    const h = setup();
+    await h.call("extensions.install", { source: "local", path: fixture(h.dataDir, {
+      preferences: [{ name: "shared", type: "password" }],
+      commands: ["a", "b"].map(name => ({ name, title: name, mode: "no-view", preferences: [{ name: "token", type: "password" }] })),
+    }) });
+    await h.call("extensions.setPreferences", { name: "fixture", command: "a", values: { token: "value-a", shared: "shared-value" } });
+    await h.call("extensions.setPreferences", { name: "fixture", command: "b", values: { token: "value-b" } });
+    expect(await h.call("extensions.getPreferences", { name: "fixture", command: "a" })).toMatchObject({ values: { token: "value-a", shared: "shared-value" } });
+    expect(await h.call("extensions.getPreferences", { name: "fixture", command: "b" })).toMatchObject({ values: { token: "value-b", shared: "shared-value" } });
+    await h.call("extensions.uninstall", { name: "fixture" });
+    expect(h.secrets.size).toBe(0);
+  });
+
   it("keeps the local installed version and commands when desired metadata syncs", async () => {
     const h = setup(); await h.call("extensions.install", { source: "local", path: fixture(h.dataDir, { version: "v1" }) });
     const original = h.host.installer.get("fixture");

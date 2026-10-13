@@ -6,7 +6,7 @@ import type { AppContext } from "../../context";
 import { builtRoot, installed, safeName, validateManifest } from "./manifest";
 import { extractArchive } from "./archive";
 import { ExtensionStoreClient } from "./store";
-import type { ExtensionRecord } from "./preferences";
+import { preferenceAccount, type ExtensionRecord } from "./preferences";
 export class ExtensionInstaller {
   readonly store = new ExtensionStoreClient();
   private readonly operations = new Map<string, Promise<unknown>>();
@@ -78,6 +78,8 @@ export class ExtensionInstaller {
     // Development source directories belong to the developer; remove only our install.
     if (extension.source !== "development") await rm(join(this.ctx.dataDir, "extensions", safeName(name)), { recursive: true, force: true });
     for (const pref of [...extension.preferences, ...extension.commands.flatMap((x) => x.preferences ?? [])]) if (pref.type === "password") await this.ctx.secrets.delete(`ext:${name}:pref:${pref.name}`);
+    for (const command of extension.commands) for (const pref of command.preferences ?? [])
+      if (pref.type === "password") await this.ctx.secrets.delete(preferenceAccount(extension, pref.name, command.name));
     const fields = this.ctx.entities.get<{ ids: string[] }>("localState", `ext:${name}:formPasswords`)?.data.ids ?? [];
     for (const fieldId of fields) await this.ctx.secrets.delete(`ext:${name}:form:${fieldId}`);
     this.ctx.entities.delete("localState", `ext:${name}:formPasswords`);
