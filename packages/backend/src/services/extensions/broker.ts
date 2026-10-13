@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import type { AlertOptions, ClipboardContent, AIModelOption, ToastState } from "@surgecast/protocol";
+import type { AlertOptions, ClipboardContent, AIModelOption, ToastState, ScreenInfo } from "@surgecast/protocol";
 import type { AppContext } from "../../context";
 import type { HostSession, ExtensionSessions } from "./sessions";
 interface OAuthFlow { sessionId: string; callbackId: string; expires: number; }
@@ -136,10 +136,8 @@ export class ExtensionBroker {
       }
       case "getActiveWindow": {
         const window = await ctx.native.call("windows.focused", undefined); if (!window) throw new Error("No accessible active window");
-        const screens = await ctx.native.call("windows.screens", undefined); const screen = window.screenId !== undefined ? screens.find((x) => x.id === window.screenId) : screens.length === 1 ? screens[0] : undefined;
-        if (!screen) throw new Error("The native host did not report a screen for the active window");
-        const visible = screen.visibleFrame;
-        return { window: { id: "active", application: window.app, bounds: { position: { x: visible.x + window.frame.x * visible.width, y: visible.y + window.frame.y * visible.height }, size: { width: window.frame.width * visible.width, height: window.frame.height * visible.height } }, desktopId: "active", fullScreenSettable: true, resizable: true, positionable: true, active: true } };
+        // windows.focused reports absolute, top-left AX points, not layout fractions.
+        return { window: { id: "active", application: window.app, bounds: { position: { x: window.frame.x, y: window.frame.y }, size: { width: window.frame.width, height: window.frame.height } }, desktopId: "active", fullScreenSettable: true, resizable: true, positionable: true, active: true } };
       }
       case "getWindowsOnActiveDesktop": throw new Error("Listing all windows on the current desktop is not available from the native host yet");
       case "setWindowBounds": {
@@ -147,10 +145,9 @@ export class ExtensionBroker {
         if (p.bounds === "fullscreen") { await ctx.native.call("windows.run", { command: "toggleFullscreen" }); return; }
         const window = await ctx.native.call("windows.focused", undefined); const screens = await ctx.native.call("windows.screens", undefined);
         if (!window || !screens.length) throw new Error("Window bounds are unavailable");
-        const screen = window.screenId !== undefined ? screens.find((x) => x.id === window.screenId) : screens.length === 1 ? screens[0] : undefined;
-        if (!screen) throw new Error("The native host must report screenId to move windows on multiple displays");
-        const frame = { x: screen.visibleFrame.x + window.frame.x * screen.visibleFrame.width, y: screen.visibleFrame.y + window.frame.y * screen.visibleFrame.height, width: window.frame.width * screen.visibleFrame.width, height: window.frame.height * screen.visibleFrame.height };
-        const rect = { x: ((p.bounds.position?.x ?? frame.x) - screen.visibleFrame.x) / screen.visibleFrame.width, y: ((p.bounds.position?.y ?? frame.y) - screen.visibleFrame.y) / screen.visibleFrame.height, width: (p.bounds.size?.width ?? frame.width) / screen.visibleFrame.width, height: (p.bounds.size?.height ?? frame.height) / screen.visibleFrame.height };
+        const visible = visibleFrameForWindow(window.frame, screens);
+        const frame = window.frame;
+        const rect = { x: ((p.bounds.position?.x ?? frame.x) - visible.x) / visible.width, y: ((p.bounds.position?.y ?? frame.y) - visible.y) / visible.height, width: (p.bounds.size?.width ?? frame.width) / visible.width, height: (p.bounds.size?.height ?? frame.height) / visible.height };
         if (Object.values(rect).some((x) => !Number.isFinite(x))) throw new Error("Invalid window bounds");
         await ctx.native.call("windows.applyLayout", { rect, gap: 0 }); return;
       }
@@ -217,4 +214,13 @@ function validDecision(answer: any, question: any): boolean {
   if (answer.type === "choice") return typeof answer.choice === "string" && answer.choice in question.criteria && Object.keys(question.criteria).every((key) => probability(answer.probabilities[key]));
   if (answer.type === "score") return Number.isFinite(answer.score) && answer.score >= 0 && answer.legend && typeof answer.legend === "object";
   return false;
+}
+
+function visibleFrameForWindow(frame: ScreenInfo["frame"], screens: ScreenInfo[]): ScreenInfo["frame"] {
+  // NSScreen uses bottom-left Cocoa points. AX uses the primary display's top-left.
+  // Match WindowManager's display selection by intersecting visible frames in AX space.
+  const desktopTop = screens[0].frame.y + screens[0].frame.height;
+  const visible = screens.map(({ visibleFrame: v }) => ({ ...v, y: desktopTop - v.y - v.height }));
+  const overlap = (v: ScreenInfo["frame"]) => Math.max(0, Math.min(frame.x + frame.width, v.x + v.width) - Math.max(frame.x, v.x)) * Math.max(0, Math.min(frame.y + frame.height, v.y + v.height) - Math.max(frame.y, v.y));
+  return visible.reduce((best, v) => overlap(v) > overlap(best) ? v : best);
 }
