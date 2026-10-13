@@ -27,6 +27,8 @@ jobs:
           for script in scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh scripts/make-icon.sh scripts/prepare-release-node.sh scripts/verify-node.sh; do
             bash -n "$script"
           done
+      - name: Check release provenance and retries
+        run: node --test scripts/release-macos.test.mjs
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

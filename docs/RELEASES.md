@@ -26,14 +26,19 @@ The workflow has a manual **Run workflow** action on `main`. It uses full Git
 history and the package version to assign `v<version>-build.<commit-count>` tags.
 The app's build number uses the same count, and `OpenCastSourceRevision` records
 the source commit in its bundle. Releases use drafts until all assets are uploaded.
-Re-running a published release checks its commit and assets instead of replacing
-it. Older queued commits do not replace a newer commit as the Latest release.
+Re-running the publishing job checks the tag, downloads all published assets,
+and compares them with the original verified workflow artifact. It rejects a
+different tag target or changed bytes instead of replacing a published release.
+A new rebuild can produce different DMG bytes, so retry only the failed
+publishing job to reuse its original artifact. Older queued commits do not
+replace a newer commit as the Latest release.
 
 The Mac builds and verifies the DMG with read-only repository permission. A
 separate GitHub-hosted job downloads those files and checks their checksum and
 source manifest before publishing. Only the publishing step receives the
 short-lived write token. It runs no dependency installs or build tools. Release
-actions are pinned to full commit SHAs.
+actions are pinned to full commit SHAs. All Node and pnpm build commands use the
+same checksum-pinned standalone Node runtime that is bundled in the app.
 There is no personal access token or signing secret in the repository. Other
 repositories' runners on this Mac are independent of the OpenCast runner.
 

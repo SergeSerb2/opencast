@@ -21,34 +21,29 @@ STATUS="$(gh api "repos/$REPO/compare/$REVISION...$DEFAULT_BRANCH" --jq .status)
 if [ "$STATUS" != ahead ] && [ "$STATUS" != identical ]; then
     echo 'Only commits on the default branch can be released' >&2; exit 1
 fi
-if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    DRAFT="$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq .isDraft)"
-    if [ "$DRAFT" = true ]; then
-        TARGET="$(gh release view "$TAG" --repo "$REPO" --json targetCommitish --jq .targetCommitish)"
-        # A draft may not have created its tag yet. Check an existing tag too.
-        if TAG_TARGET="$(gh api "repos/$REPO/commits/$TAG" --jq .sha 2>/dev/null)"; then
-            if [ "$TAG_TARGET" != "$REVISION" ]; then echo 'Existing tag belongs to a different commit' >&2; exit 1; fi
-        fi
-    else
-        TARGET="$(gh api "repos/$REPO/commits/$TAG" --jq .sha)"
+TEMP="$(mktemp -d "${TMPDIR:-/tmp}/opencast-publish.XXXXXX")"
+trap 'rm -rf "$TEMP"' EXIT
+# Resolve the exact tag ref, including annotated tags. A failed API request must
+# not be mistaken for an absent tag unless GitHub explicitly returns 404.
+TAG_TARGET=''
+if TAG_OBJECT="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object | [.type, .sha] | @tsv' 2>"$TEMP/tag-error")"; then
+    read -r TAG_TYPE TAG_TARGET <<< "$TAG_OBJECT"
+    for depth in {1..10}; do
+        if [ "$TAG_TYPE" = commit ]; then break; fi
+        if [ "$TAG_TYPE" != tag ]; then echo 'Unexpected tag object type' >&2; exit 1; fi
+        TAG_OBJECT="$(gh api "repos/$REPO/git/tags/$TAG_TARGET" --jq '.object | [.type, .sha] | @tsv')"
+        read -r TAG_TYPE TAG_TARGET <<< "$TAG_OBJECT"
+    done
+    if [ "$TAG_TYPE" != commit ] || [ "$TAG_TARGET" != "$REVISION" ]; then
+        echo 'Existing tag belongs to a different commit' >&2; exit 1
     fi
-    if [ "$TARGET" != "$REVISION" ]; then echo 'Release tag belongs to a different commit' >&2; exit 1; fi
-    if [ "$DRAFT" = false ]; then
-        ASSETS="$(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name')"
-        for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
-            if ! printf '%s\n' "$ASSETS" | grep -Fxq "$asset"; then
-                echo "Published release is missing $asset; repair it explicitly" >&2; exit 1
-            fi
-        done
-        echo "Release $TAG is already published for $REVISION"
-        exit 0
-    fi
+elif ! grep -Fq '(HTTP 404)' "$TEMP/tag-error"; then
+    cat "$TEMP/tag-error" >&2
+    exit 1
 fi
 # Publishing consumes verified files; it never installs dependencies or builds.
-for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
-    test -s "$OUT/$asset"
-done
-node --input-type=module - "$OUT" "$NAME" "$VERSION" "$BUILD_NUMBER" "$REVISION" <<'JS'
+verify_assets() {
+    node --input-type=module - "$1" "$NAME" "$VERSION" "$BUILD_NUMBER" "$REVISION" <<'JS'
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -59,6 +54,36 @@ assert.deepEqual(manifest, { version, build: Number(build), revision, architectu
 const hash = createHash('sha256').update(readFileSync(`${dir}/${name}.dmg`)).digest('hex');
 assert.equal(readFileSync(`${dir}/${name}.dmg.sha256`, 'utf8'), `${hash}  ${name}.dmg\n`);
 JS
+}
+verify_assets "$OUT"
+if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+    DRAFT="$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq .isDraft)"
+    if [ "$DRAFT" = true ]; then
+        TARGET="$(gh release view "$TAG" --repo "$REPO" --json targetCommitish --jq .targetCommitish)"
+    else
+        TARGET="$TAG_TARGET"
+    fi
+    if [ "$TARGET" != "$REVISION" ]; then echo 'Release tag belongs to a different commit' >&2; exit 1; fi
+    if [ "$DRAFT" = false ]; then
+        ASSETS="$(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name')"
+        for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
+            if ! printf '%s\n' "$ASSETS" | grep -Fxq "$asset"; then
+                echo "Published release is missing $asset; repair it explicitly" >&2; exit 1
+            fi
+        done
+        mkdir "$TEMP/published"
+        gh release download "$TAG" --repo "$REPO" --dir "$TEMP/published" \
+            --pattern "$NAME.dmg" --pattern "$NAME.dmg.sha256" --pattern "$NAME.json"
+        verify_assets "$TEMP/published"
+        for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
+            if ! cmp -s "$OUT/$asset" "$TEMP/published/$asset"; then
+                echo "Published $asset differs from the verified artifact; repair it explicitly" >&2; exit 1
+            fi
+        done
+        echo "Release $TAG is already published for $REVISION"
+        exit 0
+    fi
+fi
 NOTES="$OUT/notes.md"
 cat > "$NOTES" <<EOF
 OpenCast $VERSION, build $BUILD_NUMBER, for Apple silicon Macs running macOS 14 or later.
@@ -67,8 +92,12 @@ Built on the dedicated local Mac from [$REVISION](https://github.com/$REPO/commi
 
 This build is ad-hoc signed and is not notarized. If macOS blocks the app, follow [Apple's Open Anyway instructions](https://support.apple.com/guide/mac-help/mh40616/mac).
 EOF
+if [ -z "$TAG_TARGET" ]; then
+    # Atomic ref creation fails if another writer creates the tag first.
+    gh api "repos/$REPO/git/refs" --method POST -f "ref=refs/tags/$TAG" -f "sha=$REVISION" >/dev/null
+fi
 if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    gh release create "$TAG" --repo "$REPO" --target "$REVISION" --draft \
+    gh release create "$TAG" --repo "$REPO" --target "$REVISION" --verify-tag --draft \
         --title "OpenCast $VERSION (build $BUILD_NUMBER)" --notes-file "$NOTES"
 fi
 gh release upload "$TAG" --repo "$REPO" --clobber "$OUT/$NAME.dmg" "$OUT/$NAME.dmg.sha256" "$OUT/$NAME.json"
