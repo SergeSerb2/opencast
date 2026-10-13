@@ -7,6 +7,9 @@
  *   node scripts/screenshot.mjs root clip       # selected scenes
  *   node scripts/screenshot.mjs --list          # scene names
  *   node scripts/screenshot.mjs --url "gallery.html#form" --out form --size 750x475 [--light]
+ *   node scripts/screenshot.mjs --url main.html --steps '[{"type":"store"},{"press":"Enter","wait":600}]' --out store
+ *
+ * Feature scenes live in scripts/scenes/*.mjs (each default-exports a Scene[]).
  *
  * Output: packages/frontend/.screenshots/<name>.png (gitignored).
  * Uses Playwright 1.64 through npx (no local dependency) and a Vite dev server.
@@ -74,13 +77,23 @@ const SCENES = [
   { name: "gallery", url: "gallery.html", size: [1500, 1000], fullPage: true },
 ];
 
+/** Scenes contributed by feature modules in scripts/scenes/. */
+async function featureScenes() {
+  const dir = join(root, "scripts", "scenes");
+  if (!existsSync(dir)) return [];
+  const files = readdirSync(dir).filter((f) => f.endsWith(".mjs")).sort();
+  const modules = await Promise.all(files.map((f) => import(pathToFileURL(join(dir, f)).href)));
+  return modules.flatMap((m) => m.default ?? []);
+}
+
 function parseArgs(argv) {
-  const args = { names: [], url: null, out: null, size: null, light: false, list: false };
+  const args = { names: [], url: null, out: null, size: null, steps: null, light: false, list: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--url") args.url = argv[++i];
     else if (a === "--out") args.out = argv[++i];
     else if (a === "--size") args.size = argv[++i].split("x").map(Number);
+    else if (a === "--steps") args.steps = JSON.parse(argv[++i]);
     else if (a === "--light") args.light = true;
     else if (a === "--list") args.list = true;
     else args.names.push(a);
@@ -118,13 +131,14 @@ async function launchChromium(chromium) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const all = [...SCENES, ...(await featureScenes())];
   if (args.list) {
-    for (const scene of SCENES) console.log(`${scene.name.padEnd(16)} ${scene.url}`);
+    for (const scene of all) console.log(`${scene.name.padEnd(16)} ${scene.url}`);
     return;
   }
-  let scenes = SCENES;
-  if (args.url) scenes = [{ name: args.out ?? "custom", url: args.url, size: args.size ?? undefined }];
-  else if (args.names.length) scenes = SCENES.filter((s) => args.names.includes(s.name));
+  let scenes = all;
+  if (args.url) scenes = [{ name: args.out ?? "custom", url: args.url, size: args.size ?? undefined, steps: args.steps ?? undefined }];
+  else if (args.names.length) scenes = all.filter((s) => args.names.includes(s.name));
   if (!scenes.length) throw new Error(`No scenes match: ${args.names.join(", ")}`);
 
   mkdirSync(outDir, { recursive: true });

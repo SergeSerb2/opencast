@@ -226,7 +226,7 @@ export interface BackendMethods {
   "scripts.list": { params: Void; result: ScriptCommand[] };
   "scripts.directories.add": { params: { path: string }; result: Void };
   "scripts.directories.remove": { params: { path: string }; result: Void };
-  "scripts.create": { params: { directory: string; title: string; mode: ScriptCommand["mode"]; language: "bash" | "python" | "node" | "applescript" | "swift" | "ruby"; packageName?: string; icon?: string }; result: ScriptCommand };
+  "scripts.create": { params: { directory: string; title: string; mode: ScriptCommand["mode"]; language: "bash" | "python" | "node" | "applescript" | "swift" | "ruby" | "typescript" | "go" | "csharp"; packageName?: string; icon?: string; needsConfirmation?: boolean; refreshTime?: string }; result: ScriptCommand };
   "scripts.run": { params: { path: string; arguments?: string[] }; result: { exitCode: number; output: string; lastLine: string } };
 
   // ---- themes ------------------------------------------------------------------------------------------

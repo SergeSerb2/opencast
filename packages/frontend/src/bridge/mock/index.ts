@@ -19,6 +19,7 @@ import { CHATS, EXTENSIONS, MESSAGES, PROVIDERS } from "./fixtures/content";
 import { createLibraryHandlers, LIBRARY_COMMANDS, libraryView } from "./library";
 import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
+import { createTeamBMock } from "./team-b";
 
 type Handlers = { [M in BackendMethod]?: (params: BackendParams<M>) => BackendResult<M> | Promise<BackendResult<M>> };
 
@@ -49,7 +50,9 @@ function settingsFromUrl(search: string): Partial<Record<string, unknown>> {
 
 export function createMockBackend(events: Emitter<BackendEvents>): BackendClient {
   const settings: SettingsValues = { ...defaultSettings(), ...settingsFromUrl(typeof location === "undefined" ? "" : location.search) } as SettingsValues;
-  const commands: CommandInfo[] = [...ALL_COMMANDS, ...LIBRARY_COMMANDS].map((c) => ({ ...c }));
+  const commands: CommandInfo[] = [];
+  const teamB = createTeamBMock({ events, commands });
+  commands.push(...[...ALL_COMMANDS, ...LIBRARY_COMMANDS, ...teamB.commands].map((c) => ({ ...c })));
   const chats: AIChat[] = CHATS.map((c) => ({ ...c }));
   const sessions = new Map<string, MockSession>();
   const extensionPrefs = new Map<string, Record<string, unknown>>();
@@ -61,6 +64,8 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
 
   const launch = (id: string, args?: Record<string, string>, fallbackText?: string): LaunchResult => {
     const command = commandById(id);
+    const teamBResult = teamB.launch(command, args, fallbackText);
+    if (teamBResult) return teamBResult;
     if (command.kind === "extension") {
       const [extension, name] = id.slice(4).split(".");
       if (command.needsPreferences) return { kind: "view", view: { id: "extension.preferences", title: `${command.extensionTitle ?? extension} Preferences`, props: { extensionName: extension, commandName: name, launchCommandId: id } } };
@@ -183,6 +188,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "sync.status": () => ({ phase: "disabled", deviceId: "mock-device", deviceName: "This Mac", pendingChanges: 0, counts: {} }),
     "hud.show": () => undefined,
     ...createLibraryHandlers(events),
+    ...teamB.handlers,
   };
 
   return {

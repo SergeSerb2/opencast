@@ -1,0 +1,34 @@
+/* ---- Script output (fullOutput mode) ---- */
+.sc-script-output {
+  position: absolute;
+  inset: 0;
+}
+.sc-script-output__inner {
+  padding: var(--window-header-height) var(--space-16) calc(var(--window-footer-height) + var(--space-12));
+}
+.sc-script-output__text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-12);
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
+}
+.sc-script-output__note {
+  color: var(--color-text-tertiary);
+}
+.sc-script-output__error {
+  color: var(--red);
+}
+.sc-script-output__status {
+  color: var(--color-text-secondary);
+}
+.sc-script-output__status[data-tone="success"] {
+  color: var(--green);
+}
+.sc-script-output__status[data-tone="error"] {
+  color: var(--red);
+}

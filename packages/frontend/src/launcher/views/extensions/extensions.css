@@ -1,0 +1,10 @@
+/* Extension lists: rows keep every accessory visible and truncate the description instead. */
+.sc-extensions-list {
+  display: contents;
+}
+.sc-extensions-list .sc-list-item__text {
+  flex: 1 1 0;
+}
+.sc-extensions-list .sc-list-item__accessories {
+  flex: 0 0 auto;
+}

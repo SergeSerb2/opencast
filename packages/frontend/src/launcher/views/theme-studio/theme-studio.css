@@ -1,0 +1,237 @@
+/* Theme Studio editor: fields column (left) and live miniature launcher (right). */
+.sc-theme-editor {
+  --sc-theme-fields-width: round(calc(300 * var(--spx)), 1px);
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.sc-theme-editor__fields {
+  flex: 0 0 var(--sc-theme-fields-width);
+}
+.sc-theme-editor__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: calc(var(--window-header-height) + var(--space-4)) var(--space-12) calc(var(--window-footer-height) + var(--space-24)) var(--space-16);
+}
+.sc-theme-editor__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-6);
+  margin: 0 0 calc(-1 * var(--space-4));
+  font-size: var(--font-size-11);
+  line-height: 15px;
+  color: var(--color-text-tertiary);
+}
+.sc-theme-editor__notice > :first-child {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.sc-theme-editor__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.sc-theme-editor__group-title {
+  padding-bottom: var(--space-2);
+  font-size: var(--font-size-11);
+  line-height: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* label | swatch | hex field; the error wraps under the controls. */
+.sc-theme-editor__row {
+  display: grid;
+  grid-template-columns: round(calc(80 * var(--spx)), 1px) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-8);
+  row-gap: var(--space-2);
+  min-height: round(calc(28 * var(--spx)), 1px);
+}
+.sc-theme-editor__label {
+  font-size: var(--font-size-12);
+  color: var(--color-text-primary);
+}
+.sc-theme-editor__row > .sc-segmented,
+.sc-theme-editor__name {
+  grid-column: 2 / -1;
+}
+.sc-theme-editor__row > .sc-segmented {
+  justify-self: start;
+}
+.sc-theme-editor__swatch {
+  position: relative;
+  display: block;
+  width: var(--icon-18);
+  height: var(--icon-18);
+  border-radius: var(--radius-5);
+  box-shadow:
+    inset 0 0 0 1px var(--fg-20),
+    0 0 0 0.5px var(--bg-20);
+  cursor: pointer;
+}
+.sc-theme-editor__swatch:hover {
+  box-shadow: inset 0 0 0 1px var(--fg-40);
+}
+.sc-theme-editor__swatch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.sc-theme-editor__hex .sc-field__input {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-12);
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+.sc-theme-editor__error {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--font-size-11);
+  line-height: 14px;
+  color: var(--red-contrast);
+}
+
+/* ---- preview column ---- */
+.sc-theme-editor__preview {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--window-header-height) var(--space-16) var(--window-footer-height) var(--space-12);
+}
+.sc-theme-editor__preview::before {
+  content: "";
+  position: absolute;
+  top: var(--window-header-height);
+  bottom: var(--space-16);
+  left: 0;
+  width: 1px;
+  background: var(--color-border-separator);
+  -webkit-mask-image: linear-gradient(to bottom, #0000 0%, #000 8% 92%, #0000 100%);
+  mask-image: linear-gradient(to bottom, #0000 0%, #000 8% 92%, #0000 100%);
+}
+.sc-theme-editor__preview-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: var(--space-16);
+  font-size: var(--font-size-11);
+  color: var(--color-text-secondary);
+}
+.sc-theme-editor__badge {
+  display: inline-flex;
+  align-items: center;
+  height: var(--space-16);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-10);
+  background: var(--orange-20);
+  color: var(--orange-on-tint-20);
+}
+
+/* The miniature is laid out at the launcher's real size and zoomed to fit the column. */
+.sc-theme-editor__frame {
+  zoom: calc(var(--zoom) * 0.565);
+  align-self: flex-start;
+}
+
+/* ---- miniature launcher ---- */
+.sc-theme-mini {
+  --sc-mini-glass: rgb(44 43 50 / 0.86);
+  position: relative;
+  width: 750px;
+  height: 475px;
+  overflow: hidden;
+  border-radius: var(--radius-main-window);
+  background:
+    linear-gradient(to bottom, var(--color-window-bg), var(--color-window-bg-secondary)),
+    var(--sc-mini-glass);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.12),
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 12px 40px rgb(0 0 0 / 0.3);
+  pointer-events: none;
+  user-select: none;
+}
+.sc-theme-mini[light] {
+  --sc-mini-glass: rgb(247 246 250 / 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.7),
+    0 0 0 1px rgb(0 0 0 / 0.12),
+    0 12px 40px rgb(40 20 90 / 0.18);
+}
+.sc-theme-mini__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  height: var(--main-window-header-height);
+  padding-inline: var(--space-16);
+}
+.sc-theme-mini__logo {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+}
+.sc-theme-mini__placeholder {
+  flex: 1 1 auto;
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-search);
+  letter-spacing: -0.1px;
+  color: var(--color-text-placeholder);
+}
+.sc-theme-mini__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-13);
+  color: var(--color-text-tertiary);
+}
+.sc-theme-mini .sc-theme-mini__section {
+  height: var(--space-32);
+}
+.sc-theme-mini .sc-theme-mini__section:first-child {
+  height: var(--space-24);
+}
+.sc-theme-mini__row {
+  height: var(--list-row-large);
+}
+.sc-theme-mini__tags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: var(--list-row-large);
+  padding-inline: calc(var(--list-padding-x) + var(--list-item-padding-x));
+}
+.sc-theme-mini__footer {
+  position: absolute;
+  left: var(--space-8);
+  right: var(--space-8);
+  bottom: var(--space-8);
+  display: flex;
+  justify-content: space-between;
+}
+.sc-theme-mini__pill {
+  display: flex;
+  align-items: center;
+  height: var(--footer-pill-height);
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--fg-10);
+  box-shadow: inset 0 0 0 0.5px var(--fg-10);
+}
+.sc-theme-mini__pill--round {
+  width: var(--footer-pill-height);
+  justify-content: center;
+}
+.sc-theme-mini__menu {
+  color: var(--color-text-secondary);
+}

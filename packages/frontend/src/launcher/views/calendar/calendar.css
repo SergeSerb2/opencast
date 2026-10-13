@@ -1,0 +1,63 @@
+/* My Schedule rows: ring · time column · title · accessories (custom List rows). */
+.sc-cal-row {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding-inline: var(--list-item-padding-x);
+  white-space: nowrap;
+  font-size: var(--font-size-13);
+  line-height: 1.8;
+  font-feature-settings: var(--font-features-list);
+  color: var(--color-text-primary);
+}
+.sc-cal-row[data-past] > * {
+  opacity: 0.5;
+}
+
+/* Calendar ring: 22px, 1.5px ring in the calendar color over a 20% tint. */
+.sc-cal-row__ring {
+  flex-shrink: 0;
+  width: var(--icon-22);
+  height: var(--icon-22);
+  border-radius: var(--radius-full);
+  background: rgb(from var(--calendar-color) r g b / 20%);
+  box-shadow: inset 0 0 0 1.5px var(--calendar-color);
+}
+
+.sc-cal-row__time {
+  flex-shrink: 0;
+  min-width: round(calc(100 * var(--spx)), 1px);
+  font-variant-numeric: tabular-nums;
+}
+.sc-cal-row[data-clock="12"] .sc-cal-row__time {
+  min-width: round(calc(150 * var(--spx)), 1px);
+}
+.sc-cal-row[data-compact] .sc-cal-row__time {
+  min-width: round(calc(48 * var(--spx)), 1px);
+}
+.sc-cal-row[data-compact][data-clock="12"] .sc-cal-row__time {
+  min-width: round(calc(66 * var(--spx)), 1px);
+}
+.sc-cal-row__end {
+  color: var(--color-text-secondary);
+}
+
+.sc-cal-row__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sc-cal-row__accessories {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  color: var(--color-text-secondary);
+}
+.sc-cal-row__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-variant-numeric: tabular-nums;
+}

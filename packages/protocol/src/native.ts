@@ -117,6 +117,8 @@ export interface CalendarInfo {
 export interface CalendarEvent {
   id: string;
   calendarId: string;
+  /** Title of the event's calendar (e.g. "Work"), for the calendar filter and event details. */
+  calendarTitle?: string;
   title: string;
   location?: string;
   notes?: string;

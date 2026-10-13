@@ -529,7 +529,7 @@ export interface StoreExtension {
   title: string;
   description: string;
   author: { handle: string; name: string; avatar?: string };
-  owner?: { handle: string; name: string };
+  owner?: { handle: string; name: string; avatar?: string };
   icon: { light?: string; dark?: string };
   downloadCount: number;
   categories: string[];
