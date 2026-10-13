@@ -76,8 +76,38 @@ it("usage does not republish unchanged native snippet keywords", async () => {
   f = await fixture();
   const snippet = await f.call("snippets.create", { name: "Keyword", text: "hello", keyword: ";hi" });
   f.nativeCall.mockClear();
-  await f.nativeInvoke("snippets.resolve", { id: snippet.id });
+  await f.nativeInvoke("snippets.resolve", { id: snippet.id, keyword: ";hi" });
   expect(f.nativeCall.mock.calls.filter(([method]) => method === "snippets.setKeywords")).toHaveLength(0);
   await f.call("snippets.update", { id: snippet.id, patch: { keyword: ";new" } });
   expect(f.nativeCall).toHaveBeenCalledWith("snippets.setKeywords", expect.objectContaining({ keywords: [{ id: snippet.id, keyword: ";new" }] }));
+});
+
+it("discards quicklink provider responses invalidated while loading apps", async () => {
+  f = await fixture();
+  await f.call("quicklinks.create", { name: "Old", link: "https://example.com", openWith: "com.apple.Safari" });
+  let release!: (value: unknown) => void;
+  const pending = new Promise(resolve => { release = resolve; });
+  const original = f.nativeCall.getMockImplementation()!;
+  f.nativeCall.mockImplementation(async (method) => method === "apps.list" ? pending : original(method));
+  f.nativeCall.mockClear();
+  f.ctx.commands.invalidate("quicklinks");
+  const listing = f.call("commands.list", {});
+  await vi.waitFor(() => expect(f.nativeCall).toHaveBeenCalledWith("apps.list", {}));
+  const added = await f.call("quicklinks.create", { name: "New", link: "https://new.example" });
+  release([]);
+  expect((await listing).some(c => c.id === `quicklink:${added.id}`)).toBe(true);
+  expect((await f.call("commands.list", {})).some(c => c.id === `quicklink:${added.id}`)).toBe(true);
+});
+it("populates the first named argument from quicklink fallback text", async () => {
+  f = await fixture();
+  const link = await f.call("quicklinks.create", { name: "Named", link: 'https://example.com/?term={argument name="term"}' });
+  await f.call("commands.launch", { id: `quicklink:${link.id}`, fallbackText: "hello world" });
+  expect(f.nativeCall).toHaveBeenCalledWith("open.url", expect.objectContaining({ url: "https://example.com/?term=hello%20world" }));
+  await f.call("commands.launch", { id: `quicklink:${link.id}`, fallbackText: "ignored", arguments: { term: "explicit" } });
+  expect(f.nativeCall).toHaveBeenCalledWith("open.url", expect.objectContaining({ url: "https://example.com/?term=explicit" }));
+});
+it("passes configured outer gap to built-in window commands", async () => {
+  f = await fixture(); f.ctx.settings.set("windowManagement.outerGap", 12);
+  await f.call("commands.launch", { id: "builtin:windowManagement.leftHalf" });
+  expect(f.nativeCall).toHaveBeenCalledWith("windows.run", { command: "leftHalf", gap: 0, outerGap: 12 });
 });

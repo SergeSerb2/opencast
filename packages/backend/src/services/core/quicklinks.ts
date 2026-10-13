@@ -95,6 +95,9 @@ export async function openQuicklink(
   )
     query =
       (await ctx.native.call("input.selectedText", undefined)) ?? undefined;
+  const first = templateArguments(link.link, true)[0];
+  if (first && query !== undefined && args?.[first.name] === undefined)
+    args = { ...args, [first.name]: query };
   const resolved = await renderTemplate(
     link.link,
     templateContext(ctx, {

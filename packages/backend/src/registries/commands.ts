@@ -14,6 +14,7 @@ const log = createLogger("commands");
  */
 export class DefaultCommandRegistry implements CommandRegistry {
   private readonly providers = new Map<string, CommandProvider>();
+  private readonly generations = new Map<string, number>();
   private readonly cache = new Map<string, CommandInfo[]>();
   private readonly owner = new Map<string, string>();
 
@@ -32,8 +33,10 @@ export class DefaultCommandRegistry implements CommandRegistry {
   }
 
   invalidate(providerId?: string): void {
-    if (providerId) this.cache.delete(providerId);
-    else this.cache.clear();
+    for (const id of providerId ? [providerId] : this.providers.keys()) {
+      this.cache.delete(id);
+      this.generations.set(id, (this.generations.get(id) ?? 0) + 1);
+    }
     this.events.emit("commands.changed", { reason: providerId ?? "all" });
   }
 
@@ -70,18 +73,22 @@ export class DefaultCommandRegistry implements CommandRegistry {
   }
 
   private async listProvider(provider: CommandProvider): Promise<CommandInfo[]> {
-    let list = this.cache.get(provider.id);
-    if (!list) {
+    while (true) {
+      let list = this.cache.get(provider.id);
+      if (list) return list;
+      const generation = this.generations.get(provider.id) ?? 0;
       try {
         list = await provider.list();
       } catch (error) {
         log.error(`provider ${provider.id} failed to list commands`, error);
         list = [];
       }
+      if (generation !== (this.generations.get(provider.id) ?? 0)) continue;
       this.cache.set(provider.id, list);
+      for (const [id, owner] of this.owner) if (owner === provider.id) this.owner.delete(id);
       for (const cmd of list) this.owner.set(cmd.id, provider.id);
+      return list;
     }
-    return list;
   }
 }
 

@@ -193,6 +193,7 @@ export function builtinCatalog(): Builtin[] {
         await ctx.native.call("windows.run", {
           command,
           gap: ctx.settings.get("windowManagement.innerGap"),
+          outerGap: ctx.settings.get("windowManagement.outerGap"),
         });
         return done();
       },
