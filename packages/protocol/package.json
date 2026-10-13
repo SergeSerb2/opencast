@@ -1,9 +1,9 @@
 {
-  "name": "@surgecast/protocol",
+  "name": "@opencast/protocol",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Shared types and wire contracts between the Surgecast native host, backend, frontend, and extension runtime.",
+  "description": "Shared types and wire contracts between the OpenCast native host, backend, frontend, and extension runtime.",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {

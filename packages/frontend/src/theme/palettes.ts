@@ -1,4 +1,4 @@
-import type { Theme } from "@surgecast/protocol";
+import type { Theme } from "@opencast/protocol";
 
 /** A full palette: the Theme colors with a resolved accent (themes may omit it; a system accent still wins in CSS). */
 export interface Palette {
@@ -10,17 +10,17 @@ export interface Palette {
 
 const DEFAULT_ACCENT = "#4FA3F8";
 
-/** Built-in palettes (design spec §2.5). "surgecast-dark/light" are the defaults. */
+/** Built-in palettes (design spec §2.5). "opencast-dark/light" are the defaults. */
 export const BUILTIN_PALETTES: readonly Palette[] = [
   {
-    id: "surgecast-dark",
-    name: "Surgecast Dark",
+    id: "opencast-dark",
+    name: "OpenCast Dark",
     appearance: "dark",
     colors: { background: "#000000", backgroundSecondary: "#000000", text: "#FFFFFF", accent: DEFAULT_ACCENT, selection: "#FFFFFF", loader: "#FFFFFF", red: "#FF6363", orange: "#FF9217", yellow: "#FFC531", green: "#59D499", blue: "#56C2FF", purple: "#A485FF", magenta: "#CF2F98" },
   },
   {
-    id: "surgecast-light",
-    name: "Surgecast Light",
+    id: "opencast-light",
+    name: "OpenCast Light",
     appearance: "light",
     colors: { background: "#FFFFFF", backgroundSecondary: "#FFFFFF", text: "#000000", accent: "#138AF2", selection: "#000000", loader: "#000000", red: "#B12424", orange: "#C75D07", yellow: "#F8A300", green: "#006B4F", blue: "#138AF2", purple: "#6A3DEC", magenta: "#9A1B6E" },
   },

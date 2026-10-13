@@ -1,5 +1,5 @@
 /*
- * Surgecast design tokens. Values follow the Surgecast design spec (§1–§2, §9, §12):
+ * OpenCast design tokens. Values follow the OpenCast design spec (§1–§2, §9, §12):
  * a re-statement of the measured Raycast 2.7.3 metrics in our own stylesheet.
  *
  * The root element carries:  class="theme-root"  dark | light  macos="26|27"
@@ -137,7 +137,7 @@
   --radius-window: 20px;
 }
 
-/* ---- default palettes (Surgecast Dark / Light); themes override via JS ---- */
+/* ---- default palettes (OpenCast Dark / Light); themes override via JS ---- */
 .theme-root[dark] {
   color-scheme: dark;
   --bg: #000000;

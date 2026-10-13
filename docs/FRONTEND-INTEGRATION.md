@@ -73,7 +73,7 @@ on local/sync changes through `backend/src/services/host-settings.ts` → `app.c
 | `applications.recursiveSearch` | Native/dev scan depth with app bundles treated as leaves; settings invalidate application catalogs. |
 | `translator.primaryAction` | UI-only: Translator action ordering selects copy or paste. |
 | `developer.disablePopToRootSearch` | Frontend launcher reopen behavior and development extension pop-to-root requests. |
-| `developer.openSurgecastInDevelopmentMode` | `backend/src/services/extensions/index.ts` shows launcher after initial development install/build. |
+| `developer.openOpenCastInDevelopmentMode` | `backend/src/services/extensions/index.ts` shows launcher after initial development install/build. |
 | `developer.useNodeProductionEnvironment` | `backend/src/services/extensions/sessions.ts` worker NODE_ENV. |
 
 ## Existing settings needed by the merged UI
@@ -103,7 +103,7 @@ HTTP proxies) and ignore (ignore-file semantics).
 - `pnpm -r test`
 - `pnpm -r build` (including sync-worker's dry-run build; no deployment)
 - `swift build --package-path apps/macos`
-- `swift run --package-path apps/macos SurgecastSelfTest`
+- `swift run --package-path apps/macos OpenCastSelfTest`
 - `node packages/frontend/scripts/check-mock-pages.mjs` (five entry pages, launcher
   features and Settings routes; errors fail the command)
 - `node packages/backend/test/core/e2e.mjs` (fresh bundled backend, authenticated
@@ -122,7 +122,7 @@ Final results for this checkout:
 | `pnpm -r test` | Exit 0; backend 301, frontend 522, raycast-api 12, sync-worker 7: 842 tests passed |
 | `pnpm -r build` | Exit 0 for all packages, including sync-worker dry-run |
 | `swift build --package-path apps/macos` | Exit 0, Build complete |
-| `swift run --package-path apps/macos SurgecastSelfTest` | Exit 0, geometry and file-boundary checks PASS |
+| `swift run --package-path apps/macos OpenCastSelfTest` | Exit 0, geometry and file-boundary checks PASS |
 | `node packages/frontend/scripts/check-mock-pages.mjs` | Exit 0; main, ai-chat, notes, settings, gallery PASS, zero errors |
 | `node packages/backend/test/core/e2e.mjs` | Exit 0; authenticated bundled backend, contract registration, core workflows PASS |
 | User-supplied missing-method scan | `[]` |

@@ -127,13 +127,14 @@ describe("extension host", () => {
     expect(h.ctx.ai.complete).toHaveBeenCalledWith(expect.objectContaining({ purpose: "extension", messages: [{ role: "user", content: "Prompt" }] }), expect.any(Function));
     await h.host.sessions.close(launch.sessionId);
   });
-  it("accepts only matching OAuth state and stores provider-specific tokens in Keychain", async () => {
+  it.each(["surgecast", "opencast", "raycast"])("keeps the registered OAuth redirect and accepts matching %s callbacks", async scheme => {
     const h = setup(); const path = fixture(h.dataDir); await h.call("extensions.install", { source: "local", path });
     const launch = await h.call("ext.session.start", { name: "fixture", command: "list" }) as any; const session = h.host.sessions.get(launch.sessionId);
     const dispatch = vi.spyOn(h.host.sessions, "dispatch").mockResolvedValue(undefined);
     const flow = await h.host.broker.request(session, "initOAuth", { onRedirect: "callback", providerId: "provider" });
-    h.nativeEvents.emit("url.opened", { url: "surgecast://oauth?state=wrong&code=other" }); await new Promise((resolve) => setTimeout(resolve, 10)); expect(dispatch).not.toHaveBeenCalled();
-    h.nativeEvents.emit("url.opened", { url: `raycast://oauth?state=${flow.state}&code=accepted` }); await waitFor(() => dispatch.mock.calls.length ? true : undefined);
+    expect(flow.redirectURI).toBe("surgecast://oauth");
+    h.nativeEvents.emit("url.opened", { url: "opencast://oauth?state=wrong&code=other" }); await new Promise((resolve) => setTimeout(resolve, 10)); expect(dispatch).not.toHaveBeenCalled();
+    h.nativeEvents.emit("url.opened", { url: `${scheme}://oauth?state=${flow.state}&code=accepted` }); await waitFor(() => dispatch.mock.calls.length ? true : undefined);
     expect(dispatch).toHaveBeenCalledWith(session.id, "callback", [{ authorizationCode: "accepted" }]);
     await h.host.broker.request(session, "setOAuthTokens", { providerId: "provider", tokenSet: { accessToken: "sample-token" } });
     expect(h.secrets.get("oauth:fixture:provider")).toBe('{"accessToken":"sample-token"}'); expect(JSON.stringify(h.ctx.entities.dirty())).not.toContain("sample-token");

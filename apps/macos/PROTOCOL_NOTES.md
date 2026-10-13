@@ -2,7 +2,7 @@
 
 The native host implements the existing protocol without editing `packages/`.
 
-- The architecture's `surgecast-file` backend allow-list has no method to register
+- The architecture's `opencast-file` backend allow-list has no method to register
   paths. This implementation follows the task's initial policy: data/extensions,
   `/Applications`, `/System/Applications`, `/System/Library/CoreServices`, and the
   user's home, excluding `~/Library/Keychains`. Checks resolve symlinks. Proposal:

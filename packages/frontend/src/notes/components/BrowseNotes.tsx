@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import type { NoteSummary } from "@surgecast/protocol";
+import type { NoteSummary } from "@opencast/protocol";
 import { useBackend } from "../../bridge/hooks";
 import { backend } from "../../bridge/backend";
 import { useSetting } from "../../bridge/settings";

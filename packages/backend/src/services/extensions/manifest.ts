@@ -1,6 +1,6 @@
 import { access, readFile, stat } from "node:fs/promises";
 import { join, resolve, isAbsolute, relative } from "node:path";
-import type { InstalledExtension, ExtensionCommandManifest, ExtensionPreference, ExtensionToolManifest } from "@surgecast/protocol";
+import type { InstalledExtension, ExtensionCommandManifest, ExtensionPreference, ExtensionToolManifest } from "@opencast/protocol";
 export interface Manifest {
   name: string; title: string; description?: string; author: string; owner?: string; icon?: string; version?: string;
   commands: ExtensionCommandManifest[]; tools?: (ExtensionToolManifest & { input?: Record<string, unknown>; confirmation?: boolean })[];

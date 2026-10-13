@@ -1,4 +1,4 @@
-import type { FileIconImage, ImageLike, ImageObject, ImageSource, TileImage } from "@surgecast/protocol";
+import type { FileIconImage, ImageLike, ImageObject, ImageSource, TileImage } from "@opencast/protocol";
 import { isIconName } from "./Icon";
 
 /** What an ImageLike resolves to, before rendering. */
@@ -28,14 +28,14 @@ export function isImageObject(image: ImageLike): image is ImageObject {
   return typeof image === "object" && image !== null && "source" in image;
 }
 
-/** `surgecast-file://` URL for an absolute local path (served by the native host). */
+/** `opencast-file://` URL for an absolute local path (served by the native host). */
 export function localFileUrl(path: string): string {
-  return `surgecast-file://${encodeURI(path).replace(/#/g, "%23").replace(/\?/g, "%3F")}`;
+  return `opencast-file://${encodeURI(path).replace(/#/g, "%23").replace(/\?/g, "%3F")}`;
 }
 
-/** `surgecast-icon://` URL for a Finder icon at a pixel size (2× for Retina). */
+/** `opencast-icon://` URL for a Finder icon at a pixel size (2× for Retina). */
 export function fileIconUrl(path: string, size: number): string {
-  return `surgecast-icon://file?path=${encodeURIComponent(path)}&size=${Math.round(size * 2)}`;
+  return `opencast-icon://file?path=${encodeURIComponent(path)}&size=${Math.round(size * 2)}`;
 }
 
 /** Pick the light/dark variant of a source. */
@@ -47,7 +47,7 @@ export function pickSource(source: ImageSource, appearance: "dark" | "light"): s
 export function resolveSourceString(source: string): ResolvedImage {
   const value = source.trim();
   if (!value) return { kind: "none" };
-  if (/^(https?|data|blob|surgecast-file|surgecast-icon):/i.test(value)) return { kind: "url", url: value };
+  if (/^(https?|data|blob|opencast-file|opencast-icon|surgecast-file|surgecast-icon):/i.test(value)) return { kind: "url", url: value };
   if (/^file:\/\//i.test(value)) return { kind: "url", url: localFileUrl(decodeURI(value.replace(/^file:\/\//i, ""))) };
   if (value.startsWith("/") || value.startsWith("~/")) return { kind: "url", url: localFileUrl(value) };
   if (isIconName(value)) return { kind: "icon", name: value };

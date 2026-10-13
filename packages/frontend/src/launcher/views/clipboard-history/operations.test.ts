@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BackendEvents, ClipboardItem } from "@surgecast/protocol";
+import type { BackendEvents, ClipboardItem } from "@opencast/protocol";
 import { Emitter } from "../../../bridge/emitter";
 import { createLibraryHandlers } from "../../../bridge/mock/library";
 import { loadClipboardItems } from "./operations";

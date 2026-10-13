@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ToastState } from "@surgecast/protocol";
+import type { ToastState } from "@opencast/protocol";
 import { backend } from "../bridge/backend";
 import { getEnv } from "../bridge/env";
 import { useEvent, useNativeEvent } from "../bridge/hooks";

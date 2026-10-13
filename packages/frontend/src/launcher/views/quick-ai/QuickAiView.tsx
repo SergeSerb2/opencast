@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
-import type { AIMessage, AIPreset, Creativity, ModelRef } from "@surgecast/protocol";
+import type { AIMessage, AIPreset, Creativity, ModelRef } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { native } from "../../../bridge/native";
 import { setSetting, useSetting } from "../../../bridge/settings";

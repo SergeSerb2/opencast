@@ -1,4 +1,4 @@
-import type { Appearance as AppearanceSetting, Theme } from "@surgecast/protocol";
+import type { Appearance as AppearanceSetting, Theme } from "@opencast/protocol";
 import { BUILTIN_PALETTES, defaultPalette, paletteFromTheme, type Palette } from "../../../theme/palettes";
 
 type ThemeAppearance = Palette["appearance"];

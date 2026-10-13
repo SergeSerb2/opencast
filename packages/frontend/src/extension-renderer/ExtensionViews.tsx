@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { ImageLike, UINode } from "@surgecast/protocol";
+import type { ImageLike, UINode } from "@opencast/protocol";
 import { useUIControl } from "../components/View/UIControlContext";
 import { Detail } from "../components/Detail/Detail";
 import { Form } from "../components/Form/Form";

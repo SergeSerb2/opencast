@@ -18,11 +18,18 @@ frontend = work / 'frontend'
 frontend.mkdir(parents=True, exist_ok=True)
 for page in ['main', 'ai-chat', 'notes', 'settings', 'welcome', 'theme-studio']:
     shutil.copyfile(root / 'apps/macos/DevStub/main.html', frontend / f'{page}.html')
-log = Path.home() / 'Library/Logs/Surgecast/backend.log'
+subprocess.run(['pnpm', '--filter', '@opencast/backend', 'exec', 'esbuild',
+                str(root / 'packages/frontend/src/lib/migrate-storage.ts'), '--format=esm',
+                '--outfile=' + str(frontend / 'storage-migration.js')], cwd=root, check=True)
+log_dir = work / 'logs'
+log = log_dir / 'backend.log'
 start = log.stat().st_size if log.exists() else 0
-env = dict(os.environ, SURGECAST_BACKEND_ENTRY=str(root / 'apps/macos/DevStub/stub-backend.mjs'),
-           SURGECAST_RESOURCES=str(work), SURGECAST_SHOW_ON_START='1', SURGECAST_KEEP_OPEN='1')
-executable = root / 'build/Surgecast.app/Contents/MacOS/Surgecast'
+env = dict(os.environ, OPENCAST_BACKEND_ENTRY=str(root / 'apps/macos/DevStub/stub-backend.mjs'),
+           OPENCAST_RESOURCES=str(work), OPENCAST_DATA_DIR=str(work / 'data'), OPENCAST_LOG_DIR=str(log_dir),
+           OPENCAST_SHOW_ON_START='1', OPENCAST_KEEP_OPEN='1', OPENCAST_EPHEMERAL_WEB_STORAGE='1')
+executable = root / 'build/OpenCast.app/Contents/MacOS/OpenCast'
+native_log = log_dir / 'native.log'
+native_start = native_log.stat().st_size if native_log.exists() else 0
 children = set()
 
 def child_pids(parent):
@@ -87,11 +94,17 @@ assert reports, 'Web-view bridge did not report; inspect .build/smoke-native.log
 for report in reports:
     assert report['heightOK'] and report['iconOK'] and report['macos'] and report['unknownCode'] == -32601
     assert report['window'] == 'main' and report['screens'] > 0
+    assert report['appScheme'] == 'surgecast-app:' and report['storageMigrated'], 'Upgrade storage was not accessible'
 assert duplicate_checked, 'Single-instance guard was not tested'
+activation_log = native_log.read_bytes()[native_start:].decode()
+for name in ['app.opencast.showLauncher', 'app.surgecast.showLauncher']:
+    assert f'Launcher activation requested ({name})' in activation_log, f'Activation missing for {name}'
 if args.restart:
     assert restarted and len(reports) >= 2 and text.count('STARTUP_CHECKS_COMPLETE') >= 2, 'Backend restart did not reload the frontend'
+    assert reports[-1]['storageRetained'], 'Window preferences were lost on backend reload'
 assert process.returncode == 0, f'Host did not terminate cleanly ({process.returncode})'
 summary = {'applications': len(results['apps.list']), 'screens': len(results['windows.screens']),
            'webBridgeReports': len(reports), 'singleInstance': duplicate_checked,
-           'backendRestart': args.restart, 'hostExit': process.returncode, 'childCleanup': True}
+           'backendRestart': args.restart, 'hostExit': process.returncode, 'childCleanup': True,
+           'legacyActivation': True, 'storageMigration': True}
 print('PASS:', json.dumps(summary, sort_keys=True))

@@ -1,4 +1,4 @@
-import type { BackendEvents, BackendMethod, BackendParams, BackendResult, CommandInfo, LaunchResult } from "@surgecast/protocol";
+import type { BackendEvents, BackendMethod, BackendParams, BackendResult, CommandInfo, LaunchResult } from "@opencast/protocol";
 import type { Emitter } from "../../emitter";
 
 /** Partial mock implementation of `BackendMethods`. */

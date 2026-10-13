@@ -1,4 +1,4 @@
-import { SYNC_MAX_REQUEST_BYTES } from "@surgecast/protocol";
+import { SYNC_MAX_REQUEST_BYTES } from "@opencast/protocol";
 
 export class SyncHttpError extends Error {
   constructor(readonly status: number, readonly code: string) {
@@ -21,7 +21,7 @@ export function normalizeServerUrl(input: string): string {
 export class SyncHttp {
   constructor(readonly serverUrl: string, private readonly token: string, readonly deviceId: string, private readonly signal: AbortSignal) {}
   headers(extra?: Record<string, string>): Record<string, string> {
-    return { Authorization: `Bearer ${this.token}`, "X-Surgecast-Device": this.deviceId, ...extra };
+    return { Authorization: `Bearer ${this.token}`, "X-OpenCast-Device": this.deviceId, "X-Surgecast-Device": this.deviceId, ...extra };
   }
   async request<T>(path: string, method = "GET", data?: unknown, extra?: Record<string, string>): Promise<T> {
     const response = await fetch(this.serverUrl + path, { method, headers: this.headers({ "Content-Type": "application/json", ...extra }),

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import type { CommandInfo, ExtensionPreference } from "@surgecast/protocol";
+import type { CommandInfo, ExtensionPreference } from "@opencast/protocol";
 import { Checkbox } from "../../components/Checkbox/Checkbox";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";

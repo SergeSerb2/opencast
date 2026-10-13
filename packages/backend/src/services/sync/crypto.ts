@@ -1,7 +1,8 @@
 import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes, randomUUID, scrypt } from "node:crypto";
 import { gzipSync, gunzipSync } from "node:zlib";
-import { SYNC_MAX_CIPHERTEXT_BYTES, type SyncVault, type SyncPushRecord, type SyncWireRecord } from "@surgecast/protocol";
+import { SYNC_MAX_CIPHERTEXT_BYTES, type SyncVault, type SyncPushRecord, type SyncWireRecord } from "@opencast/protocol";
 
+// These v1 wire constants are immutable so existing encrypted vaults remain readable.
 export interface SyncPayload {
   v: 1;
   collection: string;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { BackendResult } from "@surgecast/protocol";
+import type { BackendResult } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";

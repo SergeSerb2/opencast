@@ -1,4 +1,4 @@
-import type { AIChat, AICommand, AIMessage, AIPreset, AIToolInfo } from "@surgecast/protocol";
+import type { AIChat, AICommand, AIMessage, AIPreset, AIToolInfo } from "@opencast/protocol";
 
 const now = Date.now();
 const min = 60_000;
@@ -96,7 +96,7 @@ export const AI_ANSWERS: { match: RegExp; reasoning?: string; answer: string }[]
     match: /launcher/i,
     reasoning: "They want a plain definition, then what a launcher does day to day and an example of using one.",
     answer:
-      "A **launcher** is an app that lets you start programs, open files and run actions from a single search field instead of clicking through menus and folders.\n\nYou press a hotkey, type a few letters, and press ↵. Most launchers can also:\n\n- search files, contacts and the web\n- calculate, convert units and currencies\n- run scripts, snippets and window commands\n- ask an AI model a quick question\n\nOn macOS, Spotlight is the built-in launcher; Surgecast is a launcher you can extend with your own commands and AI providers.",
+      "A **launcher** is an app that lets you start programs, open files and run actions from a single search field instead of clicking through menus and folders.\n\nYou press a hotkey, type a few letters, and press ↵. Most launchers can also:\n\n- search files, contacts and the web\n- calculate, convert units and currencies\n- run scripts, snippets and window commands\n- ask an AI model a quick question\n\nOn macOS, Spotlight is the built-in launcher; OpenCast is a launcher you can extend with your own commands and AI providers.",
   },
   {
     match: /debounce|throttle|typescript|function|code/i,

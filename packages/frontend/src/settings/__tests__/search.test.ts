@@ -3,7 +3,7 @@ import { ALL_STATIC_PAGES, extensionPages } from "../catalog";
 import { searchSettings, settingId, type SearchablePage } from "../search";
 
 const pages: SearchablePage[] = [
-  { id: "general", title: "General", keywords: ["theme", "dark mode"], rows: ["Open at Login", "Surgecast Hotkey", "Interface Size"] },
+  { id: "general", title: "General", keywords: ["theme", "dark mode"], rows: ["Open at Login", "OpenCast Hotkey", "Interface Size"] },
   { id: "ai", title: "AI", keywords: ["openai", "api key"], rows: ["Default Models", "Web Search API Key", "Profile"] },
   { id: "advanced", title: "Advanced", rows: ["Import from Raycast", "Favicon Provider"] },
   { id: "cloud-sync", title: "Cloud Sync", rows: ["Encryption Passphrase", "Synced Devices"] },

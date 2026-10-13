@@ -7,7 +7,7 @@ const b64 = (size: number, byte = 1) => Buffer.alloc(size, byte).toString("base6
 const vault = { vaultId: "test-vault", keyEpoch: 1, kdf: { alg: "scrypt", N: 131072, r: 8, p: 1, salt: b64(16) }, wrapped: { nonce: b64(12), ct: b64(48) } };
 const record = (rid = b64(32), baseSeq: number | null = null) => ({ rid, baseSeq, deleted: false, nonce: b64(12), ct: b64(32), keyEpoch: 1 });
 async function call(path: string, method = "GET", data?: unknown, headers: Record<string, string> = {}) {
-  const response = await handleRequest(new Request("http://localhost" + path, { method, headers: { Authorization: "Bearer test-token", "X-Surgecast-Device": "A", ...headers }, body: data === undefined ? undefined : JSON.stringify(data) }), env);
+  const response = await handleRequest(new Request("http://localhost" + path, { method, headers: { Authorization: "Bearer test-token", "X-OpenCast-Device": "A", ...headers }, body: data === undefined ? undefined : JSON.stringify(data) }), env);
   return { status: response.status, body: await response.json() as any };
 }
 async function setup() {
@@ -17,10 +17,19 @@ async function setup() {
 beforeEach(() => { env = createTestEnv(); });
 afterEach(() => env.close());
 describe("ciphertext sync HTTP API", () => {
+  it("accepts the old device and wipe headers for existing clients", async () => {
+    const legacy = async (method: string, data?: unknown, wipe = false) => handleRequest(new Request("http://localhost/v1/vault", {
+      method, headers: { Authorization: "Bearer test-token", "X-Surgecast-Device": "A", ...(wipe ? { "X-Surgecast-Confirm": "wipe" } : {}) },
+      body: data === undefined ? undefined : JSON.stringify(data),
+    }), env);
+    expect((await legacy("PUT", vault)).status).toBe(201);
+    expect((await legacy("GET")).status).toBe(200);
+    expect((await legacy("DELETE", undefined, true)).status).toBe(200);
+  });
   it("authenticates account tokens, requires devices, and isolates tenants", async () => {
     expect((await call("/v1/health", "GET", undefined, { Authorization: "" })).body).toEqual({ ok: true, version: 1 });
     expect((await call("/v1/vault", "GET", undefined, { Authorization: "Bearer wrong" })).status).toBe(401);
-    expect((await call("/v1/vault", "GET", undefined, { "X-Surgecast-Device": "" })).status).toBe(400);
+    expect((await call("/v1/vault", "GET", undefined, { "X-OpenCast-Device": "" })).status).toBe(400);
     await setup();
     expect((await call("/v1/vault", "GET", undefined, { Authorization: "Bearer other-token" })).status).toBe(404);
     expect((await call("/v1/devices", "POST", { deviceId: "B", name: "Mac", platform: "macos" })).status).toBe(400);
@@ -32,7 +41,7 @@ describe("ciphertext sync HTTP API", () => {
     expect((await call("/v1/vault", "PUT", { ...vault, replace: true }, { "If-Match": vault.vaultId })).status).toBe(200);
     await call("/v1/push", "POST", { records: [record()] });
     expect((await call("/v1/vault", "DELETE")).status).toBe(400);
-    expect((await call("/v1/vault", "DELETE", undefined, { "X-Surgecast-Confirm": "wipe" })).status).toBe(200);
+    expect((await call("/v1/vault", "DELETE", undefined, { "X-OpenCast-Confirm": "wipe" })).status).toBe(200);
     expect((await call("/v1/vault")).status).toBe(404);
     expect((await call("/v1/devices")).body).toEqual([]);
     expect((await call("/v1/pull")).body.records).toEqual([]);

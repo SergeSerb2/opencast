@@ -2,7 +2,7 @@ import * as chrono from "chrono-node";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { CalculatorResult } from "@surgecast/protocol";
+import type { CalculatorResult } from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import { boundedLimit } from "./shared";
 import { weatherPlace, weatherResult } from "./weather";

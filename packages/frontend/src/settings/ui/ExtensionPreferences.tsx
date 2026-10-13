@@ -1,4 +1,4 @@
-import type { ExtensionPreference } from "@surgecast/protocol";
+import type { ExtensionPreference } from "@opencast/protocol";
 import { applicationPreferenceValue } from "../../lib/application-preference";
 import { backend } from "../../bridge/backend";
 import { useBackend } from "../../bridge/hooks";

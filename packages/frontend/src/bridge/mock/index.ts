@@ -12,7 +12,7 @@ import {
   type Note,
   type NoteSummary,
   type SettingsValues,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { BackendClient, CallArgs, CallOptions } from "../backend";
 import type { Emitter } from "../emitter";
 import { cancelledError, RpcError } from "../errors";
@@ -123,9 +123,9 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
         return { kind: "ai", target: "quick-ai", prompt: fallbackText ?? args?.prompt };
       case "builtin:ai.aiChat":
         return { kind: "ai", target: "chat" };
-      case "builtin:surgecast.settings":
+      case "builtin:opencast.settings":
         return { kind: "done", closeWindow: true };
-      case "builtin:surgecast.confetti":
+      case "builtin:opencast.confetti":
         return { kind: "done", closeWindow: true, hud: "🎉" };
       case "builtin:web.google":
         return { kind: "done", closeWindow: true };
@@ -141,7 +141,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
   };
 
   const handlers: Handlers = {
-    "app.info": () => ({ version: "0.1.0-mock", dataDir: "/tmp/surgecast-mock", nativeAvailable: false, methods: Object.keys(handlers) }),
+    "app.info": () => ({ version: "0.1.0-mock", dataDir: "/tmp/opencast-mock", nativeAvailable: false, methods: Object.keys(handlers) }),
 
     "settings.getAll": () => ({ ...settings }),
     "settings.set": ({ key, value }) => {

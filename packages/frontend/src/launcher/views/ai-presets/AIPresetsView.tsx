@@ -1,4 +1,4 @@
-import type { AIPreset } from "@surgecast/protocol";
+import type { AIPreset } from "@opencast/protocol";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { EmptyView, ViewFrame } from "../../../components";

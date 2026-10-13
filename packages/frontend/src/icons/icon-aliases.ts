@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { Archive, ArchiveRestore, ArrowLeftRight, ArrowUp, Brain, CircleX, ClipboardList, Command, Files, GitBranch, List, MessageCircle, PanelRight, Settings2, SquareArrowOutUpRight, SquarePen, Star } from "lucide-react";
 
 /**
- * Glyph names Surgecast's own UI uses that are not `Icon` enum values
+ * Glyph names OpenCast's own UI uses that are not `Icon` enum values
  * (Raycast's sprite has them as internal names).
  */
 export const ICON_ALIASES: Record<string, LucideIcon> = {

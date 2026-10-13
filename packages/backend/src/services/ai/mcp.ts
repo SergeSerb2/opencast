@@ -6,7 +6,7 @@ import type {
   MCPServer,
   AIToolInfo,
   BackendMethods,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext, ToolProvider } from "../../context";
 import { httpUrl, providerUrl, redact, safeError } from "./common";
 interface Connection {
@@ -46,7 +46,7 @@ export class MCP implements ToolProvider {
     }
   }
   private async open(server: MCPServer): Promise<Connection> {
-    const client = new Client({ name: "Surgecast", version: this.ctx.version });
+    const client = new Client({ name: "OpenCast", version: this.ctx.version });
     const secrets: string[] = [];
     const resolve = async (
       kind: "env" | "header",

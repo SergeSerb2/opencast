@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MenuItemInfo } from "@surgecast/protocol";
+import type { MenuItemInfo } from "@opencast/protocol";
 import { menuEntries, menuSections, parseMenuShortcut } from "./menu-model";
 
 const item = (path: string[], extra: Partial<MenuItemInfo> = {}): MenuItemInfo => ({ path, title: path[path.length - 1], enabled: true, ...extra });

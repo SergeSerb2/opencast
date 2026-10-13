@@ -1,5 +1,5 @@
 import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import type { ActionsProp } from "../actions/ActionPanel";
 import type { ListItemModel, ListItemProps, ListSectionModel, ListSectionProps } from "./model";
 

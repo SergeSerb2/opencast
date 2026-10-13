@@ -1,5 +1,5 @@
 /**
- * Every Surgecast setting, its default, and whether it syncs.
+ * Every OpenCast setting, its default, and whether it syncs.
  *
  * Keys are "<page>.<field>" and mirror Raycast's settings pages so the
  * Settings window can be laid out the same way. Values must be JSON.
@@ -35,8 +35,8 @@ export type Duration = "never" | "immediately" | `${number}s` | `${number}m` | `
 export const SETTINGS = {
   // ---- General ---------------------------------------------------------------
   "general.appearance": synced<Appearance>("system", "general-settings.appearance"),
-  "general.themeDark": synced("surgecast-dark", "general-settings.appearance"),
-  "general.themeLight": synced("surgecast-light", "general-settings.appearance"),
+  "general.themeDark": synced("opencast-dark", "general-settings.appearance"),
+  "general.themeLight": synced("opencast-light", "general-settings.appearance"),
   /** 1 = default, 1.15 = large. */
   "general.uiZoom": synced(1, "general-settings.ui-zoom"),
   "general.windowMode": synced<"expanded" | "compact">("expanded", "general-settings.window-mode"),
@@ -196,7 +196,7 @@ export const SETTINGS = {
   "developer.autoReloadOnSave": device(true),
   "developer.keepWindowVisibleDuringDevelopment": device(false),
   "developer.disablePopToRootSearch": device(false),
-  "developer.openSurgecastInDevelopmentMode": device(true),
+  "developer.openOpenCastInDevelopmentMode": device(true),
   "developer.useNodeProductionEnvironment": device(false),
 
   // ---- Cloud Sync (device-local configuration; secrets are in the Keychain) -----

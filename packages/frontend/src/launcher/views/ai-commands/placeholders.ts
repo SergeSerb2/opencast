@@ -1,4 +1,4 @@
-import type { CommandArgument } from "@surgecast/protocol";
+import type { CommandArgument } from "@opencast/protocol";
 
 /**
  * Dynamic placeholders in AI command prompts. Mirrors the backend parser

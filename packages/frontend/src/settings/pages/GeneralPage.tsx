@@ -1,4 +1,4 @@
-import { defaultSettings, type Hotkey } from "@surgecast/protocol";
+import { defaultSettings, type Hotkey } from "@opencast/protocol";
 import { native } from "../../bridge/native";
 import { setSetting, useSetting } from "../../bridge/settings";
 import { Button, IconButton } from "../../components/Button/Button";
@@ -101,7 +101,7 @@ function AppearanceSection() {
           Open Theme Studio
         </Button>
       </Row>
-      <Row title="Interface Size" description="Adjust the size of the Surgecast interface.">
+      <Row title="Interface Size" description="Adjust the size of the OpenCast interface.">
         <InterfaceSize />
       </Row>
     </Section>
@@ -138,7 +138,7 @@ function WindowModePreview({ mode }: { mode: "compact" | "expanded" }) {
 function WindowModeSection() {
   const [mode, setMode] = useSettingState("general.windowMode");
   return (
-    <Section title="Window Mode" description="Choose your preferred mode when opening Surgecast.">
+    <Section title="Window Mode" description="Choose your preferred mode when opening OpenCast.">
       <div className="sc-s-item sc-s-window-mode" role="radiogroup" aria-label="Window Mode">
         {(["compact", "expanded"] as const).map((option) => (
           <button
@@ -162,18 +162,18 @@ function WindowModeSection() {
   );
 }
 
-function SurgecastHotkey() {
+function OpenCastHotkey() {
   const hotkey = useSetting("general.globalHotkey");
   const { data: commands } = useAllCommands();
   const conflict = useHotkeyConflict(GLOBAL_HOTKEY_OWNER, commands);
   const fallback = defaultSettings()["general.globalHotkey"];
   const save = async (next: Hotkey | null) => {
-    if (!next) throw new Error("Surgecast needs a hotkey to open");
+    if (!next) throw new Error("OpenCast needs a hotkey to open");
     await setSetting("general.globalHotkey", next);
   };
   return (
     <Controls>
-      <HotkeyRecorder value={hotkey} onChange={save} conflict={conflict} appearance="button" removable={false} label="Surgecast Hotkey" />
+      <HotkeyRecorder value={hotkey} onChange={save} conflict={conflict} appearance="button" removable={false} label="OpenCast Hotkey" />
       {!sameHotkey(hotkey, fallback) && <IconButton icon="arrow-counter-clockwise-16" label="Reset to ⌥ Space" onClick={() => void saveSetting("general.globalHotkey", fallback)} />}
     </Controls>
   );
@@ -190,8 +190,8 @@ export function GeneralPage() {
         <Row title="Show in Menu Bar">
           <SettingSwitch setting="general.showInMenuBar" label="Show in Menu Bar" />
         </Row>
-        <Row title="Surgecast Hotkey">
-          <SurgecastHotkey />
+        <Row title="OpenCast Hotkey">
+          <OpenCastHotkey />
         </Row>
       </Section>
       <AppearanceSection />

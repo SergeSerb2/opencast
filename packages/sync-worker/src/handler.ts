@@ -38,7 +38,7 @@ async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url), path = url.pathname, method = request.method;
   if (path === "/v1/health" && method === "GET") return json({ ok: true, version: 1 });
   const account = await authenticate(request, env);
-  const device = text(request.headers.get("X-Surgecast-Device"), "X-Surgecast-Device", 128);
+  const device = text((request.headers.get("X-OpenCast-Device") ?? request.headers.get("X-Surgecast-Device")), "X-OpenCast-Device", 128);
   const registration = path === "/v1/devices" && method === "POST";
   const known = await env.DB.prepare("SELECT revoked FROM devices WHERE account = ? AND device_id = ?").bind(account, device).first<{ revoked: number }>();
   if (known?.revoked && !registration) throw new HttpError(403, "device_revoked", "This device has been removed; explicitly reconnect to register it again");
@@ -64,7 +64,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       return json(v, input.replace ? 200 : 201);
     }
     if (method === "DELETE") {
-      if (request.headers.get("X-Surgecast-Confirm") !== "wipe") invalid("X-Surgecast-Confirm: wipe is required");
+      if ((request.headers.get("X-OpenCast-Confirm") ?? request.headers.get("X-Surgecast-Confirm")) !== "wipe") invalid("X-OpenCast-Confirm: wipe is required");
       await env.DB.batch([stmt("DELETE FROM records WHERE account = ?", account), stmt("DELETE FROM devices WHERE account = ?", account),
         stmt("UPDATE accounts SET vault_id = NULL, key_epoch = NULL, vault_json = NULL WHERE account = ?", account)]);
       await notify(env, account, { type: "wipe" });

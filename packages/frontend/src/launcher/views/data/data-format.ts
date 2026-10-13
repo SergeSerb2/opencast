@@ -1,4 +1,4 @@
-import type { BackendResult, ImageLike } from "@surgecast/protocol";
+import type { BackendResult, ImageLike } from "@opencast/protocol";
 
 export type ImportResult = BackendResult<"data.import">["results"][number];
 export type StorageInfo = BackendResult<"data.storage">;
@@ -88,23 +88,25 @@ export function validateExportPassword(password: string, confirmation: string): 
   return {};
 }
 
-export const SURGECAST_EXTENSION = "surgecast";
+export const OPENCAST_EXTENSION = "openconfig";
+/** Accept both previous export suffixes as well as the transitional OpenCast suffix. */
+export const OPENCAST_IMPORT_EXTENSIONS = [OPENCAST_EXTENSION, "opencast", "surgecast", "surgeconfig"];
 export const RAYCONFIG_EXTENSION = "rayconfig";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** `Surgecast 2026-10-13 14.05.09.surgecast` (local time, Finder-safe characters). */
+/** `OpenCast 2026-10-13 14.05.09.openconfig` (local time, Finder-safe characters). */
 export function exportFileName(date: Date): string {
   const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   const time = `${pad(date.getHours())}.${pad(date.getMinutes())}.${pad(date.getSeconds())}`;
-  return `Surgecast ${day} ${time}.${SURGECAST_EXTENSION}`;
+  return `OpenCast ${day} ${time}.${OPENCAST_EXTENSION}`;
 }
 
 export function joinPath(directory: string, name: string): string {
   return `${directory.replace(/\/+$/, "")}/${name}`;
 }
 
-/** Home folder from the backend data directory (`~/Library/Application Support/Surgecast`). */
+/** Home folder from the backend data directory (`~/Library/Application Support/OpenCast`). */
 export function homeFromDataDir(dataDir: string): string | undefined {
   return /^(\/Users\/[^/]+)\//.exec(dataDir)?.[1];
 }
@@ -131,8 +133,8 @@ export function importErrorField(message: string): ImportFieldError | undefined 
   if (/requires a password/i.test(message)) return { field: "password", error: "Password required", message: "This file is encrypted. Enter its password." };
   if (/incorrect password/i.test(message)) return { field: "password", error: "Incorrect password", message: "Check the password and try again." };
   if (/select at least one category/i.test(message)) return { field: "categories", error: "Select a category", message: "Select at least one category to import." };
-  if (/expected a surgecast configuration/i.test(message)) return { field: "file", error: "Not a Surgecast export", message: "Choose a file created with Export Data. Use Import Raycast Data for Raycast exports." };
-  if (/use data\.import for a surgecast export/i.test(message)) return { field: "file", error: "This is a Surgecast export", message: "Use Import Surgecast Data for this file." };
+  if (/expected an? opencast configuration/i.test(message)) return { field: "file", error: "Not an OpenCast export", message: "Choose a file created with Export Data. Use Import Raycast Data for Raycast exports." };
+  if (/use data\.import for an? opencast export/i.test(message)) return { field: "file", error: "This is an OpenCast export", message: "Use Import OpenCast Data for this file." };
   if (/configuration|no such file|ENOENT|too large|empty/i.test(message)) return { field: "file", error: "Can't read this file", message };
   return undefined;
 }

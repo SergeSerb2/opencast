@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef } from "react";
-import type { BackendEvents } from "@surgecast/protocol";
+import type { BackendEvents } from "@opencast/protocol";
 
 export type UIControl = BackendEvents["ext.ui.control"];
 

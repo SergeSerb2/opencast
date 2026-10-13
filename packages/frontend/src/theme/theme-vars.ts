@@ -4,7 +4,7 @@ import type { Palette } from "./palettes";
 const NAMED = ["red", "orange", "yellow", "green", "blue", "purple", "magenta"] as const;
 
 /** tokens.css already holds the exact contrast values of the two default palettes (spec §2.4). */
-const DEFAULT_PALETTE_IDS = new Set(["surgecast-dark", "surgecast-light"]);
+const DEFAULT_PALETTE_IDS = new Set(["opencast-dark", "opencast-light"]);
 
 /** The "typical backdrop" a theme is drawn on: bg/bg-secondary at 40% over a gray. */
 export function typicalBackdrop(palette: Palette): RGB {

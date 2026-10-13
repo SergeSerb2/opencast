@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Dropdown, type DropdownSection } from "../Dropdown/Dropdown";
 import { flattenElements } from "./collect";
 
@@ -58,7 +58,7 @@ export function collectDropdownSections(children: ReactNode): DropdownSection[] 
   return sections;
 }
 
-const storageKey = (key: string) => `surgecast.dropdown.${key}`;
+const storageKey = (key: string) => `opencast.dropdown.${key}`;
 
 /** Search-bar accessory dropdown (`List.Dropdown` / `Grid.Dropdown`). */
 export function ListDropdown({ tooltip, id, value, defaultValue, onChange, placeholder, storeValue, filtering, onSearchTextChange, isLoading, children }: ListDropdownProps) {

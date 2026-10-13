@@ -1,3 +1,4 @@
+import "../lib/migrate-storage";
 import { StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/inter/wght.css";
@@ -19,7 +20,7 @@ function enableTransitionsSoon(): void {
 }
 
 /**
- * Boot a Surgecast window page: install the native event receiver, set root
+ * Boot an OpenCast window page: install the native event receiver, set root
  * attributes before the first render (no theme flash), and render `app`
  * inside the theme provider and, in a plain browser, the dev backdrop.
  */

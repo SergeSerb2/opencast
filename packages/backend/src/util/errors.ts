@@ -1,4 +1,4 @@
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 
 /** An error that crosses an RPC boundary with a JSON-RPC code. */
 export class RpcError extends Error {

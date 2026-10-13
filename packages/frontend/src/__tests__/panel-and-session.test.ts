@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ExtensionSessionState, UINode } from "@surgecast/protocol";
+import type { ExtensionSessionState, UINode } from "@opencast/protocol";
 import { resolveLevels } from "../components/ActionPanel/ActionPanelPopover";
 import type { ActionPanelModel } from "../components/actions/model";
 import { nextLayers } from "../extension-renderer/ExtensionSessionView";

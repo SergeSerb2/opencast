@@ -1,4 +1,4 @@
-import type { TileImage } from "@surgecast/protocol";
+import type { TileImage } from "@opencast/protocol";
 
 /** A glyph on a neutral rounded tile, as Raycast draws content rows (clipboard text, snippets). */
 export function glyphTile(glyph: string): TileImage {

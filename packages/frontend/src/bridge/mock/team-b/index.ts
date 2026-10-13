@@ -1,4 +1,4 @@
-import type { CommandInfo, LaunchResult } from "@surgecast/protocol";
+import type { CommandInfo, LaunchResult } from "@opencast/protocol";
 import { createAiMock } from "./ai";
 import { TEAM_B_COMMANDS, TEAM_B_VIEWS } from "./commands";
 import { createDataMock } from "./data";

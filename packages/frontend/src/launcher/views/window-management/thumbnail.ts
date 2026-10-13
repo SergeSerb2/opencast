@@ -1,10 +1,11 @@
-import type { ImageLike, TileImage, WindowLayoutRect } from "@surgecast/protocol";
+import type { ImageLike, TileImage, WindowLayoutRect } from "@opencast/protocol";
 
 /** Same gradient the backend uses for window layout commands in root search. */
 const TILE_TOP = "#3B82F6";
 const TILE_BOTTOM = "#1D4ED8";
 
-const MARKER = 'data-surgecast="layout-thumbnail"';
+const MARKER = 'data-opencast="layout-thumbnail"';
+const LEGACY_MARKER = 'data-surgecast="layout-thumbnail"';
 const PREFIX = "data:image/svg+xml,";
 
 const round = (value: number) => Math.round(value * 100) / 100;
@@ -34,7 +35,8 @@ export function layoutThumbnail(rect: WindowLayoutRect): string {
 
 /** True for icons produced by `layoutThumbnail` (the "Automatic" choice). */
 export function isLayoutThumbnail(icon: ImageLike | undefined): boolean {
-  return typeof icon === "string" && icon.startsWith(PREFIX) && icon.includes(encodeURIComponent(MARKER));
+  return typeof icon === "string" && icon.startsWith(PREFIX) &&
+    [MARKER, LEGACY_MARKER].some(marker => icon.includes(encodeURIComponent(marker)));
 }
 
 /** A glyph on the window-management tile gradient. */

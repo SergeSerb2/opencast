@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { KeyboardShortcut, ToastStyle } from "@surgecast/protocol";
+import type { KeyboardShortcut, ToastStyle } from "@opencast/protocol";
 
 export interface ToastAction {
   title: string;

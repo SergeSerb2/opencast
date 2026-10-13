@@ -2,7 +2,7 @@
  * Messages don't store how long the model reasoned, so the window measures it
  * while streaming and remembers it per message for "Thought for Ns" labels.
  */
-const KEY = "surgecast.ai.reasoningDurations";
+const KEY = "opencast.ai.reasoningDurations";
 const LIMIT = 500;
 
 let cache: Map<string, number> | null = null;

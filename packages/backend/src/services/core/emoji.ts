@@ -1,5 +1,5 @@
 import data from "emojibase-data/en/data.json";
-import type { EmojiItem } from "@surgecast/protocol";
+import type { EmojiItem } from "@opencast/protocol";
 import type { Service } from "../../context";
 import { fuzzyMatch } from "./ranking";
 import { RpcError } from "../../util/errors";

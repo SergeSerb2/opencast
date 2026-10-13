@@ -1,4 +1,4 @@
-import type { BackendParams, BackendResult } from "@surgecast/protocol";
+import type { BackendParams, BackendResult } from "@opencast/protocol";
 
 type ListClipboard = (params: BackendParams<"clipboard.list">) => Promise<BackendResult<"clipboard.list">>;
 

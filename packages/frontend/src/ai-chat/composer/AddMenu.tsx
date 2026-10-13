@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { AIAttachment, WindowKind } from "@surgecast/protocol";
+import type { AIAttachment, WindowKind } from "@opencast/protocol";
 import { showFailureToast, showToast } from "../../components/feedback/toast-store";
 import { Menu, type MenuSection } from "../../components/Menu/Menu";
 import { Popover, type PopoverAnchor } from "../../components/Popover/Popover";

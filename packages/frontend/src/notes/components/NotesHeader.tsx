@@ -1,5 +1,5 @@
 import { forwardRef, type MouseEvent } from "react";
-import type { KeyboardShortcut } from "@surgecast/protocol";
+import type { KeyboardShortcut } from "@opencast/protocol";
 import { getEnv } from "../../bridge/env";
 import { native } from "../../bridge/native";
 import { Shortcut } from "../../components/Keycap/Keycap";

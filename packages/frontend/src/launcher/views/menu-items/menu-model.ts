@@ -1,4 +1,4 @@
-import type { KeyboardShortcut, KeyModifier, MenuItemInfo } from "@surgecast/protocol";
+import type { KeyboardShortcut, KeyModifier, MenuItemInfo } from "@opencast/protocol";
 import { fuzzyFilter, type MatchRange } from "../../../lib/fuzzy";
 
 /** A pressable menu item (leaf) with display data. */

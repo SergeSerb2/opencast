@@ -1,4 +1,4 @@
-import { RpcErrorCode, type BackendParams, type CommandInfo, type LaunchResult, type ScriptCommand } from "@surgecast/protocol";
+import { RpcErrorCode, type BackendParams, type CommandInfo, type LaunchResult, type ScriptCommand } from "@opencast/protocol";
 import { RpcError } from "../../errors";
 import type { MockArea, MockContext } from "./types";
 

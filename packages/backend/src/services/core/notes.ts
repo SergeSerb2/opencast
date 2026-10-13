@@ -1,4 +1,4 @@
-import type { Note, NoteSummary } from "@surgecast/protocol";
+import type { Note, NoteSummary } from "@opencast/protocol";
 import type { Service } from "../../context";
 import {
   list,

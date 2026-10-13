@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { environment } from "./environment";
 
@@ -8,7 +8,7 @@ const stores = new Map<string, DatabaseSync>();
 const listeners = new Map<string, Set<Subscriber>>();
 /** Synchronous local cache, shared by all commands of an extension. Never synced. */
 export class Cache {
-  static STORAGE_DIRECTORY_NAME = "com.surgecast.api.cache";
+  static STORAGE_DIRECTORY_NAME = "com.opencast.api.cache";
   static DEFAULT_CAPACITY = 10_000_000;
   readonly storageDirectory: string;
   private readonly db: DatabaseSync;
@@ -16,7 +16,10 @@ export class Cache {
   private readonly capacity: number;
   private readonly listenerKey: string;
   constructor(options: { directory?: string; namespace?: string; capacity?: number } = {}) {
-    this.storageDirectory = join(options.directory ?? environment.supportPath, Cache.STORAGE_DIRECTORY_NAME);
+    const directory = options.directory ?? environment.supportPath;
+    const current = join(directory, Cache.STORAGE_DIRECTORY_NAME);
+    const legacy = join(directory, "com.surgecast.api.cache");
+    this.storageDirectory = !existsSync(current) && existsSync(legacy) ? legacy : current;
     mkdirSync(this.storageDirectory, { recursive: true });
     const path = join(this.storageDirectory, "cache.sqlite");
     let db = stores.get(path);

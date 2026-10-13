@@ -61,7 +61,7 @@ async function exercise(name, command, expected, options = {}) {
   return result;
 }
 try {
-  await call("extensions.install", { source: "local", path: "/tmp/surgecast-re/pretty/api-template/dist" });
+  await call("extensions.install", { source: "local", path: "/tmp/opencast-re/pretty/api-template/dist" });
   for (const [command, expected] of [["static-list", "List"], ["detail", "Detail"], ["form", "Form"], ["grid", "Grid"], ["list-and-detail", "List"], ["menu-bar-extra", "MenuBarExtra"], ["blank", "done"], ["script", "done"], ["typeahead-search", "List"], ["ai", "Detail"]]) {
     try { results.push(await exercise("extension-template", command, expected)); } catch (error) { results.push({ name: "extension-template", command, error: error.message }); }
   }
@@ -82,5 +82,5 @@ try {
   const output = { checkedAt: new Date().toISOString(), backend: "--no-native", results, failureToasts: toasts.filter((x) => x.toast?.style === "failure").map((x) => ({ title: x.toast.title, message: x.toast.message })) };
   console.log(JSON.stringify(output, null, 2));
   if (results.some((x) => x.error || x.setupRequired)) process.exitCode = 1;
-  if (process.env.SURGECAST_EXTENSION_REPORT) writeFileSync(process.env.SURGECAST_EXTENSION_REPORT, JSON.stringify(output, null, 2) + "\n");
+  if ((process.env.OPENCAST_EXTENSION_REPORT ?? process.env.SURGECAST_EXTENSION_REPORT)) writeFileSync((process.env.OPENCAST_EXTENSION_REPORT ?? process.env.SURGECAST_EXTENSION_REPORT), JSON.stringify(output, null, 2) + "\n");
 } finally { socket.close(); }

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { ImageLike, WindowLayout } from "@surgecast/protocol";
+import type { ImageLike, WindowLayout } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { Action, ActionPanel, ScrollArea, showFailureToast, showToast, TextField, useNavigation, useRegisterActions, ViewFrame } from "../../../components";
 import { sc } from "../../../lib/keyboard";

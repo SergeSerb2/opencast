@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { BackendEventTopic, BackendEvents, BackendMethod, BackendParams, BackendResult, NativeEvents } from "@surgecast/protocol";
+import type { BackendEventTopic, BackendEvents, BackendMethod, BackendParams, BackendResult, NativeEvents } from "@opencast/protocol";
 import { backend, type CallOptions, type ConnectionState } from "./backend";
 import { isCancelled } from "./errors";
 import { native } from "./native";

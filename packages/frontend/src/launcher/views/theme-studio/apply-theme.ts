@@ -1,4 +1,4 @@
-import type { Appearance as AppearanceSetting } from "@surgecast/protocol";
+import type { Appearance as AppearanceSetting } from "@opencast/protocol";
 import { setSetting } from "../../../bridge/settings";
 
 type ThemeAppearance = "dark" | "light";

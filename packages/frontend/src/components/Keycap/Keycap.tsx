@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { KeyboardShortcut } from "@surgecast/protocol";
+import type { KeyboardShortcut } from "@opencast/protocol";
 import { useSetting } from "../../bridge/settings";
 import { shortcutKeys, shortcutLabel } from "../../lib/keyboard";
 import "./keycap.css";

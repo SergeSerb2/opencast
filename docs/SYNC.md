@@ -1,8 +1,8 @@
 # Self-hosted encrypted Cloud Sync
 
-Surgecast sync connects directly to a Cloudflare Worker and D1 database that you deploy.
+OpenCast sync connects directly to a Cloudflare Worker and D1 database that you deploy.
 It requires an account-scoped bearer token and a vault passphrase. There are no hosted
-Surgecast endpoints, user accounts, credits, or paywalls.
+OpenCast endpoints, user accounts, credits, or paywalls.
 
 ## Threat model
 
@@ -27,6 +27,8 @@ and create a new vault/key to exclude a former token holder; export and coordina
 first. This is single-user/small-team self-hosting, not an enterprise identity system.
 
 ## Cryptography (format v1)
+
+The v1 labels below retain their original bytes for compatibility with encrypted vaults.
 
 All binary fields are canonical unpadded base64url. All strings use UTF-8. Timestamps and
 server sequences are nonnegative safe JavaScript integers in milliseconds and integers,
@@ -109,7 +111,7 @@ reset, even across wipes, avoiding cursor reuse.
 ## HTTP API
 
 All endpoints return JSON. Errors have `{ error, message }`. Except health, every request
-requires `Authorization: Bearer <token>` and `X-Surgecast-Device: <deviceId>`. Requests
+requires `Authorization: Bearer <token>` and `X-OpenCast-Device: <deviceId>`. Requests
 from revoked devices return 403 `device_revoked`, except explicit same-device registration.
 There is no CORS/browser authentication flow. Use HTTPS; localhost HTTP is supported for
 local development. Tokens never appear in URLs and redirects are refused by clients.
@@ -119,7 +121,7 @@ local development. Tokens never appear in URLs and redirects are refused by clie
 | GET | `/v1/health` | Unauthenticated `{ ok: true, version: 1 }` |
 | GET | `/v1/vault` | Vault JSON, or 404 `vault_not_found` |
 | PUT | `/v1/vault` | Create vault (201); 409 if present. Replace with vault fields plus `replace: true` and raw `If-Match: <existing vaultId>` |
-| DELETE | `/v1/vault` | Require `X-Surgecast-Confirm: wipe`; delete all account records/devices/vault; return `{ ok: true }` |
+| DELETE | `/v1/vault` | Require `X-OpenCast-Confirm: wipe`; delete all account records/devices/vault; return `{ ok: true }` |
 | POST | `/v1/devices` | Upsert `{ deviceId, name, platform, appVersion? }`; body ID must match header; explicit registration clears revocation; vault required |
 | GET | `/v1/devices` | Array of active devices including `deviceId, name, platform, appVersion, lastSeenAt` |
 | DELETE | `/v1/devices/:id` | Revoke device; return `{ ok: true }`; 404 if unknown |
@@ -150,7 +152,7 @@ old-epoch records are not automatically re-encrypted or readable with a new key.
 
 See [the Worker deployment guide](../packages/sync-worker/README.md), or run
 `./scripts/deploy-sync.sh` after `wrangler login`. Configure the returned HTTPS URL,
-server token, passphrase and optional device name through `sync.connect` in Surgecast.
+server token, passphrase and optional device name through `sync.connect` in OpenCast.
 Each additional Mac uses the same account token and passphrase. Separate tokens/accounts
 provide separate vaults; a shared team vault intentionally shares one administrative token.
 The script stops without Cloudflare login and never starts a login flow itself.
@@ -182,11 +184,11 @@ it does not recover a lost encryption key. Removing a device does not erase its 
 ## Verification
 
 ```sh
-pnpm --filter @surgecast/sync-worker typecheck
-pnpm --filter @surgecast/sync-worker test
-pnpm --filter @surgecast/backend typecheck
-pnpm --filter @surgecast/backend test
-pnpm --filter @surgecast/backend build
+pnpm --filter @opencast/sync-worker typecheck
+pnpm --filter @opencast/sync-worker test
+pnpm --filter @opencast/backend typecheck
+pnpm --filter @opencast/backend test
+pnpm --filter @opencast/backend build
 ```
 
 Backend integration tests use two separate data directories, real entity/settings/RPC
@@ -200,7 +202,7 @@ from local verification.
 For a full process/transport check while the dedicated local Wrangler server runs:
 
 ```sh
-pnpm --filter @surgecast/backend build
+pnpm --filter @opencast/backend build
 node packages/backend/test/sync/process-smoke.mjs
 ```
 

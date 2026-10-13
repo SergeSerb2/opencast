@@ -1,9 +1,9 @@
 {
-  "name": "@surgecast/sync-worker",
+  "name": "@opencast/sync-worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Self-hosted, end-to-end encrypted Surgecast Cloud Sync server for Cloudflare Workers + D1.",
+  "description": "Self-hosted, end-to-end encrypted OpenCast Cloud Sync server for Cloudflare Workers + D1.",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

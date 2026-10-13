@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RpcErrorCode, type CalendarEvent, type CalendarInfo, type ColorLike, type ImageLike } from "@surgecast/protocol";
+import { RpcErrorCode, type CalendarEvent, type CalendarInfo, type ColorLike, type ImageLike } from "@opencast/protocol";
 import { errorMessage, RpcError } from "../../../bridge/errors";
 import { useBackend, useNativeEvent } from "../../../bridge/hooks";
 import { native } from "../../../bridge/native";
@@ -28,7 +28,7 @@ import "./calendar.css";
 const ALL_CALENDARS = "all";
 const PAGE_DAYS = 7;
 const MAX_DAYS = 8 * PAGE_DAYS;
-const DETAIL_KEY = "surgecast.calendar.showDetail";
+const DETAIL_KEY = "opencast.calendar.showDetail";
 
 type CalendarOption = Pick<CalendarInfo, "id" | "title" | "color" | "source">;
 
@@ -206,7 +206,7 @@ export function ScheduleView({ props, title, icon }: LauncherViewProps<{ query?:
         <List.EmptyView
           icon="lock-16"
           title="Calendar Access Needed"
-          description="Allow Surgecast to read your calendars to see your schedule here."
+          description="Allow OpenCast to read your calendars to see your schedule here."
           actions={
             <ActionPanel>
               <Action

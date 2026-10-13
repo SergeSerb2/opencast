@@ -1,4 +1,4 @@
-import type { ColorLike, ImageLike, UINode } from "@surgecast/protocol";
+import type { ColorLike, ImageLike, UINode } from "@opencast/protocol";
 import type { MetadataEntry } from "../components/Detail/Metadata";
 import type { ActionPanelModel } from "../components/actions/model";
 import type { GridAspectRatio, GridContent, GridFit, GridInset, GridItemProps } from "../components/Grid/Grid";

@@ -61,7 +61,7 @@ export function ListDetailDemo() {
       </List.Dropdown>
     }>
       <List.Section title="Today">
-        {["Ship the launcher redesign", "https://github.com/surgecast", "#7C5CFF", "const theme = usePalette()"].map((text, i) => (
+        {["Ship the launcher redesign", "https://github.com/opencast", "#7C5CFF", "const theme = usePalette()"].map((text, i) => (
           <List.Item
             key={i}
             title={text}
@@ -125,7 +125,7 @@ export function DetailDemo() {
     <Detail
       navigationTitle="Release Notes"
       navigationIcon={tile("book-16", "#5AB8FF", "#2D7FF0")}
-      markdown={"# Surgecast 0.1\n\nThe first public build. **Bring your own AI keys**, self-host your sync.\n\n## Highlights\n\n- Glass launcher with floating footer pills\n- Raycast-compatible extensions\n- `⌘K` action panel everywhere\n\n| Area | Status |\n|---|---|\n| Launcher | Ready |\n| Sync | Beta |\n\n```ts\nimport { List } from \"@raycast/api\";\n```\n\n> Everything that used to be Pro is free."}
+      markdown={"# OpenCast 0.1\n\nThe first public build. **Bring your own AI keys**, self-host your sync.\n\n## Highlights\n\n- Glass launcher with floating footer pills\n- Raycast-compatible extensions\n- `⌘K` action panel everywhere\n\n| Area | Status |\n|---|---|\n| Launcher | Ready |\n| Sync | Beta |\n\n```ts\nimport { List } from \"@raycast/api\";\n```\n\n> Everything that used to be Pro is free."}
       metadata={
         <Metadata>
           <Metadata.Label title="Version" text="0.1.0" />
@@ -135,12 +135,12 @@ export function DetailDemo() {
             <Metadata.TagList.Item text="macOS 27" color="raycast-purple" />
           </Metadata.TagList>
           <Metadata.Separator />
-          <Metadata.Link title="Changelog" text="surgecast.app/changelog" target="https://surgecast.app/changelog" />
+          <Metadata.Link title="Changelog" text="opencast.app/changelog" target="https://opencast.app/changelog" />
         </Metadata>
       }
       actions={
         <ActionPanel>
-          <Action.OpenInBrowser url="https://surgecast.app" />
+          <Action.OpenInBrowser url="https://opencast.app" />
           <Action.CopyToClipboard title="Copy Version" content="0.1.0" />
         </ActionPanel>
       }
@@ -154,7 +154,7 @@ export function FormDemo() {
     <Form
       navigationTitle="Create Snippet"
       navigationIcon={tile("snippets-16", "#5AB8FF", "#2D7FF0")}
-      searchBarAccessory={<Form.LinkAccessory text="Snippets Guide" target="https://surgecast.app/docs/snippets" />}
+      searchBarAccessory={<Form.LinkAccessory text="Snippets Guide" target="https://opencast.app/docs/snippets" />}
       actions={
         <ActionPanel>
           <Action.SubmitForm

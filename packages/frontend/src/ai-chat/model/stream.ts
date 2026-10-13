@@ -1,4 +1,4 @@
-import type { AIMessage, AIStreamEvent, AIToolCall, ModelRef } from "@surgecast/protocol";
+import type { AIMessage, AIStreamEvent, AIToolCall, ModelRef } from "@opencast/protocol";
 
 /** Client-side state of one running (or just finished) `ai.stream`. */
 export interface LiveStream {

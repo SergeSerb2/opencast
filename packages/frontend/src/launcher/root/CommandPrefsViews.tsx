@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Hotkey, RootSearchItem } from "@surgecast/protocol";
+import type { Hotkey, RootSearchItem } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { native } from "../../bridge/native";
 import { Action, ActionPanel, Button, Form, FormRow, Shortcut, showFailureToast, showToast, useNavigation } from "../../components";
@@ -51,7 +51,7 @@ export function SetHotkeyView({ item }: { item: RootSearchItem }) {
       const next = await native.call("hotkeys.record");
       if (next) setHotkey(next);
     } catch (error) {
-      showFailureToast("Hotkey recording needs the Surgecast app", error);
+      showFailureToast("Hotkey recording needs the OpenCast app", error);
     } finally {
       setRecording(false);
     }

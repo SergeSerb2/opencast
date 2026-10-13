@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { EmojiItem } from "@surgecast/protocol";
+import type { EmojiItem } from "@opencast/protocol";
 import { FREQUENTLY_USED, skinToneVariant, titleCase, unicodeCodePoints, visibleSections } from "./emoji-model";
 
 const wave: EmojiItem = { emoji: "👋", name: "waving hand", keywords: [], category: "People & Body", skins: ["👋🏻", "👋🏼", "👋🏽", "👋🏾", "👋🏿"] };

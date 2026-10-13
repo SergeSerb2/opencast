@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AIMessage, AIStreamEvent } from "@surgecast/protocol";
+import type { AIMessage, AIStreamEvent } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { createLiveStream, reasoningDurationMs, reduceStream, type LiveStream } from "../model/stream";
 import { rememberReasoningDuration } from "./reasoning-durations";

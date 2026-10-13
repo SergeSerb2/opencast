@@ -63,7 +63,7 @@ connected sync fixture.
   - `applications`: `directories`, `recursiveSearch`.
   - `calculator`: `flightTracker`, `weather`, `syntaxHighlighting`.
   - `clipboard`: `recognitionMode`, `captureUniversalClipboard`.
-  - `developer`: `disablePopToRootSearch`, `openSurgecastInDevelopmentMode`,
+  - `developer`: `disablePopToRootSearch`, `openOpenCastInDevelopmentMode`,
     `useNodeProductionEnvironment`.
   - `emoji`: `saveAiCustomKeyword`.
   - `files`: `contentSearch`, `useIgnoreFiles`, `indexNetworkAndRemovableVolumes`,
@@ -79,13 +79,13 @@ connected sync fixture.
 ## Verification
 
 ```sh
-pnpm --filter @surgecast/frontend typecheck
-pnpm --filter @surgecast/frontend test
-pnpm --filter @surgecast/frontend build
-pnpm --filter @surgecast/protocol typecheck
-pnpm --filter @surgecast/backend typecheck
+pnpm --filter @opencast/frontend typecheck
+pnpm --filter @opencast/frontend test
+pnpm --filter @opencast/frontend build
+pnpm --filter @opencast/protocol typecheck
+pnpm --filter @opencast/backend typecheck
 node packages/frontend/src/settings/__tests__/browser-workflows.mjs
-node packages/frontend/scripts/screenshot.mjs --settings --out-dir /tmp/surgecast-re/ours/fe-settings
+node packages/frontend/scripts/screenshot.mjs --settings --out-dir /tmp/opencast-re/ours/fe-settings
 ```
 
 Vitest covers search ranking/filtering, catalog anchors, provider validation/key

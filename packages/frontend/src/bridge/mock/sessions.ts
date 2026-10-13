@@ -1,4 +1,4 @@
-import type { BackendEvents, ExtensionSessionState, HandlerRef, UINode } from "@surgecast/protocol";
+import type { BackendEvents, ExtensionSessionState, HandlerRef, UINode } from "@opencast/protocol";
 import type { Emitter } from "../emitter";
 import { SAMPLE_IMAGE } from "./fixtures/content";
 
@@ -122,11 +122,11 @@ function prActions(s: MockSession, pr: { title: string; url: string; number: num
 }
 
 const PRS = [
-  { number: 128, title: "Glass footer pills and action panel", repo: "surgecast/surgecast", author: "mira", comments: 12, updated: 14, labels: ["design", "frontend"], state: "open", section: "review" },
-  { number: 131, title: "E2E encrypted sync worker", repo: "surgecast/sync-worker", author: "dev", comments: 4, updated: 55, labels: ["sync"], state: "open", section: "review" },
-  { number: 119, title: "Calculator: time zones and units", repo: "surgecast/surgecast", author: "me", comments: 7, updated: 60 * 26, labels: ["backend"], state: "open", section: "mine" },
-  { number: 102, title: "Extension runtime: Form drafts", repo: "surgecast/raycast-api", author: "me", comments: 0, updated: 60 * 24 * 3, labels: ["runtime"], state: "merged", section: "mine" },
-  { number: 97, title: "Notes window: floating mode", repo: "surgecast/surgecast", author: "me", comments: 21, updated: 60 * 24 * 9, labels: ["notes"], state: "merged", section: "mine" },
+  { number: 128, title: "Glass footer pills and action panel", repo: "opencast/opencast", author: "mira", comments: 12, updated: 14, labels: ["design", "frontend"], state: "open", section: "review" },
+  { number: 131, title: "E2E encrypted sync worker", repo: "opencast/sync-worker", author: "dev", comments: 4, updated: 55, labels: ["sync"], state: "open", section: "review" },
+  { number: 119, title: "Calculator: time zones and units", repo: "opencast/opencast", author: "me", comments: 7, updated: 60 * 26, labels: ["backend"], state: "open", section: "mine" },
+  { number: 102, title: "Extension runtime: Form drafts", repo: "opencast/raycast-api", author: "me", comments: 0, updated: 60 * 24 * 3, labels: ["runtime"], state: "merged", section: "mine" },
+  { number: 97, title: "Notes window: floating mode", repo: "opencast/opencast", author: "me", comments: 21, updated: 60 * 24 * 9, labels: ["notes"], state: "merged", section: "mine" },
 ];
 
 function pullRequests(s: MockSession): UINode {
@@ -179,20 +179,20 @@ function pullRequests(s: MockSession): UINode {
   );
 }
 
-function readmeDetail(s: MockSession, title = "surgecast/surgecast"): UINode {
+function readmeDetail(s: MockSession, title = "opencast/opencast"): UINode {
   return s.node("Detail", {
     navigationTitle: "Repository Readme",
-    markdown: `# ${title}\n\nAn open-source launcher for macOS. **Bring your own AI keys**, self-host your sync.\n\n## Features\n\n- Root search with calculator, quicklinks and snippets\n- Raycast-compatible extensions\n- [Documentation](https://surgecast.app/docs)\n\n| Area | Status |\n|---|---|\n| Launcher | ✅ |\n| Sync | 🚧 |\n\n\`\`\`bash\npnpm install && pnpm dev\n\`\`\`\n\n![Screenshot](${SAMPLE_IMAGE})`,
+    markdown: `# ${title}\n\nAn open-source launcher for macOS. **Bring your own AI keys**, self-host your sync.\n\n## Features\n\n- Root search with calculator, quicklinks and snippets\n- Raycast-compatible extensions\n- [Documentation](https://opencast.app/docs)\n\n| Area | Status |\n|---|---|\n| Launcher | ✅ |\n| Sync | 🚧 |\n\n\`\`\`bash\npnpm install && pnpm dev\n\`\`\`\n\n![Screenshot](${SAMPLE_IMAGE})`,
     metadata: s.node("Detail.Metadata", {}, [
       s.node("Detail.Metadata.Label", { title: "Stars", text: "4,210", icon: "star-16" }),
       s.node("Detail.Metadata.Label", { title: "Language", text: "TypeScript" }),
       s.node("Detail.Metadata.TagList", { title: "Topics" }, [s.node("Detail.Metadata.TagList.Item", { text: "launcher", color: "raycast-orange" }), s.node("Detail.Metadata.TagList.Item", { text: "macos" })]),
       s.node("Detail.Metadata.Separator"),
-      s.node("Detail.Metadata.Link", { title: "Homepage", text: "surgecast.app", target: "https://surgecast.app" }),
+      s.node("Detail.Metadata.Link", { title: "Homepage", text: "opencast.app", target: "https://opencast.app" }),
     ]),
     actions: s.node("ActionPanel", {}, [
-      s.node("Action.OpenInBrowser", { url: "https://github.com/surgecast/surgecast", onAction: s.handler(() => undefined) }),
-      s.node("Action.CopyToClipboard", { title: "Copy Clone URL", content: "git@github.com:surgecast/surgecast.git", onAction: s.handler(() => undefined) }),
+      s.node("Action.OpenInBrowser", { url: "https://github.com/opencast/opencast", onAction: s.handler(() => undefined) }),
+      s.node("Action.CopyToClipboard", { title: "Copy Clone URL", content: "git@github.com:opencast/opencast.git", onAction: s.handler(() => undefined) }),
     ]),
   });
 }
@@ -223,9 +223,9 @@ function createIssue(s: MockSession): UINode {
       ]),
     },
     [
-      s.node("Form.Dropdown", { id: "repo", title: "Repository", defaultValue: "surgecast/surgecast" }, [
-        s.node("Form.Dropdown.Item", { value: "surgecast/surgecast", title: "surgecast/surgecast", icon: "code-block-16" }),
-        s.node("Form.Dropdown.Item", { value: "surgecast/sync-worker", title: "surgecast/sync-worker", icon: "code-block-16" }),
+      s.node("Form.Dropdown", { id: "repo", title: "Repository", defaultValue: "opencast/opencast" }, [
+        s.node("Form.Dropdown.Item", { value: "opencast/opencast", title: "opencast/opencast", icon: "code-block-16" }),
+        s.node("Form.Dropdown.Item", { value: "opencast/sync-worker", title: "opencast/sync-worker", icon: "code-block-16" }),
       ]),
       s.node("Form.TextField", { id: "title", title: "Title", placeholder: "Short summary", error: s.state.formError, info: "Shown in notifications and lists", onChange: s.handler(() => {
         if (s.state.formError) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CommandInfo } from "@surgecast/protocol";
+import type { CommandInfo } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { Button, IconButton } from "../../components/Button/Button";
 import { confirmAlert } from "../../components/feedback/alert-store";
@@ -155,10 +155,10 @@ export function LauncherPage() {
   return (
     <PageFrame title="Launcher">
       <Section anchor="behavior">
-        <Row title="Show Surgecast on">
-          <SettingSelect setting="launcher.windowPresentationMode" options={SCREENS} label="Show Surgecast on" />
+        <Row title="Show OpenCast on">
+          <SettingSelect setting="launcher.windowPresentationMode" options={SCREENS} label="Show OpenCast on" />
         </Row>
-        <Row title="Pop to Root Search" description="Time after closing the window when Surgecast returns to root search.">
+        <Row title="Pop to Root Search" description="Time after closing the window when OpenCast returns to root search.">
           <SettingSelect setting="launcher.popToRootTimeout" options={POP_TO_ROOT} label="Pop to Root Search" />
         </Row>
         <Row

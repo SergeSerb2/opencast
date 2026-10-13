@@ -1,5 +1,5 @@
 import { load } from "cheerio";
-import type { CommandArgument, Snippet } from "@surgecast/protocol";
+import type { CommandArgument, Snippet } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import { browserTab, readPage } from "./web";
 interface Placeholder {

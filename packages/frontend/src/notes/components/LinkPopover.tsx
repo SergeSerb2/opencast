@@ -7,7 +7,7 @@ import { Icon } from "../../icons/Icon";
 import { showVirtualSelection } from "../editor/virtual-selection";
 import { useNotesStore } from "../store";
 
-/** "example.com" → "https://example.com"; keeps explicit schemes (mailto:, surgecast:, …). */
+/** "example.com" → "https://example.com"; keeps explicit schemes (mailto:, opencast:, …). */
 export function normalizeHref(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return "";

@@ -9,7 +9,7 @@ import {
   type BackendResult,
   type EventEnvelope,
   type RpcMessage,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import { Emitter } from "./emitter";
 import { cancelledError, CONNECTION_LOST, REQUEST_TIMEOUT, RpcError } from "./errors";
 import { getEnv } from "./env";
@@ -159,7 +159,7 @@ export class WebSocketBackend implements BackendClient {
     socket.onclose = () => {
       if (this.socket !== socket) return;
       this.socket = null;
-      this.failAll(new RpcError({ code: CONNECTION_LOST, message: "Lost connection to the Surgecast backend" }), (entry) => entry.sent);
+      this.failAll(new RpcError({ code: CONNECTION_LOST, message: "Lost connection to the OpenCast backend" }), (entry) => entry.sent);
       if (this.closed) return;
       this.setState("reconnecting");
       this.reconnectTimer = setTimeout(() => this.connect(), reconnectDelay(this.attempt++));
@@ -174,7 +174,7 @@ export class WebSocketBackend implements BackendClient {
     try {
       message = JSON.parse(raw) as RpcMessage;
     } catch {
-      console.warn("[surgecast] dropped malformed backend frame");
+      console.warn("[opencast] dropped malformed backend frame");
       return;
     }
     if (isResponse(message)) {

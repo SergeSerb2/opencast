@@ -1,4 +1,4 @@
-import type { CommandMode, ExtensionPreference, StoreExtension } from "@surgecast/protocol";
+import type { CommandMode, ExtensionPreference, StoreExtension } from "@opencast/protocol";
 
 /**
  * Fictional Store catalog for the mock backend: tile icons, avatars and
@@ -667,8 +667,8 @@ function toCatalogItem(entry: CatalogEntry, index: number): CatalogItem {
     version: entry.version,
     updatedAt: now - entry.updatedDaysAgo * DAY,
     storeUrl: `https://www.raycast.com/${ownerHandle}/${entry.name}`,
-    sourceUrl: `https://github.com/surgecast-community/extensions/tree/main/extensions/${entry.name}`,
-    readmeUrl: `https://github.com/surgecast-community/extensions/blob/main/extensions/${entry.name}/README.md`,
+    sourceUrl: `https://github.com/opencast-community/extensions/tree/main/extensions/${entry.name}`,
+    readmeUrl: `https://github.com/opencast-community/extensions/blob/main/extensions/${entry.name}/README.md`,
     screenshots,
   };
   return { listing, readme: readme(entry, screenshots[0]), preferences: entry.preferences ?? [], iconUrl };

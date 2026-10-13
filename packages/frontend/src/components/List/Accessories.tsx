@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from "react";
-import type { ColorLike, ImageLike } from "@surgecast/protocol";
+import type { ColorLike, ImageLike } from "@opencast/protocol";
 import { resolveColor } from "../../icons/colors";
 import { Image } from "../../icons/Image";
 import { useTheme } from "../../theme/ThemeProvider";

@@ -1,12 +1,13 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import React, { useState, useEffect, useRef } from "react";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as api from "../src/index";
 import { configure, initialization, dispatch } from "../src/bridge";
 import { ExtensionRenderer, serialize } from "../src/renderer";
-import type { UINode } from "@surgecast/protocol";
+import type { UINode } from "@opencast/protocol";
 const renderers: ExtensionRenderer[] = [];
 const h = React.createElement;
 async function tick() { await new Promise((resolve) => setTimeout(resolve, 50)); }
@@ -86,6 +87,19 @@ describe("UI contract", () => {
   });
 });
 describe("API services", () => {
+  it("reads an existing extension cache without moving its SQLite files", () => {
+    const directory = mkdtempSync(join(tmpdir(), "opencast-cache-upgrade-"));
+    const legacy = join(directory, "com.surgecast.api.cache");
+    mkdirSync(legacy);
+    const db = new DatabaseSync(join(legacy, "cache.sqlite"));
+    db.exec("CREATE TABLE cache (namespace TEXT, key TEXT, value TEXT NOT NULL, touched INTEGER NOT NULL, PRIMARY KEY(namespace,key)); INSERT INTO cache VALUES ('a', 'saved', 'keep', 1)");
+    db.close();
+    const cache = new api.Cache({ directory, namespace: "a" });
+    expect(cache.get("saved")).toBe("keep");
+    cache.set("new", "value");
+    expect(new api.Cache({ directory, namespace: "a" }).get("new")).toBe("value");
+    expect(existsSync(join(legacy, "cache.sqlite"))).toBe(true);
+  });
   it("exports all named runtime values and every public icon/model enum key", () => {
     const declarations = readFileSync(new URL("../public-api.d.ts", import.meta.url), "utf8");
     const names = new Set([...declarations.matchAll(/^\s*export declare (?:const|class|enum|function|namespace) (\w+)/gm)].map((m) => m[1]));
@@ -93,7 +107,7 @@ describe("API services", () => {
     expect(Object.keys(api.Icon)).toHaveLength(478); expect(Object.keys(api.AI.Model)).toHaveLength(176);
   });
   it("persists Cache namespaces, evicts LRU by UTF8 bytes and notifies subscribers", () => {
-    const directory = mkdtempSync(join(tmpdir(), "surgecast-cache-test-"));
+    const directory = mkdtempSync(join(tmpdir(), "opencast-cache-test-"));
     const cache = new api.Cache({ directory, namespace: "a", capacity: 6 }); const notify = vi.fn(); const subscribe = cache.subscribe; const unsubscribe = subscribe(notify);
     cache.set("first", "é"); cache.set("second", "bb"); cache.get("first"); cache.set("third", "ccc");
     expect(cache.get("second")).toBeUndefined(); expect(cache.get("first")).toBe("é");
@@ -119,5 +133,6 @@ describe("API services", () => {
     const auth = await client.authorizationRequest({ endpoint: "https://example.com/auth", clientId: "own-client", scope: "read" });
     expect(auth.codeVerifier).toHaveLength(43); expect(auth.codeChallenge).toHaveLength(43);
     const url = new URL(auth.toURL()); expect(url.searchParams.get("redirect_uri")).toBe("surgecast://oauth"); expect(url.searchParams.get("client_id")).toBe("own-client");
+    expect(api.OAuth.clientIdMetadataDocument).toBe("surgecast://oauth-client-metadata");
   });
 });

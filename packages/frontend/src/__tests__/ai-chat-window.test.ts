@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AIChat } from "@surgecast/protocol";
+import type { AIChat } from "@opencast/protocol";
 import { flattenGroups, groupChats, timeGroupLabel } from "../ai-chat/model/chat-groups";
 import { formatThoughtDuration, formatTokens, toolCallLabel, usageSummary } from "../ai-chat/lib/format";
 import { resolveModelRef } from "../ai-chat/model/models";

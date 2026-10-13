@@ -2,7 +2,7 @@ import { mkdir, readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import type { AppContext } from "../../context";
 import { expandPath } from "./shared";
-const MANAGED = /^surgecast-backup-\d{4}-\d{2}-\d{2}T[\d-]+Z\.surgeconfig$/;
+const MANAGED = /^(?:opencast-backup-\d{4}-\d{2}-\d{2}T[\d-]+Z\.openconfig|surgecast-backup-\d{4}-\d{2}-\d{2}T[\d-]+Z\.surgeconfig)$/;
 const INTERVAL = { daily: 86400000, weekly: 7 * 86400000, monthly: 30 * 86400000 };
 /** Only prune our own completed exports, after the new encrypted backup is durable. */
 export class ScheduledBackup {
@@ -30,7 +30,7 @@ export class ScheduledBackup {
       const password = await secrets.get("data.backup:passphrase");
       if (!password || this.stopped) return;
       await mkdir(directory, { recursive: true });
-      const name = `surgecast-backup-${new Date(now).toISOString().replace(/[:.]/g, "-")}.surgeconfig`;
+      const name = `opencast-backup-${new Date(now).toISOString().replace(/[:.]/g, "-")}.openconfig`;
       await this.exportData(this.ctx, { path: join(directory, name), password });
       const keep = settings.get("advanced.backupAutoDelete");
       if (keep !== "never") for (const backup of backups.slice(keep - 1)) await unlink(join(directory, backup.name));

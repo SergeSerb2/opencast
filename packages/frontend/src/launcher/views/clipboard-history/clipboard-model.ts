@@ -1,4 +1,4 @@
-import type { ClipboardItem, ClipboardItemKind } from "@surgecast/protocol";
+import type { ClipboardItem, ClipboardItemKind } from "@opencast/protocol";
 import { groupByDate } from "../library/format";
 
 export type TypeFilter = ClipboardItemKind | "all";

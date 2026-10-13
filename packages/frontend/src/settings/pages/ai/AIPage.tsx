@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { SettingsValues } from "@surgecast/protocol";
+import type { SettingsValues } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
 import { Button, IconButton } from "../../../components/Button/Button";

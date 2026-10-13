@@ -1,4 +1,4 @@
-import type { BackendEventTopic, BackendEvents } from "@surgecast/protocol";
+import type { BackendEventTopic, BackendEvents } from "@opencast/protocol";
 
 /** An event that invalidates the result of a query; `when` returning false ignores the event. */
 export type RefetchRule = { [T in BackendEventTopic]: { topic: T; when?: (payload: BackendEvents[T]) => boolean } }[BackendEventTopic];

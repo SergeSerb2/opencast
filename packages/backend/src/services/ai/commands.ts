@@ -4,7 +4,7 @@ import type {
   AIPreset,
   BackendMethods,
   CommandInfo,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import { Chats } from "./chats";
 import { commandArguments, resolvePlaceholders } from "./placeholders";

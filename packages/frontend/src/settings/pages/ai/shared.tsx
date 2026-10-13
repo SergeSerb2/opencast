@@ -1,4 +1,4 @@
-import type { AIModelCapabilities, ModelRef } from "@surgecast/protocol";
+import type { AIModelCapabilities, ModelRef } from "@opencast/protocol";
 import { useBackend } from "../../../bridge/hooks";
 import { Select } from "../../ui/controls";
 
@@ -23,7 +23,7 @@ const MONOGRAMS: Record<string, [string, string]> = {
   custom: ["{ }", "#5E6270"],
 };
 
-/** Monogram tile for a provider template (Surgecast doesn't ship vendor logos). */
+/** Monogram tile for a provider template (OpenCast doesn't ship vendor logos). */
 export function providerIcon(template: string, name?: string): string {
   const [letters, color] = MONOGRAMS[template] ?? [(name ?? template).slice(0, 2), "#5E6270"];
   const size = letters.length > 2 ? 11 : letters.length === 2 ? 13 : 16;

@@ -10,7 +10,7 @@ import {
   decodeConfig,
   encodeConfig,
   RAY_MAGIC,
-  SURGE_MAGIC,
+  OPENCAST_MAGIC,
 } from "../../src/services/core/config-format";
 import {
   mapAICommand,
@@ -56,11 +56,28 @@ function v3(encrypted: boolean) {
   return Buffer.concat([RAY_MAGIC, size, h, data]);
 }
 describe("configuration containers", () => {
+  it.each([false, true])("imports an authenticated legacy backup, encrypted=%s", async encrypted => {
+    const header: Record<string, unknown> = { schemaVersion: 1, app: "Surgecast" };
+    const salt = Buffer.alloc(16, 3), iv = Buffer.alloc(16, 4);
+    if (encrypted) header.encryption = { salt: salt.toString("hex"), iv: iv.toString("hex") };
+    const h = gzipSync(Buffer.from(JSON.stringify(header)));
+    const length = Buffer.alloc(4); length.writeUInt32LE(h.length);
+    const prefix = Buffer.concat([Buffer.from("SURGECFG1\n"), length, h]);
+    let data = gzipSync(Buffer.from(JSON.stringify(payload)));
+    if (encrypted) {
+      const cipher = createCipheriv("aes-256-gcm", scryptSync(password, salt, 32), iv);
+      cipher.setAAD(prefix);
+      data = Buffer.concat([cipher.update(data), cipher.final(), cipher.getAuthTag()]);
+    }
+    const bytes = Buffer.concat([prefix, data]);
+    expect(await decodeConfig(bytes, encrypted ? password : undefined, true)).toEqual({ family: "opencast", payload });
+    if (encrypted) await expect(decodeConfig(bytes, "wrong", true)).rejects.toThrow("Incorrect password");
+  });
   it.each([undefined, password])(
-    "round trips Surgecast with password %s",
+    "round trips OpenCast with password %s",
     async (pass) => {
       const bytes = await encodeConfig(payload, pass);
-      expect(bytes.subarray(0, SURGE_MAGIC.length).equals(SURGE_MAGIC)).toBe(
+      expect(bytes.subarray(0, OPENCAST_MAGIC.length).equals(OPENCAST_MAGIC)).toBe(
         true,
       );
       expect((await decodeConfig(bytes, pass)).payload).toEqual(payload);
@@ -181,15 +198,15 @@ describe("configuration containers", () => {
   });
 });
 
-describe("authenticated Surgecast headers", () => {
+describe("authenticated OpenCast headers", () => {
   it("rejects a modified header even when its schema is valid", async () => {
     const bytes = await encodeConfig(payload, password);
-    const headerLength = bytes.readUInt32LE(SURGE_MAGIC.length);
+    const headerLength = bytes.readUInt32LE(OPENCAST_MAGIC.length);
     const original = JSON.parse(
       gunzipSync(
         bytes.subarray(
-          SURGE_MAGIC.length + 4,
-          SURGE_MAGIC.length + 4 + headerLength,
+          OPENCAST_MAGIC.length + 4,
+          OPENCAST_MAGIC.length + 4 + headerLength,
         ),
       ).toString("utf8"),
     );
@@ -198,10 +215,10 @@ describe("authenticated Surgecast headers", () => {
     const length = Buffer.alloc(4);
     length.writeUInt32LE(header.length);
     const corrupt = Buffer.concat([
-      SURGE_MAGIC,
+      OPENCAST_MAGIC,
       length,
       header,
-      bytes.subarray(SURGE_MAGIC.length + 4 + headerLength),
+      bytes.subarray(OPENCAST_MAGIC.length + 4 + headerLength),
     ]);
     await expect(decodeConfig(corrupt, password)).rejects.toThrow("damaged");
   });

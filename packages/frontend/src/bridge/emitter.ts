@@ -21,7 +21,7 @@ export class Emitter<Events extends object> {
       try {
         (fn as (payload: Events[T]) => void)(payload);
       } catch (error) {
-        console.error(`[surgecast] listener for "${String(topic)}" failed`, error);
+        console.error(`[opencast] listener for "${String(topic)}" failed`, error);
       }
     }
   }

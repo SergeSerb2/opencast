@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { CommandId, CommandInfo, CommandPrefs, Hotkey } from "@surgecast/protocol";
+import type { CommandId, CommandInfo, CommandPrefs, Hotkey } from "@opencast/protocol";
 import { backend } from "../bridge/backend";
 import { useBackend } from "../bridge/hooks";
 import { useSetting } from "../bridge/settings";

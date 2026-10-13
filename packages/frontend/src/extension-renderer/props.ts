@@ -1,4 +1,4 @@
-import type { HandlerRef, UINode } from "@surgecast/protocol";
+import type { HandlerRef, UINode } from "@opencast/protocol";
 import { deserializeValue } from "../components/Form/serialize";
 
 /** Dispatches a HandlerRef to the extension runtime with JS arguments. */

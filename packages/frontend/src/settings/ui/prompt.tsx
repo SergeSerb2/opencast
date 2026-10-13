@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { create } from "zustand";
-import { RpcErrorCode, type NativeParams } from "@surgecast/protocol";
+import { RpcErrorCode, type NativeParams } from "@opencast/protocol";
 import { native } from "../../bridge/native";
 import { RpcError } from "../../bridge/errors";
 import { Button } from "../../components/Button/Button";
@@ -131,7 +131,7 @@ export async function chooseFiles(params: NativeParams<"dialog.openFiles">): Pro
     const kind = params.canChooseDirectories && !params.canChooseFiles ? "Folder" : "File";
     const values = await promptForm({
       title: params.title ?? `Choose ${kind}`,
-      message: "The file picker needs the Surgecast app. Enter an absolute path instead.",
+      message: "The file picker needs the OpenCast app. Enter an absolute path instead.",
       fields: [{ id: "path", label: `${kind} Path`, placeholder: kind === "Folder" ? "/Users/me/Scripts" : "/Users/me/Downloads/export.rayconfig", required: true }],
       primaryTitle: params.prompt ?? "Choose",
       validate: ({ path }) => (path.trim().startsWith("/") || path.trim().startsWith("~") ? null : { path: "Enter an absolute path" }),

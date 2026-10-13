@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RootSearchItem, RootSearchResult } from "@surgecast/protocol";
+import type { RootSearchItem, RootSearchResult } from "@opencast/protocol";
 import { buildRootSections, CALCULATOR_ID, commandDeeplink, rootAccessories } from "../launcher/root/root-items";
 import { launcherContentHeight, shouldPopToRoot } from "../launcher/useLauncherBehavior";
 import { useNavigationStore } from "../launcher/navigation";
@@ -28,9 +28,9 @@ describe("root search rows", () => {
   });
 
   it("formats deeplinks", () => {
-    expect(commandDeeplink(item({}))).toBe("surgecast://extensions/surgecast/clipboard/history");
-    expect(commandDeeplink(item({ id: "ext:github.my-prs", kind: "extension", extensionId: "github" }))).toBe("surgecast://extensions/github/github/my-prs");
-    expect(commandDeeplink(item({ id: "quicklink:abc", kind: "quicklink" }))).toBe("surgecast://commands/quicklink%3Aabc");
+    expect(commandDeeplink(item({}))).toBe("opencast://extensions/opencast/clipboard/history");
+    expect(commandDeeplink(item({ id: "ext:github.my-prs", kind: "extension", extensionId: "github" }))).toBe("opencast://extensions/github/github/my-prs");
+    expect(commandDeeplink(item({ id: "quicklink:abc", kind: "quicklink" }))).toBe("opencast://commands/quicklink%3Aabc");
   });
 });
 

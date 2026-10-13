@@ -15,7 +15,7 @@ import { closePanel, openPanel, useNotesStore, type NotesState } from "./store";
 
 /** Deeplink that opens a note (handled by the `notes.open` command's launch context). */
 export function noteDeeplink(id: string): string {
-  return `surgecast://extensions/surgecast/notes/open?launchContext=${encodeURIComponent(JSON.stringify({ id }))}`;
+  return `opencast://extensions/opencast/notes/open?launchContext=${encodeURIComponent(JSON.stringify({ id }))}`;
 }
 
 export async function setNotesZoom(value: number, toastTitle?: string): Promise<void> {

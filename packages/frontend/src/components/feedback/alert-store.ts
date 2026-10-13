@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AlertOptions } from "@surgecast/protocol";
+import type { AlertOptions } from "@opencast/protocol";
 
 export interface PendingAlert {
   id: string;

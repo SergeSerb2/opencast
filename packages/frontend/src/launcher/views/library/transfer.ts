@@ -1,6 +1,6 @@
 /**
  * Import/export file shapes for snippets and quicklinks. Imports accept what
- * Surgecast and Raycast export: an array, `{ snippets | quicklinks: [...] }`,
+ * OpenCast and Raycast export: an array, `{ snippets | quicklinks: [...] }`,
  * or a single object, with Raycast's field aliases.
  */
 

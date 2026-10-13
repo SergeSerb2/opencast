@@ -7,7 +7,7 @@
  *     which resolves with `{ result }` or `{ error }` (WKScriptMessageHandlerWithReply).
  *
  * The native host also sends notifications (NativeEvents) to the backend over stdio
- * and to every web view by calling `window.__surgecastNative.emit(topic, payload)`.
+ * and to every web view by calling `window.__opencastNative.emit(topic, payload)`.
  *
  * Every method must answer. Methods that need a missing macOS permission fail with
  * RpcErrorCode.PermissionDenied and `data: { permission }`.
@@ -184,7 +184,7 @@ export interface NativeMethods {
   "apps.list": { params: { refresh?: boolean; directories?: string[]; recursive?: boolean }; result: AppInfo[] };
   "apps.running": { params: void; result: RunningAppInfo[] };
   "apps.frontmost": { params: void; result: RunningAppInfo | null };
-  /** The app that was frontmost before Surgecast's main window opened. */
+  /** The app that was frontmost before OpenCast's main window opened. */
   "apps.previous": { params: void; result: RunningAppInfo | null };
   "apps.defaultForPath": { params: { path: string }; result: AppInfo | null };
   "apps.forUrl": { params: { url: string }; result: AppInfo[] };
@@ -208,7 +208,7 @@ export interface NativeMethods {
   /** Start/stop emitting `clipboard.changed`. Poll interval in ms (default 300). */
   "clipboard.setMonitoring": { params: { enabled: boolean; intervalMs?: number; ignoredBundleIds?: string[]; captureUniversalClipboard?: boolean; textRecognitionEnabled?: boolean; recognitionMode?: "fast" | "accurate" }; result: void };
   /**
-   * Hide Surgecast, restore focus to the previous app, put `content` on the
+   * Hide OpenCast, restore focus to the previous app, put `content` on the
    * pasteboard and press ⌘V. Restores the old pasteboard afterwards when
    * `restoreClipboard` is true (used by snippets).
    */
@@ -326,7 +326,7 @@ export interface NativeEvents {
   "frontmost.changed": { app: RunningAppInfo | null };
   "menubar.itemClicked": { menuId: string; itemId: string };
   "menubar.opened": { menuId: string };
-  /** A deeplink such as surgecast://extensions/... or raycast://... was opened. */
+  /** A deeplink such as opencast://extensions/... or raycast://... was opened. */
   "url.opened": { url: string };
   "permissions.changed": { kind: PermissionKind; status: PermissionStatus };
   "system.willSleep": Record<string, never>;

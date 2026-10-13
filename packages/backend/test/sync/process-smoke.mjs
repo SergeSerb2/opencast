@@ -11,10 +11,10 @@ import WebSocket from "ws";
 const url = process.env.SYNC_TEST_URL ?? "http://127.0.0.1:18787";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(url).hostname), "Process smoke tests require localhost");
 const token = process.env.SYNC_TEST_TOKEN ?? "local-test";
-const root = mkdtempSync(join(tmpdir(), "surgecast-sync-process-"));
+const root = mkdtempSync(join(tmpdir(), "opencast-sync-process-"));
 const apps = [];
 async function wipe() {
-  const response = await fetch(url + "/v1/vault", { method: "DELETE", headers: { Authorization: `Bearer ${token}`, "X-Surgecast-Device": "process-test", "X-Surgecast-Confirm": "wipe" } });
+  const response = await fetch(url + "/v1/vault", { method: "DELETE", headers: { Authorization: `Bearer ${token}`, "X-OpenCast-Device": "process-test", "X-OpenCast-Confirm": "wipe" } });
   assert.equal(response.status, 200);
 }
 async function start(name) {
@@ -52,7 +52,7 @@ async function start(name) {
     app.pending.set(id, { resolve: resolveResult, reject, timer });
     app.socket.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
   });
-  app.db = new DatabaseSync(join(dir, "surgecast.db"));
+  app.db = new DatabaseSync(join(dir, "opencast.db"));
   return app;
 }
 function put(app, id, content, updatedAt) {

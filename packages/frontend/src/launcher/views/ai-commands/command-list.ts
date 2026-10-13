@@ -1,4 +1,4 @@
-import type { AICommand } from "@surgecast/protocol";
+import type { AICommand } from "@opencast/protocol";
 import { fuzzyFilter, type MatchRange } from "../../../lib/fuzzy";
 
 /** Tag filter value that shows every command. */
@@ -26,7 +26,7 @@ export function commandSections(commands: AICommand[], query: string, tag: strin
   return [section("custom", "Custom Commands", tagged.filter((c) => !c.builtin)), section("builtin", "Built-in Commands", tagged.filter((c) => c.builtin))].filter((s) => s.items.length > 0);
 }
 
-/** Deeplink that runs the command (`surgecast://ai-commands/<id>`, resolved by the backend). */
+/** Deeplink that runs the command (`opencast://ai-commands/<id>`, resolved by the backend). */
 export function commandDeeplink(command: Pick<AICommand, "id">): string {
-  return `surgecast://ai-commands/${encodeURIComponent(command.id)}`;
+  return `opencast://ai-commands/${encodeURIComponent(command.id)}`;
 }

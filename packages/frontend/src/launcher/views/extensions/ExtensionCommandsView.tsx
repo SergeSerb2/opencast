@@ -1,4 +1,4 @@
-import type { CommandMode, InstalledExtension } from "@surgecast/protocol";
+import type { CommandMode, InstalledExtension } from "@opencast/protocol";
 import { useBackend } from "../../../bridge/hooks";
 import { List, useNavigation, type ActionModel, type ActionPanelModel, type ListAccessory, type NavigationApi } from "../../../components";
 import { sc } from "../../../lib/keyboard";

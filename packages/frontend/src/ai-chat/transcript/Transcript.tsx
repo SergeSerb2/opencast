@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
-import type { AIMessage, AIModelOption, ModelRef } from "@surgecast/protocol";
+import type { AIMessage, AIModelOption, ModelRef } from "@opencast/protocol";
 import { ScrollArea } from "../../components/ScrollArea/ScrollArea";
 import type { Toolset } from "../model/mentions";
 import type { ChatSession } from "../state/useChatSession";

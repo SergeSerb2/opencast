@@ -1,7 +1,7 @@
 import { memo, useMemo, type CSSProperties } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { ActionButton, ListItemRow, LoadingBar, Shortcut, Tag, type ListItemProps } from "../../../components";
-import { MenuGlyph, SurgecastLogo } from "../../../icons/glyphs";
+import { MenuGlyph, OpenCastLogo } from "../../../icons/glyphs";
 import { sc } from "../../../lib/keyboard";
 import { ThemeScope } from "../../../theme/ThemeProvider";
 import type { Palette } from "../../../theme/palettes";
@@ -12,8 +12,8 @@ const tile = (glyph: string, top: string, bottom: string): ImageLike => ({ tile:
 
 const ROWS: (ListItemProps & { id: string })[] = [
   { id: "clipboard", title: "Clipboard History", subtitle: "Clipboard", icon: tile("clipboard-16", "#FFA24A", "#F2711C"), accessories: [{ alias: "ch" }, { text: "Command" }] },
-  { id: "chat", title: "AI Chat", subtitle: "Surgecast AI", icon: tile("speech-bubble-16", "#FF7BC1", "#E2408F"), accessories: [{ text: "Command" }] },
-  { id: "theme", title: "Switch Theme", subtitle: "Surgecast", icon: tile("brush-16", "#B58CFF", "#8156F0"), accessories: [{ tag: { value: "New", color: "raycast-purple" } }, { text: "Command" }] },
+  { id: "chat", title: "AI Chat", subtitle: "OpenCast AI", icon: tile("speech-bubble-16", "#FF7BC1", "#E2408F"), accessories: [{ text: "Command" }] },
+  { id: "theme", title: "Switch Theme", subtitle: "OpenCast", icon: tile("brush-16", "#B58CFF", "#8156F0"), accessories: [{ tag: { value: "New", color: "raycast-purple" } }, { text: "Command" }] },
   { id: "calendar", title: "My Schedule", subtitle: "Calendar", icon: tile("calendar-16", "#FF6B6B", "#E5383B"), accessories: [{ text: "Command" }] },
 ];
 
@@ -43,7 +43,7 @@ export const ThemeMiniLauncher = memo(function ThemeMiniLauncher({ palette, show
         <div className="sc-theme-mini__window">
           <LoadingBar loading={showLoader} delay={0} />
           <div className="sc-theme-mini__header">
-            <SurgecastLogo size={22} className="sc-theme-mini__logo" />
+            <OpenCastLogo size={22} className="sc-theme-mini__logo" />
             <span className="sc-theme-mini__placeholder">Search for apps and commands…</span>
             <span className="sc-theme-mini__hint">
               Quick AI <Shortcut shortcut={sc("tab")} size="medium" />

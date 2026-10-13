@@ -1,3 +1,4 @@
+# Stable deployment identity: changing this creates a different workers.dev endpoint.
 name = "surgecast-sync"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"

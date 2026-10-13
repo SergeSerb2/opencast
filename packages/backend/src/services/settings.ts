@@ -5,11 +5,12 @@ import {
   type SettingsKey,
   type SettingValue,
   type SettingsValues,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { Database, Migration } from "../db/database";
 import type { EntityStore } from "../db/entities";
 import type { EventBus } from "../events";
 import { RpcError } from "../util/errors";
+import { currentSettingKey, currentSettingValue } from "../util/legacy-branding";
 
 /**
  * Settings live in two places:
@@ -41,20 +42,25 @@ export class SettingsService {
   get<K extends SettingsKey>(key: K): SettingValue<K> {
     const def = SETTINGS[key];
     if (def.scope === "device") {
-      const row = this.db.get<{ value: string }>("SELECT value FROM device_settings WHERE key = ?", key);
+      const row = this.db.get<{ value: string }>("SELECT value FROM device_settings WHERE key = ?", key)
+        ?? (key === "developer.openOpenCastInDevelopmentMode"
+          ? this.db.get<{ value: string }>("SELECT value FROM device_settings WHERE key = ?", "developer.openSurgecastInDevelopmentMode") : undefined);
       return row ? (JSON.parse(row.value) as SettingValue<K>) : structuredClone(def.default as SettingValue<K>);
     }
     const rec = this.entities.get<{ value: SettingValue<K> }>("settings", key);
-    return rec ? rec.data.value : structuredClone(def.default as SettingValue<K>);
+    return rec ? currentSettingValue(key, rec.data.value) as SettingValue<K> : structuredClone(def.default as SettingValue<K>);
   }
 
   getAll(): SettingsValues {
     const out = defaultSettings() as Record<string, unknown>;
     for (const rec of this.entities.list<{ value: unknown }>("settings")) {
-      if (isSettingsKey(rec.id) && SETTINGS[rec.id].scope === "synced") out[rec.id] = rec.data.value;
+      if (isSettingsKey(rec.id) && SETTINGS[rec.id].scope === "synced") out[rec.id] = currentSettingValue(rec.id, rec.data.value);
     }
-    for (const row of this.db.all<{ key: string; value: string }>("SELECT key, value FROM device_settings")) {
-      if (isSettingsKey(row.key)) out[row.key] = JSON.parse(row.value);
+    const rows = this.db.all<{ key: string; value: string }>("SELECT key, value FROM device_settings");
+    for (const row of rows) {
+      const key = currentSettingKey(row.key);
+      if (key !== row.key && rows.some(r => r.key === key)) continue;
+      if (isSettingsKey(key)) out[key] = JSON.parse(row.value);
     }
     return out as SettingsValues;
   }
@@ -75,6 +81,8 @@ export class SettingsService {
   }
 
   reset(key: SettingsKey): void {
+    if (key === "developer.openOpenCastInDevelopmentMode")
+      this.db.run("DELETE FROM device_settings WHERE key = ?", "developer.openSurgecastInDevelopmentMode");
     if (SETTINGS[key].scope === "device") this.db.run("DELETE FROM device_settings WHERE key = ?", key);
     else this.entities.delete("settings", key);
     this.notify(key, this.get(key));

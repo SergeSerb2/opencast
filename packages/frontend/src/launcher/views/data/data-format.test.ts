@@ -55,13 +55,13 @@ describe("validateExportPassword", () => {
 
 describe("paths", () => {
   it("names exports with the local date and time", () => {
-    expect(exportFileName(new Date(2026, 9, 3, 7, 5, 9))).toBe("Surgecast 2026-10-03 07.05.09.surgecast");
+    expect(exportFileName(new Date(2026, 9, 3, 7, 5, 9))).toBe("OpenCast 2026-10-03 07.05.09.openconfig");
   });
 
   it("joins and finds the home folder", () => {
-    expect(joinPath("/Users/me/Downloads/", "a.surgecast")).toBe("/Users/me/Downloads/a.surgecast");
-    expect(homeFromDataDir("/Users/me/Library/Application Support/Surgecast")).toBe("/Users/me");
-    expect(homeFromDataDir("/tmp/surgecast")).toBeUndefined();
+    expect(joinPath("/Users/me/Downloads/", "a.opencast")).toBe("/Users/me/Downloads/a.opencast");
+    expect(homeFromDataDir("/Users/me/Library/Application Support/OpenCast")).toBe("/Users/me");
+    expect(homeFromDataDir("/tmp/opencast")).toBeUndefined();
   });
 });
 
@@ -73,8 +73,8 @@ describe("import results", () => {
   it("maps backend errors to form fields", () => {
     expect(importErrorField("This configuration requires a password")).toMatchObject({ field: "password", error: "Password required" });
     expect(importErrorField("Incorrect password or damaged configuration")).toMatchObject({ field: "password", error: "Incorrect password" });
-    expect(importErrorField("Expected a Surgecast configuration")).toMatchObject({ field: "file", error: "Not a Surgecast export" });
-    expect(importErrorField("Use data.import for a Surgecast export")).toMatchObject({ field: "file", error: "This is a Surgecast export" });
+    expect(importErrorField("Expected an OpenCast configuration")).toMatchObject({ field: "file", error: "Not an OpenCast export" });
+    expect(importErrorField("Use data.import for an OpenCast export")).toMatchObject({ field: "file", error: "This is an OpenCast export" });
     expect(importErrorField("Invalid configuration JSON")).toEqual({ field: "file", error: "Can't read this file", message: "Invalid configuration JSON" });
     expect(importErrorField("Database is locked")).toBeUndefined();
   });

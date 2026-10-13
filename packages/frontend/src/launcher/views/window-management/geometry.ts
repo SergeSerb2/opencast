@@ -1,4 +1,4 @@
-import type { WindowLayoutRect } from "@surgecast/protocol";
+import type { WindowLayoutRect } from "@opencast/protocol";
 
 /**
  * Geometry of custom window commands. The editor works with a Raycast-style

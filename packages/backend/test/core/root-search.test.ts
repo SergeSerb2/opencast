@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { fixture } from "./fixture";
-import type { CommandInfo } from "@surgecast/protocol";
+import type { CommandInfo } from "@opencast/protocol";
 import { realisticCatalog } from "./catalog";
 import { emptyRootItems } from "../../src/services/core/root-search";
 
@@ -169,9 +169,9 @@ describe("suggestion limits", () => {
     const commands = [
       command("file:/tmp/file", { kind: "file" }),
       command("disabled", { enabled: false }),
-      command("app:app.surgecast", {
+      command("app:app.opencast", {
         kind: "app",
-        title: "Surgecast",
+        title: "OpenCast",
         suggestionPriority: 100,
       }),
       command("seed", { suggestionPriority: 1 }),
@@ -206,8 +206,8 @@ describe("ranked root RPC", () => {
       f.ctx.settings.set("launcher.rootSearchSensitivity", sensitivity);
       const root = await f.call("search.root", { query: "clip" });
       const items = root.sections.flatMap((section) => section.items);
-      expect(items[0]).toMatchObject({ title: "Clipboard History", subtitle: "Surgecast" });
-      expect(items[1]).toMatchObject({ title: "Clipboard History Settings", subtitle: "Surgecast Settings" });
+      expect(items[0]).toMatchObject({ title: "Clipboard History", subtitle: "OpenCast" });
+      expect(items[1]).toMatchObject({ title: "Clipboard History Settings", subtitle: "OpenCast Settings" });
       expect(items.every((command) => command.kind !== "app")).toBe(true);
     }
     for (const [query, title] of [["snip", "Search Snippets"], ["vs code", "Visual Studio Code"], ["ai", "AI Chat"]]) {

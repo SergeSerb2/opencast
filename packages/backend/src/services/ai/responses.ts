@@ -1,4 +1,4 @@
-import type { AIToolCall } from "@surgecast/protocol";
+import type { AIToolCall } from "@opencast/protocol";
 import type { AICompletionResult } from "../../context";
 import { objectArguments, ProviderError, redact } from "./common";
 import { toolName, type AdapterRequest } from "./request-mapping";

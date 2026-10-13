@@ -41,7 +41,7 @@ class PKCEClient {
       else { this.response = response; this.resolve?.(response); }
     });
     const init = await request("initOAuth", { flow: "PKCE", redirectMethod: this.redirectMethod, providerName: this.providerName, providerId: this.providerId, onRedirect: this.redirectId, description: this.description });
-    if (!options.clientId) throw new Error("OAuth requires your provider's clientId; Surgecast does not use Raycast OAuth servers or metadata");
+    if (!options.clientId) throw new Error("OAuth requires your provider's clientId; OpenCast does not use Raycast OAuth servers or metadata");
     const result = { clientId: options.clientId, codeVerifier, codeChallenge, state: init.state, redirectURI: init.redirectURI, toURL: () => {
       const url = new URL(options.endpoint);
       for (const [key, value] of Object.entries({ client_id: options.clientId!, redirect_uri: init.redirectURI, response_type: "code", scope: options.scope, code_challenge: codeChallenge, code_challenge_method: "S256", state: init.state, ...options.extraParameters })) url.searchParams.set(key, String(value));
@@ -64,4 +64,5 @@ class PKCEClient {
   async getTokens(): Promise<TokenSet | undefined> { const result = await request("getOAuthTokens", { providerId: this.providerId }); return result.tokenSet ? new TokenSet(result.tokenSet) : undefined; }
   removeTokens(): Promise<void> { return request("removeOAuthTokens", { providerId: this.providerId }); }
 }
+// Keep provider registrations using this private metadata URI valid.
 export const OAuth = { PKCEClient, TokenSet, RedirectMethod, clientIdMetadataDocument: "surgecast://oauth-client-metadata" };

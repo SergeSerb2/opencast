@@ -1,4 +1,4 @@
-import type { AICommand } from "@surgecast/protocol";
+import type { AICommand } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";

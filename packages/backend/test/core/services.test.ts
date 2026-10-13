@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ClipboardSnapshot, Note } from "@surgecast/protocol";
+import type { ClipboardSnapshot, Note } from "@opencast/protocol";
 import { fixture } from "./fixture";
 let f: Awaited<ReturnType<typeof fixture>> | undefined;
 afterEach(async () => {
@@ -226,7 +226,7 @@ describe("registered core services", () => {
         route: "command:builtin:snippets.searchSnippets",
       }),
     );
-    f.emit("hotkey.pressed", { id: "surgecast.toggle" });
+    f.emit("hotkey.pressed", { id: "opencast.toggle" });
     expect(f.nativeCall).toHaveBeenCalledWith("window.toggle", {
       kind: "main",
     });
@@ -238,24 +238,24 @@ describe("registered core services", () => {
     });
     await expect(
       f.call("deeplink.open", {
-        url: "surgecast://extensions/raycast/snippets/searchSnippets?arguments=invalid",
+        url: "opencast://extensions/raycast/snippets/searchSnippets?arguments=invalid",
       }),
     ).rejects.toThrow("decode");
     expect(
-      await f.call("deeplink.open", { url: "surgecast://unknown" }),
+      await f.call("deeplink.open", { url: "opencast://unknown" }),
     ).toBeNull();
   });
   it("exports encrypted content and imports synthetic JSON formats through RPC", async () => {
     f = await fixture();
     const original = await f.call("notes.create", { content: "Export me" });
-    const path = join(f.ctx.dataDir, "test.surgeconfig");
+    const path = join(f.ctx.dataDir, "test.openconfig");
     await f.call("data.export", {
       path,
       password: "pass",
       categories: ["notes"],
     });
-    expect((await readFile(path)).subarray(0, 10).toString()).toBe(
-      "SURGECFG1\n",
+    expect((await readFile(path)).subarray(0, Buffer.byteLength("OPENCFG1\n")).toString()).toBe(
+      "OPENCFG1\n",
     );
     await f.call("notes.delete", { id: original.id });
     expect(
@@ -316,10 +316,10 @@ describe("registered core services", () => {
   it("seeds themes and emoji and validates native layout boundaries", async () => {
     f = await fixture();
     expect((await f.call("themes.list", undefined)).map((t) => t.id)).toContain(
-      "surgecast-dark",
+      "opencast-dark",
     );
     await expect(
-      f.call("themes.delete", { id: "surgecast-dark" }),
+      f.call("themes.delete", { id: "opencast-dark" }),
     ).rejects.toThrow("Built-in");
     const layout = await f.call("windows.layouts.upsert", {
       name: "Left",
@@ -393,12 +393,12 @@ describe("edge cases and persistence", () => {
     });
     await vi.waitFor(() =>
       expect(f!.nativeCall).toHaveBeenCalledWith("hotkeys.register", {
-        id: "surgecast.toggle",
+        id: "opencast.toggle",
         hotkey: { modifiers: ["cmd"], key: "space" },
       }),
     );
     expect(f.nativeCall).not.toHaveBeenCalledWith("hotkeys.unregister", {
-      id: "surgecast.toggle",
+      id: "opencast.toggle",
     });
     f.emit("apps.changed", { reason: "installed" });
     await f.call("commands.list", {});

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";
 import { fuzzyFilter } from "../../lib/fuzzy";

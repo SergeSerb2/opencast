@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type Ref } from "react";
-import type { CommandArgument, ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import type { CommandArgument, ImageLike, KeyboardShortcut } from "@opencast/protocol";
 import { useLatest } from "../../bridge/hooks";
 import { eventKey, matchesShortcut, sc } from "../../lib/keyboard";
 import { ActionPanelPopover } from "../ActionPanel/ActionPanelPopover";

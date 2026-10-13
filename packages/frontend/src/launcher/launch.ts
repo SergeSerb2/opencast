@@ -1,4 +1,4 @@
-import type { CommandId, CommandInfo, ImageLike, LaunchResult } from "@surgecast/protocol";
+import type { CommandId, CommandInfo, ImageLike, LaunchResult } from "@opencast/protocol";
 import { backend } from "../bridge/backend";
 import { errorMessage } from "../bridge/errors";
 import { native } from "../bridge/native";

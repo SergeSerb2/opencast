@@ -13,14 +13,14 @@ import { EventBus } from "../../src/events";
 import { RpcRegistry } from "../../src/rpc/registry";
 import type { NativeApi } from "../../src/native/client";
 import type { AppContext } from "../../src/context";
-import type { BackendMethods, SyncStatus } from "@surgecast/protocol";
+import type { BackendMethods, SyncStatus } from "@opencast/protocol";
 import { syncService } from "../../src/services/sync";
 import { handleRequest } from "../../../sync-worker/src/handler";
 import { createTestEnv } from "../../../sync-worker/test/d1";
 import { applyRemote } from "../../src/services/sync/conflicts";
 
 function backend(dir: string, keys = new Map<string, string>()) {
-  const db = new Database(join(dir, "surgecast.db"));
+  const db = new Database(join(dir, "opencast.db"));
   db.addMigrations(entitiesMigration, settingsMigration);
   const events = new EventBus(), entities = new EntityStore(db), nativeEvents = new EventEmitter();
   const native = { on(topic: string, fn: (...args: any[]) => void) { nativeEvents.on(topic, fn); return () => nativeEvents.off(topic, fn); },
@@ -49,7 +49,7 @@ const connect = (app: ReturnType<typeof backend>, overrides = {}) => app.rpc("sy
 const sync = (app: ReturnType<typeof backend>) => app.rpc("sync.now") as Promise<SyncStatus>;
 beforeEach(async () => {
   networkDown = false; beforePush = undefined;
-  env = createTestEnv(); root = mkdtempSync(join(tmpdir(), "surgecast-sync-test-")); instances = [];
+  env = createTestEnv(); root = mkdtempSync(join(tmpdir(), "opencast-sync-test-")); instances = [];
   server = createServer(async (req, res) => {
     if (networkDown) { req.socket.destroy(); return; }
     if (req.url === "/v1/push" && beforePush) { const fn = beforePush; beforePush = undefined; fn(); }

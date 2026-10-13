@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readdir, rename, rm, lstat, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
-import type { InstalledExtension } from "@surgecast/protocol";
+import type { InstalledExtension } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import { builtRoot, installed, safeName, validateManifest } from "./manifest";
 import { extractArchive } from "./archive";

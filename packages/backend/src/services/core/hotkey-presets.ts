@@ -1,4 +1,4 @@
-import type { Hotkey } from "@surgecast/protocol";
+import type { Hotkey } from "@opencast/protocol";
 /** Shipped window-half shortcuts. Explicit command preferences override these. */
 export function builtinHotkey(id: string, preset: "improved" | "original"): Hotkey | undefined {
   const keys: Record<string, string> = {

@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
-import type { AIAttachment, AICommand, AIPreset } from "@surgecast/protocol";
+import type { AIAttachment, AICommand, AIPreset } from "@opencast/protocol";
 import { useSetting } from "../../bridge/settings";
 import { showFailureToast } from "../../components/feedback/toast-store";
 import { Icon } from "../../icons/Icon";

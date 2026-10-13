@@ -1,4 +1,4 @@
-import type { KeyboardShortcut, KeyModifier } from "@surgecast/protocol";
+import type { KeyboardShortcut, KeyModifier } from "@opencast/protocol";
 
 const MODIFIER_ORDER: KeyModifier[] = ["ctrl", "opt", "alt", "shift", "cmd", "windows"];
 const MODIFIER_GLYPH: Record<KeyModifier, string> = { ctrl: "⌃", opt: "⌥", alt: "⌥", shift: "⇧", cmd: "⌘", windows: "⊞" };

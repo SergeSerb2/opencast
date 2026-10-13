@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import type { AIMessage, AIModelOption, ModelRef } from "@surgecast/protocol";
+import type { AIMessage, AIModelOption, ModelRef } from "@opencast/protocol";
 import { Markdown } from "../../components/Markdown/Markdown";
 import type { BranchInfo } from "../model/message-tree";
 import type { Toolset } from "../model/mentions";

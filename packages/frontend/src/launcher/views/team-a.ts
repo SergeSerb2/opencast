@@ -3,7 +3,7 @@
  * notes search and calculator history.
  */
 import { createElement } from "react";
-import type { Quicklink, Snippet } from "@surgecast/protocol";
+import type { Quicklink, Snippet } from "@opencast/protocol";
 import { CalculatorHistoryView } from "./calculator-history/CalculatorHistoryView";
 import { ClipboardHistoryView } from "./clipboard-history/ClipboardHistoryView";
 import { EmojiView } from "./emoji/EmojiView";

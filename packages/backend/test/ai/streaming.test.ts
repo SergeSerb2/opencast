@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AIModel, AIProvider, AIToolInfo } from "@surgecast/protocol";
+import type { AIModel, AIProvider, AIToolInfo } from "@opencast/protocol";
 import { parseSSE } from "../../src/services/ai/sse";
 import { redact, temperature } from "../../src/services/ai/common";
 import {

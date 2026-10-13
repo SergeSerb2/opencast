@@ -1,11 +1,11 @@
-import type { AIChat, AIStreamEvent, BackendParams } from "@surgecast/protocol";
+import type { AIChat, AIStreamEvent, BackendParams } from "@opencast/protocol";
 import type { MockArea, MockContext } from "./types";
 
 /**
  * Mock backend for the Translator: `ai.ask` streams a fake reply (a small
  * phrase table, otherwise the text marked with the target code), `ai.stop`
  * cancels it, and the throwaway chats Translator creates are accepted.
- * `?mockAi=none` simulates a Surgecast without any AI provider.
+ * `?mockAi=none` simulates an OpenCast without any AI provider.
  */
 
 const MODEL = "openai/gpt-5.1-mini";
@@ -116,7 +116,7 @@ export function createTranslatorMock(ctx: MockContext): MockArea {
         if (noProvider) {
           setTimeout(() => emit({ type: "error", streamId, message: "Configure an AI provider and enable a model in Settings → AI before asking AI." }), 80);
         } else {
-          stream(streamId, translationReply(params) ?? "This reply comes from the in-browser mock backend. Connect Surgecast to a real backend to talk to your AI provider.");
+          stream(streamId, translationReply(params) ?? "This reply comes from the in-browser mock backend. Connect OpenCast to a real backend to talk to your AI provider.");
         }
         return { streamId, chatId: params.chatId };
       },

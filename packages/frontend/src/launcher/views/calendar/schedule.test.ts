@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CalendarEvent } from "@surgecast/protocol";
+import type { CalendarEvent } from "@opencast/protocol";
 import {
   attendeeStatus,
   calendarAppUrl,

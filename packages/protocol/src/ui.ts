@@ -58,13 +58,13 @@ export interface FileIconImage {
 }
 
 /**
- * Surgecast extension: a built-in command tile. A white glyph drawn on a
+ * OpenCast extension: a built-in command tile. A white glyph drawn on a
  * rounded-square tile with a solid or gradient fill, like Raycast's
  * built-in command icons.
  */
 export interface TileImage {
   tile: {
-    /** Icon enum value or Surgecast glyph name. */
+    /** Icon enum value or OpenCast glyph name. */
     glyph: string;
     /** One color or a [top, bottom] gradient. */
     background: string | [string, string];

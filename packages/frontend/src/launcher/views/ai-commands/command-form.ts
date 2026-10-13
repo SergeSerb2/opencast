@@ -1,4 +1,4 @@
-import type { AICommand, AICommandOutput, BackendParams, Creativity } from "@surgecast/protocol";
+import type { AICommand, AICommandOutput, BackendParams, Creativity } from "@opencast/protocol";
 import { DEFAULT_AI_ICON, type ReasoningEffort } from "../ai-shared/options";
 import { promptProblem } from "./placeholders";
 

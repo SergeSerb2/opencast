@@ -1,4 +1,4 @@
-import { RpcErrorCode, type RpcErrorObject } from "@surgecast/protocol";
+import { RpcErrorCode, type RpcErrorObject } from "@opencast/protocol";
 
 /** Frontend-only code: the WebSocket dropped while the request was in flight. */
 export const CONNECTION_LOST = -32090;

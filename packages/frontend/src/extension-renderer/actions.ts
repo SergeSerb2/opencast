@@ -1,4 +1,4 @@
-import type { ImageLike, KeyboardShortcut, UINode } from "@surgecast/protocol";
+import type { ImageLike, KeyboardShortcut, UINode } from "@opencast/protocol";
 import type { ActionModel, ActionPanelModel, ActionSectionModel } from "../components/actions/model";
 import { pickDate } from "../components/feedback/date-picker";
 import { pasteTitle } from "../bridge/frontmost-app";

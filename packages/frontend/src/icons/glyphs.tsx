@@ -1,6 +1,6 @@
 import { useId, type SVGProps } from "react";
 
-/** Surgecast's own glyphs, drawn on a 24×24 grid like lucide (stroke = currentColor). */
+/** OpenCast's own glyphs, drawn on a 24×24 grid like lucide (stroke = currentColor). */
 
 type GlyphProps = SVGProps<SVGSVGElement> & { size?: number };
 
@@ -12,8 +12,8 @@ function Svg({ size = 16, children, ...rest }: GlyphProps) {
   );
 }
 
-/** The Surgecast mark: a rounded diamond with a wave cut through it. */
-export function SurgecastLogo({ size = 22, ...rest }: GlyphProps) {
+/** The OpenCast mark: a rounded diamond with a wave cut through it. */
+export function OpenCastLogo({ size = 22, ...rest }: GlyphProps) {
   const id = `sc-logo-${useId().replace(/:/g, "")}`;
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...rest}>

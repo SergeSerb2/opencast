@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";
 import { settingId } from "../search";

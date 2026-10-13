@@ -4,7 +4,7 @@ import type {
   AIModelOption,
   AIProvider,
   BackendMethods,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import {
   checkedFetch,

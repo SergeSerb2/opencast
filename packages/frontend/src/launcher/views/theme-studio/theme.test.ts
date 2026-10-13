@@ -3,7 +3,7 @@ import { defaultPalette, paletteFromTheme } from "../../../theme/palettes";
 import { themeSettingsUpdate } from "./apply-theme";
 import { buildThemeCatalog, catalogSections, currentMark, filterCatalog, themeInUse } from "./theme-catalog";
 import { copyName, draftFromPalette, draftToPalette, draftToUpsert, hasErrors, isSameDraft, normalizeHex, parseThemeJson, previewHex, themeToJson, validateDraft } from "./theme-draft";
-import type { Theme } from "@surgecast/protocol";
+import type { Theme } from "@opencast/protocol";
 
 const palette = defaultPalette("dark");
 const draft = draftFromPalette(palette, { name: "My Theme" });
@@ -62,9 +62,9 @@ describe("theme catalog and application", () => {
   it("marks fixed and system appearance themes correctly", () => {
     const catalog = buildThemeCatalog([user]);
     const entry = catalog.find((t) => t.palette.id === "custom")!;
-    expect(currentMark(entry, catalog, { appearance: "dark", themeDark: "custom", themeLight: "surgecast-light" })).toBe("current");
-    expect(currentMark(entry, catalog, { appearance: "system", themeDark: "custom", themeLight: "surgecast-light" })).toBe("dark");
-    expect(currentMark(entry, catalog, { appearance: "light", themeDark: "custom", themeLight: "surgecast-light" })).toBeNull();
+    expect(currentMark(entry, catalog, { appearance: "dark", themeDark: "custom", themeLight: "opencast-light" })).toBe("current");
+    expect(currentMark(entry, catalog, { appearance: "system", themeDark: "custom", themeLight: "opencast-light" })).toBe("dark");
+    expect(currentMark(entry, catalog, { appearance: "light", themeDark: "custom", themeLight: "opencast-light" })).toBeNull();
   });
   it("preserves system appearance when possible and switches it when needed", () => {
     expect(themeSettingsUpdate("custom", "dark", "current", "system", "dark")).toEqual({ "general.themeDark": "custom" });

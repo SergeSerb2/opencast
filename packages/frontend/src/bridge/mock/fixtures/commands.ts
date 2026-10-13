@@ -1,4 +1,4 @@
-import type { CommandInfo, ImageLike, Quicklink, TileImage } from "@surgecast/protocol";
+import type { CommandInfo, ImageLike, Quicklink, TileImage } from "@opencast/protocol";
 
 export const tile = (glyph: string, top: string, bottom: string): TileImage => ({ tile: { glyph, background: [top, bottom] } });
 
@@ -21,7 +21,7 @@ const t = (glyph: string, hue: Hue) => tile(glyph, T[hue][0], T[hue][1]);
 
 function builtin(id: string, title: string, subtitle: string, icon: ImageLike, extra: Partial<CommandInfo> = {}): CommandInfo {
   // Core commands named like their extension show the app name instead (as Raycast shows "Raycast").
-  const shown = subtitle === title ? "Surgecast" : subtitle;
+  const shown = subtitle === title ? "OpenCast" : subtitle;
   return { id: `builtin:${id}`, kind: "builtin", title, subtitle: shown, typeLabel: "Command", icon, mode: "view", enabled: true, extensionTitle: subtitle, ...extra };
 }
 
@@ -56,10 +56,10 @@ export const BUILTIN_COMMANDS: CommandInfo[] = [
   builtin("quicklinks.searchQuicklinks", "Search Quicklinks", "Quicklinks", t("link-16", "purple")),
   builtin("emoji.searchEmoji", "Search Emoji & Symbols", "Emoji & Symbols", t("emoji-16", "yellow"), { keywords: ["emoticon", "symbol"] }),
   builtin("files.searchFiles", "Search Files", "File Search", t("magnifying-glass-16", "indigo"), { acceptsFallbackText: true }),
-  builtin("store.store", "Store", "Surgecast", t("store-16", "red"), { acceptsFallbackText: true }),
-  builtin("ai.aiChat", "AI Chat", "Surgecast AI", t("speech-bubble-16", "pink"), { mode: "no-view", keywords: ["gpt", "claude", "llm"] }),
-  builtin("ai.askAi", "Quick AI", "Surgecast AI", t("stars-16", "pink"), { acceptsFallbackText: true, keywords: ["ask"] }),
-  builtin("ai.searchAiCommands", "Search AI Commands", "Surgecast AI", t("wand-16", "pink")),
+  builtin("store.store", "Store", "OpenCast", t("store-16", "red"), { acceptsFallbackText: true }),
+  builtin("ai.aiChat", "AI Chat", "OpenCast AI", t("speech-bubble-16", "pink"), { mode: "no-view", keywords: ["gpt", "claude", "llm"] }),
+  builtin("ai.askAi", "Quick AI", "OpenCast AI", t("stars-16", "pink"), { acceptsFallbackText: true, keywords: ["ask"] }),
+  builtin("ai.searchAiCommands", "Search AI Commands", "OpenCast AI", t("wand-16", "pink")),
   builtin("notes.searchNotes", "Search Notes", "Notes", t("blank-document-16", "yellow")),
   builtin("notes.createNote", "Create Note", "Notes", t("new-document-16", "yellow"), { mode: "no-view" }),
   builtin("calculator.calculatorHistory", "Calculator History", "Calculator", t("calculator-16", "graphite")),
@@ -73,9 +73,9 @@ export const BUILTIN_COMMANDS: CommandInfo[] = [
   builtin("system.sleep", "Sleep", "System", t("moon-16", "gray"), { mode: "no-view" }),
   builtin("system.emptyTrash", "Empty Trash", "System", t("trash-16", "gray"), { mode: "no-view" }),
   builtin("system.toggleSystemAppearance", "Toggle System Appearance", "System", t("contrast-16", "gray"), { mode: "no-view", keywords: ["dark mode", "light mode"] }),
-  builtin("surgecast.confetti", "Confetti", "Surgecast", t("stars-16", "purple"), { mode: "no-view" }),
-  builtin("surgecast.settings", "Settings", "Surgecast", t("cog-16", "graphite"), { mode: "no-view", keywords: ["preferences"] }),
-  builtin("surgecast.extensions", "Extensions", "Surgecast", t("app-window-grid-2x2-16", "graphite")),
+  builtin("opencast.confetti", "Confetti", "OpenCast", t("stars-16", "purple"), { mode: "no-view" }),
+  builtin("opencast.settings", "Settings", "OpenCast", t("cog-16", "graphite"), { mode: "no-view", keywords: ["preferences"] }),
+  builtin("opencast.extensions", "Extensions", "OpenCast", t("app-window-grid-2x2-16", "graphite")),
   builtin("scripts.searchScriptCommands", "Search Script Commands", "Script Commands", t("terminal-16", "graphite")),
   builtin("translator.translate", "Translate", "Translator", t("globe-01-16", "blue"), { arguments: [{ name: "text", type: "text", placeholder: "Text", required: true }] }),
   builtin("web.google", "Search Google", "Web Search", t("globe-01-16", "green"), { kind: "builtin", mode: "no-view", acceptsFallbackText: true, arguments: [{ name: "query", type: "text", placeholder: "Query", required: true }] }),
@@ -95,7 +95,7 @@ export const SCRIPT_COMMANDS: CommandInfo[] = [
 ];
 
 export const QUICKLINKS: Quicklink[] = [
-  { id: "ql-github", name: "GitHub Repository", link: "https://github.com/{argument name=\"repo\" default=\"surgecast/surgecast\"}", icon: t("link-16", "graphite"), createdAt: Date.now() - 86400000 * 20, updatedAt: Date.now() - 86400000 * 2 },
+  { id: "ql-github", name: "GitHub Repository", link: "https://github.com/{argument name=\"repo\" default=\"opencast/opencast\"}", icon: t("link-16", "graphite"), createdAt: Date.now() - 86400000 * 20, updatedAt: Date.now() - 86400000 * 2 },
   { id: "ql-mdn", name: "Search MDN", link: "https://developer.mozilla.org/search?q={query}", icon: t("globe-01-16", "blue"), createdAt: Date.now() - 86400000 * 40, updatedAt: Date.now() - 86400000 * 40 },
 ];
 
@@ -114,7 +114,7 @@ export const QUICKLINK_COMMANDS: CommandInfo[] = QUICKLINKS.map((q) => ({
 export const ALL_COMMANDS: CommandInfo[] = [...BUILTIN_COMMANDS, ...EXTENSION_COMMANDS, ...SCRIPT_COMMANDS, ...QUICKLINK_COMMANDS, ...APPS];
 
 /** Recently used ids shown under "Suggestions" for an empty query. */
-export const SUGGESTION_IDS = ["app:com.apple.Safari", "builtin:surgecast.settings", "ext:github.my-pull-requests", "app:com.figma.Desktop", "app:com.apple.ActivityMonitor"];
+export const SUGGESTION_IDS = ["app:com.apple.Safari", "builtin:opencast.settings", "ext:github.my-pull-requests", "app:com.figma.Desktop", "app:com.apple.ActivityMonitor"];
 
 /** Apps the mock reports as running (dot under the icon). */
 export const RUNNING_APP_IDS = new Set(["app:com.apple.Safari", "app:com.figma.Desktop", "app:com.apple.ActivityMonitor", "app:com.tinyspeck.slackmacgap"]);

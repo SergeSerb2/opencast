@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-wrangler() { pnpm --filter @surgecast/sync-worker exec wrangler "$@"; }
+wrangler() { pnpm --filter @opencast/sync-worker exec wrangler "$@"; }
 if [[ ! -t 0 ]]; then
   echo "Run this script in an interactive terminal. First log in:"
-  echo "  pnpm --filter @surgecast/sync-worker exec wrangler login"
+  echo "  pnpm --filter @opencast/sync-worker exec wrangler login"
   exit 1
 fi
 # whoami is read-only. No Cloudflare mutation happens before a verified login.
 if ! identity=$(wrangler whoami 2>&1) || [[ "$identity" == *"not authenticated"* || "$identity" == *"not logged in"* ]]; then
   echo "Cloudflare login is required. Run:"
-  echo "  pnpm --filter @surgecast/sync-worker exec wrangler login"
+  echo "  pnpm --filter @opencast/sync-worker exec wrangler login"
   exit 1
 fi
 read -r -p "D1 database name [surgecast-sync]: " database_name
@@ -42,6 +42,6 @@ read -r -p "Deploy the Worker now? [y/N]: " deploy
 if [[ "$deploy" != "y" && "$deploy" != "Y" ]]; then echo "Configuration ready; deployment skipped."; exit 0; fi
 wrangler deploy
 cat <<'TEXT'
-Copy the Worker HTTPS URL into Surgecast Cloud Sync settings with your token and a strong passphrase.
+Copy the Worker HTTPS URL into OpenCast Cloud Sync settings with your token and a strong passphrase.
 Keep the passphrase safe: losing it and all unlocked devices makes the encrypted data unrecoverable.
 TEXT

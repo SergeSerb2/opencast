@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { WindowLayoutRect } from "@surgecast/protocol";
+import type { WindowLayoutRect } from "@opencast/protocol";
 import { formatPercent } from "./geometry";
 import { screenInsets, type PreviewScreen } from "./useMainScreen";
 

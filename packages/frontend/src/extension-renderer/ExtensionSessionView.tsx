@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { ExtensionSessionState, HandlerRef, ImageLike, UINode } from "@surgecast/protocol";
+import type { ExtensionSessionState, HandlerRef, ImageLike, UINode } from "@opencast/protocol";
 import { backend } from "../bridge/backend";
 import { errorMessage, isCancelled } from "../bridge/errors";
 import { onReconnect, useEvent } from "../bridge/hooks";

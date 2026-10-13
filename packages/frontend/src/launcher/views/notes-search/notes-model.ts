@@ -1,4 +1,4 @@
-import type { NoteSummary } from "@surgecast/protocol";
+import type { NoteSummary } from "@opencast/protocol";
 
 /** Search results with title matches moved to the top, keeping the backend's order otherwise. */
 export function titleMatchesFirst(notes: NoteSummary[], query: string): NoteSummary[] {

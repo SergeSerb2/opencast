@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultSettings, type AIStreamEvent, type BackendEvents, type BackendMethod, type BackendParams, type BackendResult } from "@surgecast/protocol";
+import { defaultSettings, type AIStreamEvent, type BackendEvents, type BackendMethod, type BackendParams, type BackendResult } from "@opencast/protocol";
 import { Emitter } from "../../bridge/emitter";
 import { createAiMockHandlers } from "../../bridge/mock/ai";
 

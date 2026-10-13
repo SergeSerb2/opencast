@@ -1,5 +1,5 @@
 import { isValidElement, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { useLatest } from "../../bridge/hooks";
 import { fuzzyFilter } from "../../lib/fuzzy";
 import { collectActions, type ActionsProp } from "../actions/ActionPanel";
@@ -35,13 +35,13 @@ export interface ListProps {
   selectedItemId?: string;
   onSelectionChange?: (id: string | null) => void;
   pagination?: { hasMore: boolean; onLoadMore: () => void; pageSize?: number };
-  /** Surgecast: row size ("large" 38px default, "small" 36px, "multiline" 58px). */
+  /** OpenCast: row size ("large" 38px default, "small" 36px, "multiline" 58px). */
   size?: ListRowSize;
-  /** Surgecast: detail pane width ("large" 465px default, "small" 263px). */
+  /** OpenCast: detail pane width ("large" 465px default, "small" 263px). */
   detailWidth?: "small" | "large";
-  /** Surgecast: footer label for the primary action. */
+  /** OpenCast: footer label for the primary action. */
   primaryActionTitle?: string;
-  /** Surgecast: keep row accessories while the detail pane is open (built-in snippet/quicklink rows show their keyword). */
+  /** OpenCast: keep row accessories while the detail pane is open (built-in snippet/quicklink rows show their keyword). */
   keepAccessoriesInDetail?: boolean;
 }
 

@@ -1,4 +1,4 @@
-import { RpcErrorCode, type AIAttachment, type AIChat, type AICommand, type AIMessage, type AIStreamEvent, type AIToolCall, type BackendEvents, type BackendMethod, type BackendParams, type BackendResult, type ModelRef, type SettingsValues } from "@surgecast/protocol";
+import { RpcErrorCode, type AIAttachment, type AIChat, type AICommand, type AIMessage, type AIStreamEvent, type AIToolCall, type BackendEvents, type BackendMethod, type BackendParams, type BackendResult, type ModelRef, type SettingsValues } from "@opencast/protocol";
 import type { Emitter } from "../emitter";
 import { RpcError } from "../errors";
 import { AI_ANSWERS, AI_CHATS, AI_COMMANDS, AI_DEFAULT_ANSWER, AI_MESSAGES, AI_PRESETS, AI_TOOLS } from "./fixtures/ai";
@@ -282,7 +282,7 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
     "ai.chats.export": ({ id, format }) => {
       const chat = chatById(id);
       const branch = branchOf(id, chat.currentLeafId);
-      const content = format === "json" ? JSON.stringify({ schemaVersion: 1, chat, messages: chatMessages(id) }, null, 2) : `# ${chat.title}\n\n${branch.map((m) => `## ${m.role === "user" ? "You" : "Surgecast"}\n\n${m.content}`).join("\n\n")}`;
+      const content = format === "json" ? JSON.stringify({ schemaVersion: 1, chat, messages: chatMessages(id) }, null, 2) : `# ${chat.title}\n\n${branch.map((m) => `## ${m.role === "user" ? "You" : "OpenCast"}\n\n${m.content}`).join("\n\n")}`;
       return { content, fileName: `${chat.title.replace(/[^\p{L}\p{N}_-]/gu, "-").slice(0, 80) || "chat"}.${format === "json" ? "json" : "md"}` };
     },
     "ai.chats.send": send,
@@ -317,7 +317,7 @@ export function createAiMockHandlers(events: Emitter<BackendEvents>, settings: S
     "ai.commands.run": ({ id, arguments: args, selection }) => {
       const command = listCommands().find((c) => c.id === id) ?? notFound(`AI command ${id}`);
       const prompt = command.prompt
-        .replace(/\{selection[^}]*\}/g, selection ?? "Surgecast is a launcher that let you run commands and ask AI from anywhere.")
+        .replace(/\{selection[^}]*\}/g, selection ?? "OpenCast is a launcher that let you run commands and ask AI from anywhere.")
         .replace(/\{argument[^}]*\}/g, () => Object.values(args ?? {})[0] ?? "")
         .replace(/\{browser-tab[^}]*\}/g, "# Example page\n\nThis page explains how launchers work.");
       const chat = createChat({ source: "ai-command", model: command.model });

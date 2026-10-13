@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { StoreExtension } from "@surgecast/protocol";
+import type { StoreExtension } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { isCancelled } from "../../../bridge/errors";
 import { mergeStorePages } from "./model";

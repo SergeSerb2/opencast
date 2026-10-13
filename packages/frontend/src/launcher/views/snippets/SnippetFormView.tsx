@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { ImageLike, Snippet } from "@surgecast/protocol";
+import type { ImageLike, Snippet } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { Action, ActionPanel, showToast, TagInput, TextField, useNavigation, useRegisterActions, ViewFrame } from "../../../components";

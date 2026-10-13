@@ -6,7 +6,7 @@
 type Level = "debug" | "info" | "warn" | "error";
 
 const LEVELS: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
-let threshold = LEVELS[(process.env.SURGECAST_LOG_LEVEL as Level) ?? "info"] ?? LEVELS.info;
+let threshold = LEVELS[((process.env.OPENCAST_LOG_LEVEL ?? process.env.SURGECAST_LOG_LEVEL) as Level) ?? "info"] ?? LEVELS.info;
 
 export function setLogLevel(level: Level): void {
   threshold = LEVELS[level];

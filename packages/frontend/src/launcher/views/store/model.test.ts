@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { StoreExtension } from "@surgecast/protocol";
+import type { StoreExtension } from "@opencast/protocol";
 import {
   changelogUrl,
   developerUrl,

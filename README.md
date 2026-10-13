@@ -1,6 +1,6 @@
 <img src="assets/icon.svg" width="64" height="64" alt="">
 
-# Surgecast
+# OpenCast
 
 An open-source launcher for macOS that works and looks like Raycast — with **your own AI
 keys**, **your own sync server**, and **no paywalls**.
@@ -15,12 +15,12 @@ keys**, **your own sync server**, and **no paywalls**.
   before it leaves it.
 - **Everything unlocked.** Unlimited notes, unlimited clipboard history, custom themes,
   custom window management commands, Translator, AI — all free and local.
-- **Raycast extensions.** Surgecast runs Raycast store extensions through a clean-room
+- **Raycast extensions.** OpenCast runs Raycast store extensions through a clean-room
   implementation of the `@raycast/api` runtime.
 - **Import from Raycast.** Bring your snippets, quicklinks, notes and AI commands over from
   a Raycast `.rayconfig` export.
 
-> Surgecast is an independent project. It is not affiliated with, endorsed by, or
+> OpenCast is an independent project. It is not affiliated with, endorsed by, or
 > sponsored by Raycast Technologies Ltd. "Raycast" is a trademark of its owner.
 
 ## Features
@@ -41,7 +41,7 @@ keys**, **your own sync server**, and **no paywalls**.
 
 ## Architecture
 
-Surgecast follows Raycast 2's design: a thin Swift/AppKit host, a React UI in WebKit
+OpenCast follows Raycast 2's design: a thin Swift/AppKit host, a React UI in WebKit
 views, and a Node backend. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ```
@@ -59,11 +59,11 @@ Requirements: macOS 14+, Xcode 16+ (Swift 6), Node 22.13+, pnpm 10.
 
 ```sh
 pnpm install
-./scripts/build-app.sh --open          # builds everything into build/Surgecast.app
+./scripts/build-app.sh --open          # builds everything into build/OpenCast.app
 ./scripts/build-app.sh --bundle-node   # also embeds the current node binary
 ```
 
-Press **⌥Space** to open Surgecast. Grant **Accessibility** permission when asked (needed for
+Press **⌥Space** to open OpenCast. Grant **Accessibility** permission when asked (needed for
 window management, snippet expansion, selected text and pasting).
 
 Browser development without the native host:
@@ -72,6 +72,20 @@ Browser development without the native host:
 ./scripts/dev.sh          # backend + Vite; macOS CLI fallbacks for native features
 ./scripts/dev.sh --mock   # UI only, in-browser mock data
 ```
+
+## Upgrade from SurgeCast
+
+OpenCast reuses an existing SurgeCast data directory and database in place. Fresh
+installs use `~/Library/Application Support/OpenCast/opencast.db`. Existing Keychain
+secrets, `.surgeconfig` backups, deep links, and encrypted sync vaults remain readable.
+New exports use `.openconfig`, links use `opencast://`, and development variables use
+`OPENCAST_*` (with `SURGECAST_*` aliases).
+
+The private bundle ID and WebKit page origin stay stable to preserve macOS grants
+and stored window preferences. Native autosave identifiers and the registered OAuth
+callback also stay stable. Legacy preference keys are copied to the OpenCast
+names before the UI loads. Existing sync deployments can keep their Worker URL and
+D1 database; use their current resource names when deploying an update.
 
 ## Set up AI
 

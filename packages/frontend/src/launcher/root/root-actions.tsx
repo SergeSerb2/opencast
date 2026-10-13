@@ -1,4 +1,4 @@
-import type { CalculatorResult, CommandPrefs, RootSearchItem } from "@surgecast/protocol";
+import type { CalculatorResult, CommandPrefs, RootSearchItem } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { native } from "../../bridge/native";
 import type { ActionModel, ActionPanelModel } from "../../components/actions/model";

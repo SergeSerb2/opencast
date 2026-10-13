@@ -1,5 +1,5 @@
 /**
- * Surgecast design system. Import from "src/components" in every window.
+ * OpenCast design system. Import from "src/components" in every window.
  * See packages/frontend/README.md for usage.
  */
 

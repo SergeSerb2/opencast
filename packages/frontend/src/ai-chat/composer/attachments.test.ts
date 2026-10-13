@@ -13,6 +13,6 @@ describe("path-less attachments", () => {
   });
   it("rejects oversized images and unknown binaries clearly", async () => {
     await expect(attachmentFromFile(new File([new Uint8Array(10 * 1024 * 1024 + 1)], "big.png", { type: "image/png" }))).rejects.toThrow("10 MB");
-    await expect(attachmentFromFile(new File(["binary"], "archive.zip"))).rejects.toThrow("Surgecast app");
+    await expect(attachmentFromFile(new File(["binary"], "archive.zip"))).rejects.toThrow("OpenCast app");
   });
 });

@@ -1,4 +1,4 @@
-import type { AIMessage } from "@surgecast/protocol";
+import type { AIMessage } from "@opencast/protocol";
 
 /**
  * A chat stores every branch: editing a user message or regenerating a

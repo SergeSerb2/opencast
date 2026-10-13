@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { RunningAppInfo } from "@surgecast/protocol";
+import type { RunningAppInfo } from "@opencast/protocol";
 import { useNativeEvent } from "../../../bridge/hooks";
 import { native } from "../../../bridge/native";
 

@@ -1,9 +1,9 @@
 import { memo, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Image } from "../../icons/Image";
 import "./empty-view.css";
 
-/** Default illustration: a window being searched (drawn for Surgecast). */
+/** Default illustration: a window being searched (drawn for OpenCast). */
 export function EmptyIllustration() {
   return (
     <svg className="sc-empty-view__illustration" width="100" height="78" viewBox="0 0 100 78" fill="none" aria-hidden="true">

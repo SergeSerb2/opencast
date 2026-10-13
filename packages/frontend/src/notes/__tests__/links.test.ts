@@ -8,7 +8,7 @@ describe("normalizeHref", () => {
     expect(normalizeHref("example.com/path")).toBe("https://example.com/path");
     expect(normalizeHref("  https://x.y  ")).toBe("https://x.y");
     expect(normalizeHref("mailto:a@b.c")).toBe("mailto:a@b.c");
-    expect(normalizeHref("surgecast://extensions/surgecast/notes/open")).toBe("surgecast://extensions/surgecast/notes/open");
+    expect(normalizeHref("opencast://extensions/opencast/notes/open")).toBe("opencast://extensions/opencast/notes/open");
     expect(normalizeHref("someone@example.com")).toBe("mailto:someone@example.com");
     expect(normalizeHref("   ")).toBe("");
   });
@@ -17,9 +17,9 @@ describe("normalizeHref", () => {
 describe("noteDeeplink", () => {
   it("passes the note id as launch context of the Notes command", () => {
     const url = new URL(noteDeeplink("abc-123"));
-    expect(url.protocol).toBe("surgecast:");
+    expect(url.protocol).toBe("opencast:");
     expect(url.host).toBe("extensions");
-    expect(url.pathname).toBe("/surgecast/notes/open");
+    expect(url.pathname).toBe("/opencast/notes/open");
     expect(JSON.parse(url.searchParams.get("launchContext") ?? "")).toEqual({ id: "abc-123" });
   });
 });

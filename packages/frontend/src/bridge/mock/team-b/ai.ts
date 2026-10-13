@@ -1,4 +1,4 @@
-import { RpcErrorCode, type AICommand, type AIPreset, type AIToolInfo, type BackendParams, type CommandInfo, type Creativity } from "@surgecast/protocol";
+import { RpcErrorCode, type AICommand, type AIPreset, type AIToolInfo, type BackendParams, type CommandInfo, type Creativity } from "@opencast/protocol";
 import { promptArguments, promptProblem } from "../../../launcher/views/ai-commands/placeholders";
 import { RpcError } from "../../errors";
 import type { MockArea, MockContext } from "./types";
@@ -14,7 +14,7 @@ const OUTPUTS: AICommand["output"][] = ["window", "quick-ai", "paste", "copy", "
 
 const rewrite = (instruction: string) => `${instruction} Keep the original language, meaning, links and formatting. Reply with the revised text only.\n\n{selection}`;
 
-/** Built-in commands (ids as the backend seeds them; prompts written for Surgecast). */
+/** Built-in commands (ids as the backend seeds them; prompts written for OpenCast). */
 const SEEDS: [id: string, name: string, prompt: string][] = [
   ["improve-writing", "Improve Writing", rewrite("Make this text clearer and more concise while keeping the author's voice. Leave sentences that already work untouched.")],
   ["fix-spelling-grammar", "Fix Spelling and Grammar", rewrite("Correct spelling, grammar and punctuation with the smallest possible changes.")],
@@ -98,7 +98,7 @@ function seedPresets(): AIPreset[] {
       icon: "megaphone-16",
       description: "Landing pages, release notes and app store copy",
       instructions:
-        "You write product copy for **Surgecast**, a keyboard-first launcher for macOS.\n\n### Voice\n- Confident, friendly and specific\n- Short sentences; no buzzwords or exclamation marks\n- Lead with what the user can do, not with features\n\n### When asked for copy\n1. Offer three variations of different length\n2. Mark the one you recommend\n3. Keep headlines under 8 words",
+        "You write product copy for **OpenCast**, a keyboard-first launcher for macOS.\n\n### Voice\n- Confident, friendly and specific\n- Short sentences; no buzzwords or exclamation marks\n- Lead with what the user can do, not with features\n\n### When asked for copy\n1. Offer three variations of different length\n2. Mark the one you recommend\n3. Keep headlines under 8 words",
       model: "anthropic/claude-sonnet-5-5",
       creativity: "high",
       webSearch: false,

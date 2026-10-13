@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { AICommand, AIModelOption, AIPreset } from "@surgecast/protocol";
+import type { AICommand, AIModelOption, AIPreset } from "@opencast/protocol";
 import { useBackend } from "../../bridge/hooks";
 import { toolsetsFromTools, type Toolset } from "../model/mentions";
 

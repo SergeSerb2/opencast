@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import type { AlertOptions, ClipboardContent, AIModelOption, ToastState, ScreenInfo } from "@surgecast/protocol";
+import type { AlertOptions, ClipboardContent, AIModelOption, ToastState, ScreenInfo } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import type { HostSession, ExtensionSessions } from "./sessions";
 interface OAuthFlow { sessionId: string; callbackId: string; expires: number; }
@@ -103,6 +103,7 @@ export class ExtensionBroker {
       case "initOAuth": {
         for (const [state, flow] of this.flows) if (flow.expires < Date.now()) this.flows.delete(state);
         const state = randomBytes(32).toString("base64url"); this.flows.set(state, { sessionId: session.id, callbackId: p.onRedirect, expires: Date.now() + 600000 });
+        // OAuth providers match the registered redirect URI exactly.
         return { state, redirectURI: "surgecast://oauth" };
       }
       case "authorizeOAuth": {
@@ -161,7 +162,7 @@ export class ExtensionBroker {
       case "createSnippet": ctx.launcher.navigate({ action: "launch", result: { kind: "view", view: { id: "snippets.create", props: { text: p.snippet, name: p.name, keyword: p.keyword } } } }); return;
       case "installMCPServer": return invoke("ai.mcp.upsert", p);
       case "renderEmpty": case "renderSuspense": return;
-      case "render": throw new Error("Legacy Raycast render envelopes are not accepted; Surgecast uses UINode trees");
+      case "render": throw new Error("Legacy Raycast render envelopes are not accepted; OpenCast uses UINode trees");
       default: throw new Error(`Extension host API is not supported: ${method}`);
     }
   }
@@ -181,7 +182,7 @@ export class ExtensionBroker {
   private async oauthRedirect(raw: string): Promise<void> {
     try {
       const url = new URL(raw);
-      if (!["surgecast:", "raycast:"].includes(url.protocol) || url.hostname !== "oauth") return;
+      if (!["opencast:", "surgecast:", "raycast:"].includes(url.protocol) || url.hostname !== "oauth") return;
       const state = url.searchParams.get("state"); if (!state) return;
       const flow = this.flows.get(state); if (!flow || flow.expires < Date.now()) return;
       this.flows.delete(state);

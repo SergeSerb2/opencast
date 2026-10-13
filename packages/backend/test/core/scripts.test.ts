@@ -6,6 +6,14 @@ import {
 const source =
   '#!/bin/bash\n# @raycast.schemaVersion 1\n# @raycast.title Example\n# @raycast.mode fullOutput\n# @raycast.argument1 {"placeholder":"Name","secure":true,"percentEncoded":true}\n# @raycast.needsConfirmation true\n# @raycast.currentDirectoryPath ~/Documents\necho "$1"';
 describe("script metadata", () => {
+  it.each(["opencast", "surgecast", "OPENCAST"])("discovers complete @%s script metadata", prefix => {
+    expect(parseScriptMetadata(source.replaceAll("@raycast.", `@${prefix}.`), "/scripts/example.sh"))
+      .toEqual(parseScriptMetadata(source, "/scripts/example.sh"));
+  });
+  it("allows OpenCast metadata to override fields in a Raycast script", () => {
+    expect(parseScriptMetadata(`${source}\n# @opencast.title Renamed`, "/scripts/example.sh"))
+      .toMatchObject({ title: "Renamed", mode: "fullOutput", arguments: [{ type: "password" }] });
+  });
   it("parses complete metadata and secure positional arguments", () => {
     expect(parseScriptMetadata(source, "/scripts/example.sh")).toMatchObject({
       title: "Example",

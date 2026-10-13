@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/surgecast-icon.XXXXXX")"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/opencast-icon.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/AppIcon.iconset" "$ROOT/apps/macos/Resources"
 qlmanage -t -s 1024 -o "$WORK" "$ROOT/assets/icon.svg" >/dev/null 2>&1

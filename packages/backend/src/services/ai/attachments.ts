@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { extname } from "node:path";
 import { inflateSync } from "node:zlib";
-import type { AIAttachment, AIModel, AIProvider } from "@surgecast/protocol";
+import type { AIAttachment, AIModel, AIProvider } from "@opencast/protocol";
 import type { AIChatTurn } from "../../context";
 import { httpUrl } from "./common";
 import { readPage } from "./web";

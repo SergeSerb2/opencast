@@ -4,7 +4,7 @@ const require = createRequire(new URL("../../backend/package.json", import.meta.
 const WebSocket = require("ws");
 const url = process.env.SYNC_TEST_URL ?? "http://127.0.0.1:18787";
 const token = process.env.SYNC_TEST_TOKEN ?? "local-test";
-const headers = { Authorization: `Bearer ${token}`, "X-Surgecast-Device": "local-smoke" };
+const headers = { Authorization: `Bearer ${token}`, "X-OpenCast-Device": "local-smoke" };
 async function call(path, method = "GET", body, extra = {}, status = 200) {
   const r = await fetch(url + path, { method, headers: { ...headers, ...extra }, body: body === undefined ? undefined : JSON.stringify(body) });
   const data = await r.json(); assert.equal(r.status, status, JSON.stringify(data)); return data;
@@ -14,7 +14,7 @@ const vault = { vaultId: "local-smoke-vault", keyEpoch: 1, kdf: { alg: "scrypt",
 assert.equal((await call("/v1/health")).ok, true);
 // This smoke test intentionally wipes its dedicated local account. Never use a production token.
 assert.ok(new URL(url).hostname === "127.0.0.1" || new URL(url).hostname === "localhost", "Smoke tests require localhost");
-await call("/v1/vault", "DELETE", undefined, { "X-Surgecast-Confirm": "wipe" });
+await call("/v1/vault", "DELETE", undefined, { "X-OpenCast-Confirm": "wipe" });
 await call("/v1/vault", "PUT", vault, {}, 201);
 await call("/v1/vault", "PUT", vault, {}, 409);
 await call("/v1/devices", "POST", { deviceId: "local-smoke", name: "Local smoke", platform: "test" }, {}, 201);
@@ -36,7 +36,7 @@ const revoked = new Promise(resolve => socket.once("close", code => resolve(code
 await call("/v1/devices/local-smoke", "DELETE"); assert.equal(await revoked, 4003);
 await call("/v1/pull", "GET", undefined, {}, 403);
 await call("/v1/devices", "POST", { deviceId: "local-smoke", name: "Local smoke", platform: "test" }, {}, 201);
-await call("/v1/vault", "DELETE", undefined, { "X-Surgecast-Confirm": "wipe" });
+await call("/v1/vault", "DELETE", undefined, { "X-OpenCast-Confirm": "wipe" });
 await call("/v1/vault", "GET", undefined, {}, 404);
 assert.equal((await call("/v1/stats")).devices, 0);
 console.log("Wrangler local: vault, device, CAS, pull, tombstone, stats, WebSocket notification, revocation and wipe passed");

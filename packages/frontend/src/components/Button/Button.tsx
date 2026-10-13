@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import type { ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import type { ImageLike, KeyboardShortcut } from "@opencast/protocol";
 import { Image } from "../../icons/Image";
 import { Shortcut } from "../Keycap/Keycap";
 import "./button.css";

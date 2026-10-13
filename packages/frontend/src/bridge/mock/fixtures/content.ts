@@ -1,4 +1,4 @@
-import type { AIProvider, ClipboardItem, InstalledExtension, Note, Snippet } from "@surgecast/protocol";
+import type { AIProvider, ClipboardItem, InstalledExtension, Note, Snippet } from "@opencast/protocol";
 
 const now = Date.now();
 const min = 60_000;
@@ -14,7 +14,7 @@ export const SAMPLE_IMAGE =
 
 export const CLIPBOARD: ClipboardItem[] = [
   { id: "c1", kind: "text", title: "Ship the launcher redesign behind the glass flag", text: "Ship the launcher redesign behind the glass flag\n\n- footer pills\n- action panel\n- progressive blur", pinned: false, copyCount: 1, characters: 92, words: 15, contentHash: "h1", createdAt: now - 4 * min, lastCopiedAt: now - 4 * min, sourceApp: { name: "Slack", bundleId: "com.tinyspeck.slackmacgap", path: "/Applications/Slack.app" } },
-  { id: "c2", kind: "link", title: "https://github.com/surgecast/surgecast/pull/128", text: "https://github.com/surgecast/surgecast/pull/128", url: "https://github.com/surgecast/surgecast/pull/128", pinned: true, copyCount: 3, characters: 46, words: 1, contentHash: "h2", createdAt: now - 25 * min, lastCopiedAt: now - 20 * min, sourceApp: { name: "Safari", bundleId: "com.apple.Safari", path: "/Applications/Safari.app" } },
+  { id: "c2", kind: "link", title: "https://github.com/opencast/opencast/pull/128", text: "https://github.com/opencast/opencast/pull/128", url: "https://github.com/opencast/opencast/pull/128", pinned: true, copyCount: 3, characters: 46, words: 1, contentHash: "h2", createdAt: now - 25 * min, lastCopiedAt: now - 20 * min, sourceApp: { name: "Safari", bundleId: "com.apple.Safari", path: "/Applications/Safari.app" } },
   { id: "c3", kind: "color", title: "#7C5CFF", text: "#7C5CFF", color: "#7C5CFF", pinned: false, copyCount: 1, characters: 7, words: 1, contentHash: "h3", createdAt: now - 1 * hour, lastCopiedAt: now - 1 * hour, sourceApp: { name: "Figma", bundleId: "com.figma.Desktop", path: "/Applications/Figma.app" } },
   { id: "c4", kind: "image", title: "Image (640×400)", imagePath: SAMPLE_IMAGE, imageWidth: 640, imageHeight: 400, ocrText: "", pinned: false, copyCount: 1, byteSize: 182_400, contentHash: "h4", createdAt: now - 3 * hour, lastCopiedAt: now - 3 * hour, sourceApp: { name: "Preview", bundleId: "com.apple.Preview", path: "/System/Applications/Preview.app" } },
   { id: "c5", kind: "file", title: "Quarterly Report.pdf", filePaths: ["/Users/me/Documents/Quarterly Report.pdf"], pinned: false, copyCount: 1, byteSize: 2_480_000, contentHash: "h5", createdAt: now - 1 * day - 2 * hour, lastCopiedAt: now - 1 * day - 2 * hour, sourceApp: { name: "Finder", bundleId: "com.apple.finder", path: "/System/Library/CoreServices/Finder.app" } },
@@ -22,7 +22,7 @@ export const CLIPBOARD: ClipboardItem[] = [
 ];
 
 export const SNIPPETS: Snippet[] = [
-  { id: "s1", name: "Email Signature", text: "Best,\n{argument name=\"name\" default=\"Alex\"}\nSurgecast", keyword: ";sig", tags: ["email"], copyCount: 12, createdAt: now - 30 * day, updatedAt: now - 3 * day },
+  { id: "s1", name: "Email Signature", text: "Best,\n{argument name=\"name\" default=\"Alex\"}\nOpenCast", keyword: ";sig", tags: ["email"], copyCount: 12, createdAt: now - 30 * day, updatedAt: now - 3 * day },
   { id: "s2", name: "Today's Date", text: "{date format=\"yyyy-MM-dd\"}", keyword: ";date", copyCount: 40, createdAt: now - 60 * day, updatedAt: now - 60 * day },
   { id: "s3", name: "Meeting Notes Template", text: "## {date}\n\n**Attendees:** {cursor}\n\n### Notes\n\n### Action items\n", tags: ["work"], copyCount: 5, createdAt: now - 10 * day, updatedAt: now - 1 * day },
 ];
@@ -30,7 +30,7 @@ export const SNIPPETS: Snippet[] = [
 const LAUNCH_NOTE = [
   "# Launch checklist",
   "",
-  "Ship **Surgecast 0.1** with the new glass interface. Details live in [the roadmap](https://github.com/surgecast/surgecast).",
+  "Ship **OpenCast 0.1** with the new glass interface. Details live in [the roadmap](https://github.com/opencast/opencast).",
   "",
   "## Before release",
   "",
@@ -116,7 +116,7 @@ export const EXTENSIONS: InstalledExtension[] = [
     name: "github",
     title: "GitHub",
     description: "Search pull requests, issues and repositories.",
-    author: "surgecast",
+    author: "opencast",
     source: "store",
     version: "1.8.0",
     enabled: true,
@@ -130,7 +130,7 @@ export const EXTENSIONS: InstalledExtension[] = [
     tools: [],
     preferences: [
       { name: "token", title: "Personal Access Token", description: "Used to read and create issues.", type: "password", required: true, placeholder: "ghp_…" },
-      { name: "defaultRepo", title: "Default Repository", type: "textfield", required: false, default: "surgecast/surgecast" },
+      { name: "defaultRepo", title: "Default Repository", type: "textfield", required: false, default: "opencast/opencast" },
       { name: "includeDrafts", title: "Pull Requests", label: "Include drafts", type: "checkbox", required: false, default: true },
       { name: "sort", title: "Sort By", type: "dropdown", required: false, default: "updated", data: [{ title: "Recently Updated", value: "updated" }, { title: "Newest", value: "created" }, { title: "Most Commented", value: "comments" }] },
     ],
@@ -138,7 +138,7 @@ export const EXTENSIONS: InstalledExtension[] = [
   {
     name: "weather",
     title: "Weather",
-    author: "surgecast",
+    author: "opencast",
     source: "store",
     enabled: true,
     installedAt: now - 10 * day,

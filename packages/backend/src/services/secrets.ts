@@ -2,7 +2,7 @@ import type { NativeApi } from "../native/client";
 
 /**
  * API keys, OAuth tokens, the sync passphrase-derived key, extension password
- * preferences. Stored in the macOS Keychain (service "app.surgecast") through
+ * preferences. Stored in the macOS Keychain (service "app.opencast") through
  * the native host; cached in memory for the life of the process.
  *
  * Account naming: "<area>:<id>[:<field>]", e.g. "ai.provider:openai:apiKey",

@@ -1,4 +1,4 @@
-import type { Note } from "@surgecast/protocol";
+import type { Note } from "@opencast/protocol";
 import { createDocument, type Editor, type JSONContent } from "@tiptap/core";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { backend } from "../bridge/backend";

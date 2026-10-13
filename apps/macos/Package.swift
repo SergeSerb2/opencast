@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-  name: "Surgecast", platforms: [.macOS(.v14)],
+  name: "OpenCast", platforms: [.macOS(.v14)],
   products: [
-    .executable(name: "Surgecast", targets: ["Surgecast"]),
-    .executable(name: "SurgecastSelfTest", targets: ["SurgecastSelfTest"]),
+    .executable(name: "OpenCast", targets: ["OpenCast"]),
+    .executable(name: "OpenCastSelfTest", targets: ["OpenCastSelfTest"]),
   ],
   targets: [
-    .target(name: "SurgecastCore"),
-    .executableTarget(name: "Surgecast", dependencies: ["SurgecastCore"]),
-    .executableTarget(name: "SurgecastSelfTest", dependencies: ["SurgecastCore"]),
+    .target(name: "OpenCastCore"),
+    .executableTarget(name: "OpenCast", dependencies: ["OpenCastCore"]),
+    .executableTarget(name: "OpenCastSelfTest", dependencies: ["OpenCastCore"]),
   ], swiftLanguageModes: [.v5])

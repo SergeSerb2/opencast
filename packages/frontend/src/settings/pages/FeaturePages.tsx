@@ -236,7 +236,7 @@ export function CalculatorPage() {
         <Row title="Enable Color Conversion" description="Preview and convert color values such as #FF6363 or rgb(255 99 99) in root search.">
           <SettingSwitch setting="calculator.colorConversion" label="Enable Color Conversion" />
         </Row>
-        <Row title="Enable Flight Tracker" description="Unavailable: no flight-data provider is configured for Surgecast.">
+        <Row title="Enable Flight Tracker" description="Unavailable: no flight-data provider is configured for OpenCast.">
           <SettingSwitch setting="calculator.flightTracker" disabled label="Enable Flight Tracker" />
         </Row>
         <Row title="Enable Weather" description="Show weather forecasts and calculations in root search.">
@@ -476,8 +476,8 @@ export function DeveloperPage() {
         <Row title="Disable Pop to Root Search" description="Keep the current command open while developing.">
           <SettingSwitch setting="developer.disablePopToRootSearch" label="Disable Pop to Root Search" />
         </Row>
-        <Row title="Open Surgecast in Development Mode" description="Open Surgecast after the first successful build.">
-          <SettingSwitch setting="developer.openSurgecastInDevelopmentMode" label="Open Surgecast in Development Mode" />
+        <Row title="Open OpenCast in Development Mode" description="Open OpenCast after the first successful build.">
+          <SettingSwitch setting="developer.openOpenCastInDevelopmentMode" label="Open OpenCast in Development Mode" />
         </Row>
         <Row title="Use Node Production Environment" description="Set NODE_ENV to production in development workers.">
           <SettingSwitch setting="developer.useNodeProductionEnvironment" label="Use Node Production Environment" />
@@ -508,7 +508,7 @@ export function ScriptCommandsPage() {
   };
   return (
     <BuiltinPage id="script-commands">
-      <Section title="Script Folders" description="Scripts in these folders with Surgecast (or Raycast) metadata comments become commands.">
+      <Section title="Script Folders" description="Scripts in these folders with OpenCast (or Raycast) metadata comments become commands.">
         <Row title="Script Folders" layout="stacked" anchor="script-folders">
           <PathListEditor
             value={directories}

@@ -1,4 +1,4 @@
-import type { WindowKind } from "@surgecast/protocol";
+import type { WindowKind } from "@opencast/protocol";
 
 /** Object the native host injects into every web view at document start. */
 export interface InjectedEnvironment {
@@ -11,7 +11,7 @@ export interface InjectedEnvironment {
   dev: boolean;
 }
 
-export interface SurgecastEnv {
+export interface OpenCastEnv {
   /** WebSocket URL of the backend RPC endpoint, without the query string. */
   backendUrl: string | null;
   token: string | null;
@@ -33,7 +33,7 @@ interface NativeMessageHandler {
 
 declare global {
   interface Window {
-    __SURGECAST__?: Partial<InjectedEnvironment>;
+    __OPENCAST__?: Partial<InjectedEnvironment>;
     webkit?: { messageHandlers?: { native?: NativeMessageHandler } };
   }
 }
@@ -51,7 +51,7 @@ export function resolveEnvironment(input: {
   search: string;
   pathname: string;
   hasNativeHandler: boolean;
-}): SurgecastEnv {
+}): OpenCastEnv {
   const params = new URLSearchParams(input.search);
   const injected = input.injected ?? {};
   const backendUrl = injected.backendUrl ?? params.get("backend");
@@ -74,12 +74,12 @@ export function resolveEnvironment(input: {
   };
 }
 
-let cached: SurgecastEnv | null = null;
+let cached: OpenCastEnv | null = null;
 
-export function getEnv(): SurgecastEnv {
+export function getEnv(): OpenCastEnv {
   if (!cached) {
     cached = resolveEnvironment({
-      injected: window.__SURGECAST__,
+      injected: window.__OPENCAST__,
       search: window.location.search,
       pathname: window.location.pathname,
       hasNativeHandler: Boolean(window.webkit?.messageHandlers?.native),

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AIProvider, AIToolInfo } from "@surgecast/protocol";
+import type { AIProvider, AIToolInfo } from "@opencast/protocol";
 import {
   mapRequest,
   streamAdapter,

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { BackendEvents, CommandInfo } from "@surgecast/protocol";
+import type { BackendEvents, CommandInfo } from "@opencast/protocol";
 import { Emitter } from "../../emitter";
 import { createScriptsMock } from "./scripts";
 

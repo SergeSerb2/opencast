@@ -1,6 +1,6 @@
 import { forwardRef, memo, useImperativeHandle, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import type { CommandArgument, ImageLike } from "@surgecast/protocol";
-import { SurgecastLogo } from "../../icons/glyphs";
+import type { CommandArgument, ImageLike } from "@opencast/protocol";
+import { OpenCastLogo } from "../../icons/glyphs";
 import { Image } from "../../icons/Image";
 import { sc } from "../../lib/keyboard";
 import { Shortcut } from "../Keycap/Keycap";
@@ -19,7 +19,7 @@ export interface SearchBarProps {
   value?: string;
   onChange?: (text: string) => void;
   placeholder?: string;
-  /** Left glyph: the Surgecast mark (root), a back chevron (pushed views), a custom image, or nothing. */
+  /** Left glyph: the OpenCast mark (root), a back chevron (pushed views), a custom image, or nothing. */
   leading?: "logo" | "back" | ImageLike | null;
   onBack?: () => void;
   /** Right side: dropdown accessory, Quick AI hint, link accessory… */
@@ -75,7 +75,7 @@ export const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(function Se
   const hasArgs = Boolean(args && args.length > 0);
 
   let leadingNode: ReactNode = null;
-  if (leading === "logo") leadingNode = <SurgecastLogo size={22} className="sc-search-bar__logo" />;
+  if (leading === "logo") leadingNode = <OpenCastLogo size={22} className="sc-search-bar__logo" />;
   else if (leading === "back")
     leadingNode = (
       <button type="button" className="sc-search-bar__back" aria-label="Back" title={"Esc to go back\n⌘Esc to go to root search"} onMouseDown={(e) => e.preventDefault()} onClick={onBack}>

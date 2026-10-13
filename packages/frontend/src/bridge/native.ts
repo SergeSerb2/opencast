@@ -1,4 +1,4 @@
-import { RpcErrorCode, type NativeEvents, type NativeMethod, type NativeParams, type NativeResult, type RpcErrorObject } from "@surgecast/protocol";
+import { RpcErrorCode, type NativeEvents, type NativeMethod, type NativeParams, type NativeResult, type RpcErrorObject } from "@opencast/protocol";
 import { Emitter } from "./emitter";
 import { RpcError } from "./errors";
 import { getEnv } from "./env";
@@ -14,7 +14,7 @@ export interface NativeReceiver {
 
 declare global {
   interface Window {
-    __surgecastNative?: NativeReceiver;
+    __opencastNative?: NativeReceiver;
   }
 }
 
@@ -26,7 +26,7 @@ let pendingRoute: NativeEvents["window.route"] | undefined;
 let routeSubscribers = 0;
 
 /**
- * Install `window.__surgecastNative` as early as possible. Safe to call more than once.
+ * Install `window.__opencastNative` as early as possible. Safe to call more than once.
  *
  * The Swift host injects a placeholder receiver at document start that queues
  * events nobody listens to yet (WebKit can finish loading before modules run);
@@ -34,7 +34,7 @@ let routeSubscribers = 0;
  */
 export function installNativeReceiver(): NativeReceiver {
   if (!receiver) {
-    const placeholder = window.__surgecastNative as (NativeReceiver & { pending?: [keyof NativeEvents, unknown][] }) | undefined;
+    const placeholder = window.__opencastNative as (NativeReceiver & { pending?: [keyof NativeEvents, unknown][] }) | undefined;
     const installed: NativeReceiver = {
       emit: (topic, payload) => {
         if (topic === "window.route" && routeSubscribers === 0) pendingRoute = payload as NativeEvents["window.route"];
@@ -43,7 +43,7 @@ export function installNativeReceiver(): NativeReceiver {
       on: (topic, fn) => events.on(topic, fn),
     };
     receiver = installed;
-    window.__surgecastNative = installed;
+    window.__opencastNative = installed;
     for (const [topic, payload] of placeholder?.pending?.splice(0) ?? []) installed.emit(topic, payload as never);
   }
   return receiver;

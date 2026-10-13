@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
-import type { AIAttachment, AIToolCall } from "@surgecast/protocol";
+import type { AIAttachment, AIToolCall } from "@opencast/protocol";
 import { Button } from "../../components/Button/Button";
 import { ActivityIndicator, type ActivityState } from "../../components/Spinner/Spinner";
 import { Icon } from "../../icons/Icon";

@@ -1,4 +1,4 @@
-import type { MCPServer } from "@surgecast/protocol";
+import type { MCPServer } from "@opencast/protocol";
 
 export interface McpDraft {
   id?: string;

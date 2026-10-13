@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ImageLike, ScriptCommand } from "@surgecast/protocol";
+import type { ImageLike, ScriptCommand } from "@opencast/protocol";
 import { Action, ActionPanel, Form, showToast, useNavigation } from "../../../components";
 import { sc } from "../../../lib/keyboard";
 import { argumentValues, firstMissingArgument } from "./script-list";

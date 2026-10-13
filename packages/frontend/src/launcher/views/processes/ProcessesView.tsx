@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ProcessInfo } from "@surgecast/protocol";
+import type { ProcessInfo } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend, useNativeEvent } from "../../../bridge/hooks";

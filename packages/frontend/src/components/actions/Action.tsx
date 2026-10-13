@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ClipboardContent, ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import type { ClipboardContent, ImageLike, KeyboardShortcut } from "@opencast/protocol";
 import { pasteTitle } from "../../bridge/frontmost-app";
 import { native } from "../../bridge/native";
 import { showHUD } from "../feedback/hud";

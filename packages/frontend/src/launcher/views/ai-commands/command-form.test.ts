@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AICommand } from "@surgecast/protocol";
+import type { AICommand } from "@opencast/protocol";
 import { DEFAULT_AI_ICON } from "../ai-shared/options";
 import { commandDraft, commandTags, commandUpsertParams, emptyCommandDraft, validateCommandDraft } from "./command-form";
 import { ALL_TAGS, commandDeeplink, commandSections } from "./command-list";
@@ -106,6 +106,6 @@ describe("commandSections", () => {
 
 describe("commandDeeplink", () => {
   it("links to the command by id", () => {
-    expect(commandDeeplink({ id: "fix spelling" })).toBe("surgecast://ai-commands/fix%20spelling");
+    expect(commandDeeplink({ id: "fix spelling" })).toBe("opencast://ai-commands/fix%20spelling");
   });
 });

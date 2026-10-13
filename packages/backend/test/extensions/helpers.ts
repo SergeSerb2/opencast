@@ -4,7 +4,7 @@ import { resolve, join } from "node:path";
 import { EventEmitter } from "node:events";
 import { vi } from "vitest";
 import type { AppContext } from "../../src/context";
-import type { BackendMethods } from "@surgecast/protocol";
+import type { BackendMethods } from "@opencast/protocol";
 import { Database } from "../../src/db/database";
 import { EntityStore, entitiesMigration } from "../../src/db/entities";
 import { SettingsService, settingsMigration } from "../../src/services/settings";
@@ -16,7 +16,7 @@ import { DefaultToolRegistry } from "../../src/registries/tools";
 import { unconfiguredAI } from "../../src/registries/ai-unconfigured";
 import { ExtensionsHost } from "../../src/services/extensions";
 export function harness() {
-  const dataDir = mkdtempSync(join(tmpdir(), "surgecast-host-test-"));
+  const dataDir = mkdtempSync(join(tmpdir(), "opencast-host-test-"));
   const db = new Database(":memory:"); db.addMigrations(entitiesMigration, settingsMigration);
   const entities = new EntityStore(db); const events = new EventBus(); const rpc = new RpcRegistry<BackendMethods>();
   const nativeEvents = new EventEmitter(); const secrets = new Map<string, string>();

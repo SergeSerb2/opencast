@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { AIModelOption, ModelRef } from "@surgecast/protocol";
+import type { AIModelOption, ModelRef } from "@opencast/protocol";
 import { Menu, type MenuSection } from "../../components/Menu/Menu";
 import { Popover, type PopoverAnchor } from "../../components/Popover/Popover";
 import { CAPABILITY_BADGES, groupByProvider } from "../model/models";

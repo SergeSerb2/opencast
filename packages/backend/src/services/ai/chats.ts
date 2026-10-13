@@ -7,7 +7,7 @@ import type {
   AIToolCall,
   BackendMethods,
   AICommandOutput,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type {
   AIChatTurn,
   AICompletionRequest,
@@ -536,7 +536,7 @@ export class Chats {
   ): string {
     const now = new Date();
     return [
-      "You are Surgecast's assistant, running through the user's chosen AI provider. Help with the request clearly and accurately. Use Markdown where it improves readability. State uncertainty and never invent tool results.",
+      "You are OpenCast's assistant, running through the user's chosen AI provider. Help with the request clearly and accurately. Use Markdown where it improves readability. State uncertainty and never invent tool results.",
       `Local date and time: ${now.toLocaleString()}. Time zone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}.`,
       chat.source === "quick-ai"
         ? "Keep answers compact unless the user asks for depth."
@@ -686,7 +686,7 @@ export class Chats {
               branch
                 .map(
                   (m) =>
-                    `## ${m.role === "user" ? "You" : "Surgecast"}\n\n${m.content}${m.attachments?.length ? "\n\nAttachments: " + m.attachments.map((a) => a.name).join(", ") : ""}`,
+                    `## ${m.role === "user" ? "You" : "OpenCast"}\n\n${m.content}${m.attachments?.length ? "\n\nAttachments: " + m.attachments.map((a) => a.name).join(", ") : ""}`,
                 )
                 .join("\n\n");
         return {

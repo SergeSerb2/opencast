@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { AICommand, AIModelOption } from "@surgecast/protocol";
+import type { AICommand, AIModelOption } from "@opencast/protocol";
 import { ItemDetail, type MetadataEntry } from "../../../components";
 import { creativityLabel, formatTimestamp, modelLabel, outputLabel, reasoningLabel, tagColor } from "../ai-shared/options";
 import { promptArguments, tokenizePrompt } from "./placeholders";

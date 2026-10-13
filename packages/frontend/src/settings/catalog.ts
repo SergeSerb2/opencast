@@ -1,4 +1,4 @@
-import type { CommandInfo, ImageLike, InstalledExtension, TileImage } from "@surgecast/protocol";
+import type { CommandInfo, ImageLike, InstalledExtension, TileImage } from "@opencast/protocol";
 import type { SearchablePage } from "./search";
 
 export type PageGroup = "core" | "builtin" | "installed" | "subpage";
@@ -20,7 +20,7 @@ const graphite = (glyph: string) => tile(glyph, "#6B6F7B", "#3C3F48");
 /** Icon for installed extensions that don't ship one. */
 export const EXTENSION_FALLBACK_ICON: TileImage = graphite("app-window-grid-2x2-16");
 
-/** Top group: Surgecast's own settings pages. */
+/** Top group: OpenCast's own settings pages. */
 export const CORE_PAGES: readonly PageEntry[] = [
   {
     id: "general",
@@ -31,7 +31,7 @@ export const CORE_PAGES: readonly PageEntry[] = [
     rows: [
       "Open at Login",
       "Show in Menu Bar",
-      "Surgecast Hotkey",
+      "OpenCast Hotkey",
       "Appearance",
       "Follow System Appearance",
       "Dark Theme",
@@ -49,7 +49,7 @@ export const CORE_PAGES: readonly PageEntry[] = [
     group: "core",
     icon: graphite("app-window-list-16"),
     keywords: ["root search", "fallback", "screen", "sensitivity"],
-    rows: ["Show Surgecast on", "Pop to Root Search", "Root Search Sensitivity", "Search Ranking", "Customize Search", "Include Files in Root Search", "Show Recently Used", "Fallback Commands"],
+    rows: ["Show OpenCast on", "Pop to Root Search", "Root Search Sensitivity", "Search Ranking", "Customize Search", "Include Files in Root Search", "Show Recently Used", "Fallback Commands"],
   },
   {
     id: "shortcuts",
@@ -93,13 +93,13 @@ export const CORE_PAGES: readonly PageEntry[] = [
     group: "core",
     icon: graphite("wrench-screwdriver-16"),
     keywords: ["import", "export", "rayconfig", "raycast", "backup", "proxy", "favicon", "storage"],
-    rows: ["Export Passphrase", "Window Activation Behavior", "Tidy Menu Bar", "Auto-Delete", "Skip on Battery", "Additional Certificate Authority", "Import from Raycast", "Export Data", "Import Surgecast Data", "Scheduled Backup", "Backup Location", "Storage", "Use System Proxy Settings", "Favicon Provider"],
+    rows: ["Export Passphrase", "Window Activation Behavior", "Tidy Menu Bar", "Auto-Delete", "Skip on Battery", "Additional Certificate Authority", "Import from Raycast", "Export Data", "Import OpenCast Data", "Scheduled Backup", "Backup Location", "Storage", "Use System Proxy Settings", "Favicon Provider"],
   },
   {
     id: "about",
     title: "About",
     group: "core",
-    icon: graphite("surgecast-logo"),
+    icon: graphite("opencast-logo"),
     keywords: ["version", "license", "licenses", "github", "update"],
     rows: ["Website", "Release Notes", "Report an Issue", "Licenses"],
   },
@@ -197,7 +197,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Tools for building and debugging extensions.",
     commandGroups: ["developer"],
     keywords: ["extension development", "reload"],
-    rows: ["Disable Pop to Root Search", "Open Surgecast in Development Mode", "Use Node Production Environment", "Develop an Extension", "Auto-reload on Save", "Keep Window Always Visible During Development"],
+    rows: ["Disable Pop to Root Search", "Open OpenCast in Development Mode", "Use Node Production Environment", "Develop an Extension", "Auto-reload on Save", "Keep Window Always Visible During Development"],
   },
   {
     id: "emoji",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { useBackend } from "../../../bridge/hooks";
 import { native } from "../../../bridge/native";
 import { getSetting, useSettings } from "../../../bridge/settings";

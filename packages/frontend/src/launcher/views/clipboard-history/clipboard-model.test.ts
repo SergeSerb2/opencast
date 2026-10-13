@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ClipboardItem } from "@surgecast/protocol";
+import type { ClipboardItem } from "@opencast/protocol";
 import { clipboardSections, entriesSince, entryPath, formattedJson, suggestedFileName, suggestedSnippetName, textPreview } from "./clipboard-model";
 import { colorFormats, parseHexColor } from "./color-formats";
 

@@ -1,4 +1,4 @@
-import type { BackendParams, ScriptCommand } from "@surgecast/protocol";
+import type { BackendParams, ScriptCommand } from "@opencast/protocol";
 import { abbreviateHome } from "./script-list";
 
 export type ScriptLanguage = BackendParams<"scripts.create">["language"];

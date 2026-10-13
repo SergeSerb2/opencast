@@ -1,4 +1,4 @@
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 import { RpcError } from "../util/errors";
 
 export interface MethodSpec {

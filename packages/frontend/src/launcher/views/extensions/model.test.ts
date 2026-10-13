@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CommandInfo, InstalledExtension } from "@surgecast/protocol";
+import type { CommandInfo, InstalledExtension } from "@opencast/protocol";
 import { RpcError } from "../../../bridge/errors";
 import { EXTENSION_FALLBACK_ICON } from "../store/model";
 import { extensionCommandRows, groupExtensions, installedExtensionIcon, runExtensionUpdates, summarizeUpdates, tildify, updatableExtensions, withNewVersions } from "./model";
@@ -10,7 +10,7 @@ function extension(overrides: Partial<InstalledExtension> = {}): InstalledExtens
     title: "GitHub",
     author: "mira",
     source: "store",
-    path: "/Users/me/Library/Application Support/Surgecast/extensions/github",
+    path: "/Users/me/Library/Application Support/OpenCast/extensions/github",
     version: "1.0.0",
     commands: [
       { name: "prs", title: "My Pull Requests", mode: "view" },
@@ -51,7 +51,7 @@ describe("installed extension helpers", () => {
   });
 
   it("resolves the manifest icon inside the install folder", () => {
-    expect(installedExtensionIcon(extension({ icon: "icon.png" }))).toEqual({ source: "/Users/me/Library/Application Support/Surgecast/extensions/github/assets/icon.png", fallback: EXTENSION_FALLBACK_ICON });
+    expect(installedExtensionIcon(extension({ icon: "icon.png" }))).toEqual({ source: "/Users/me/Library/Application Support/OpenCast/extensions/github/assets/icon.png", fallback: EXTENSION_FALLBACK_ICON });
     expect(installedExtensionIcon(extension({ icon: "https://example.com/i.png" }))).toEqual({ source: "https://example.com/i.png", fallback: EXTENSION_FALLBACK_ICON });
   });
 

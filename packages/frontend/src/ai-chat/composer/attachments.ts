@@ -1,4 +1,4 @@
-import type { AIAttachment, WindowKind } from "@surgecast/protocol";
+import type { AIAttachment, WindowKind } from "@opencast/protocol";
 import { localFileUrl } from "../../icons/image-source";
 import { native } from "../../bridge/native";
 
@@ -62,7 +62,7 @@ export async function attachmentFromFile(file: File): Promise<AIAttachment> {
     });
     return { id: attachmentId(), kind: "image", name: file.name, mimeType, url, size: file.size };
   }
-  if (!looksLikeText(file)) throw new Error(`“${file.name}” can only be attached from the Surgecast app (use + → File…).`);
+  if (!looksLikeText(file)) throw new Error(`“${file.name}” can only be attached from the OpenCast app (use + → File…).`);
   if (file.size > TEXT_LIMIT) throw new Error(`“${file.name}” is larger than 512 KB.`);
   const text = await file.text();
   if (text.includes("\u0000")) throw new Error(`“${file.name}” is not a text file.`);

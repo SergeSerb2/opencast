@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import type { AIModel, AIProvider } from "@surgecast/protocol";
+import type { AIModel, AIProvider } from "@opencast/protocol";
 import {
   prepareTurns,
   trivialPdfText,
@@ -32,7 +32,7 @@ const provider: AIProvider = {
   updatedAt: 1,
 };
 it("loads selected images as base64 and labels text files", async () => {
-  dir = await mkdtemp(join(tmpdir(), "surgecast-attachments-"));
+  dir = await mkdtemp(join(tmpdir(), "opencast-attachments-"));
   const image = join(dir, "image.png"),
     text = join(dir, "code.ts");
   await writeFile(image, Buffer.from("image bytes"));
@@ -76,7 +76,7 @@ it("loads selected images as base64 and labels text files", async () => {
   ).rejects.toThrow("does not support image");
 });
 it("sends native PDFs to document-capable vendors and extracts trivial PDFs otherwise", async () => {
-  dir = await mkdtemp(join(tmpdir(), "surgecast-pdf-"));
+  dir = await mkdtemp(join(tmpdir(), "opencast-pdf-"));
   const path = join(dir, "document.pdf");
   const pdf = Buffer.from("%PDF-1.4\nBT (Hello PDF) Tj ET\n%%EOF");
   await writeFile(path, pdf);
@@ -110,7 +110,7 @@ it("sends native PDFs to document-capable vendors and extracts trivial PDFs othe
   );
 });
 it("rejects binary attachments instead of treating bytes as text", async () => {
-  dir = await mkdtemp(join(tmpdir(), "surgecast-binary-"));
+  dir = await mkdtemp(join(tmpdir(), "opencast-binary-"));
   const path = join(dir, "data.bin");
   await writeFile(path, Buffer.from([1, 0, 2]));
   await expect(

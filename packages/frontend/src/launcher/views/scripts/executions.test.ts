@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { BackendEvents } from "@surgecast/protocol";
+import type { BackendEvents } from "@opencast/protocol";
 import { Emitter } from "../../../bridge/emitter";
 import { recentLaunchArguments, rememberLaunchArguments, ScriptExecutionStore } from "./executions";
 

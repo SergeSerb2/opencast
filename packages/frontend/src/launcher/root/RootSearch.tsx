@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { CommandArgument, RootSearchItem } from "@surgecast/protocol";
+import type { CommandArgument, RootSearchItem } from "@opencast/protocol";
 import { errorMessage } from "../../bridge/errors";
 import { useBackend } from "../../bridge/hooks";
 import { EmptyView } from "../../components/EmptyView/EmptyView";

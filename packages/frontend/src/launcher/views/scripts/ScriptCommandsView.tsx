@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import type { ScriptCommand } from "@surgecast/protocol";
+import type { ScriptCommand } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
@@ -189,7 +189,7 @@ export function ScriptCommandsView({ props, title, icon }: LauncherViewProps<{ q
     emptyView = error ? (
       <EmptyView title="Could Not Load Script Commands" description={errorMessage(error)} icon="warning-16" action={{ title: "Try Again", onAction: refetch }} />
     ) : noDirectories ? (
-      <EmptyView title="No Script Directories" description="Add a folder with your scripts to run them from Surgecast." action={{ title: "Add Script Directory", onAction: openAddDirectory }} />
+      <EmptyView title="No Script Directories" description="Add a folder with your scripts to run them from OpenCast." action={{ title: "Add Script Directory", onAction: openAddDirectory }} />
     ) : !hasScripts ? (
       <EmptyView title="No Script Commands" description="Create a script command, or put scripts with Raycast-style metadata into one of your script directories." action={{ title: "Create Script Command", onAction: openCreate }} />
     ) : (

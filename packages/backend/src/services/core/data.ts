@@ -17,7 +17,7 @@ import {
   type Quicklink,
   type Snippet,
   type Theme,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import { decodeConfig, encodeConfig } from "./config-format";
 import { nonempty } from "./shared";
@@ -26,6 +26,7 @@ import { validateTheme } from "./themes";
 import { templateArguments } from "./placeholders";
 import { ScheduledBackup } from "./backup";
 import { RpcError } from "../../util/errors";
+import { currentSettingKey, currentSettingValue } from "../../util/legacy-branding";
 
 type ObjectValue = Record<string, unknown>;
 const COLLECTIONS = new Set([
@@ -412,6 +413,8 @@ function validateOwnRecord(
   id: string,
   data: ObjectValue,
 ): ObjectValue {
+  if (collection === "settings")
+    return { ...data, value: currentSettingValue(id, data.value) };
   if (collection === "notes") {
     if (typeof data.content !== "string")
       throw RpcError.invalidParams("Note content must be text");
@@ -466,23 +469,23 @@ function validateOwnRecord(
     ? data
     : { ...data, id };
 }
-function importSurge(ctx: AppContext, payload: ObjectValue): ImportResult[] {
+function importOpenCast(ctx: AppContext, payload: ObjectValue): ImportResult[] {
   if (payload.schemaVersion !== 1)
-    throw RpcError.invalidParams("Unsupported Surgecast payload version");
+    throw RpcError.invalidParams("Unsupported OpenCast payload version");
   const collections = obj(payload.collections);
   const results: ImportResult[] = [];
   for (const [collection, values] of Object.entries(collections)) {
     if (!COLLECTIONS.has(collection)) continue;
     try {
-      const records = rows(values, collection).map((record) => ({
-        id: nonempty(record.id, "Entity id"),
-        data: validateOwnRecord(
-          collection,
-          nonempty(record.id, "Entity id"),
-          obj(record.data),
-        ),
-        createdAt: timestamp(record.createdAt),
-      }));
+      const records = rows(values, collection).map((record) => {
+        const originalId = nonempty(record.id, "Entity id");
+        const id = collection === "settings" ? currentSettingKey(originalId) : originalId;
+        return {
+          id,
+          data: validateOwnRecord(collection, id, obj(record.data)),
+          createdAt: timestamp(record.createdAt),
+        };
+      });
       ctx.db.transaction(() => {
         for (const record of records) {
           if (collection === "settings") {
@@ -574,9 +577,9 @@ export const dataService: Service = {
           await readConfiguration(path),
           password,
         );
-        if (decoded.family === "surge")
+        if (decoded.family === "opencast")
           throw RpcError.invalidParams(
-            "Use data.import for a Surgecast export",
+            "Use data.import for an OpenCast export",
           );
         return {
           results: importRaycastPayload(ctx, decoded.payload, categories),
@@ -588,15 +591,15 @@ export const dataService: Service = {
           password,
           true,
         );
-        return { results: importSurge(ctx, decoded.payload) };
+        return { results: importOpenCast(ctx, decoded.payload) };
       },
       "data.storage": async () => {
         const size = async (path: string) =>
           (await stat(path).catch(() => null))?.size ?? 0;
         const databaseBytes = (
           await Promise.all(
-            ["surgecast.db", "surgecast.db-wal", "surgecast.db-shm"].map(
-              (file) => size(join(ctx.dataDir, file)),
+            [ctx.db.path, `${ctx.db.path}-wal`, `${ctx.db.path}-shm`].map(
+              (file) => size(file),
             ),
           )
         ).reduce((a, b) => a + b, 0);

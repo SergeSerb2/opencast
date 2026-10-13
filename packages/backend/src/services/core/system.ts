@@ -1,4 +1,4 @@
-import type { CommandInfo, WindowLayout } from "@surgecast/protocol";
+import type { CommandInfo, WindowLayout } from "@opencast/protocol";
 import type { Service } from "../../context";
 import {
   list,

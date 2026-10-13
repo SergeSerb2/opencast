@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AIProvider } from "@surgecast/protocol";
+import type { AIProvider } from "@opencast/protocol";
 import { draftFromProvider, draftFromTemplate, draftToUpsert, hasErrors, KEYCHAIN_MARKER, supportedApis, validateBaseUrl, validateProviderDraft, type ProviderTemplate } from "../pages/ai/provider-form";
 
 const openai: ProviderTemplate = { id: "openai", name: "OpenAI", api: "openai-responses", supportedApis: ["openai", "openai-responses"], baseUrl: "https://api.openai.com/v1", needsApiKey: true };

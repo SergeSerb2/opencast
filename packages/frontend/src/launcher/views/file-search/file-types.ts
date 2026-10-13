@@ -1,4 +1,4 @@
-import type { FileResult } from "@surgecast/protocol";
+import type { FileResult } from "@opencast/protocol";
 
 export type FileTypeFilter = "allTypes" | "directory" | "file" | "archive" | "document" | "image" | "video" | "audio" | "text" | "other";
 

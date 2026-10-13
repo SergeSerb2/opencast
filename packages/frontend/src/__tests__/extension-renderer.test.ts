@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { UINode } from "@surgecast/protocol";
+import type { UINode } from "@opencast/protocol";
 import { mapAction, mapActionPanel } from "../extension-renderer/actions";
 import { groupSections, mapAccessories, mapDropdownSections, mapGridItem, mapGridLayout, mapListItem, mapMetadata } from "../extension-renderer/mapping";
 import { revive } from "../extension-renderer/props";

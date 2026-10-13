@@ -1,4 +1,4 @@
-import type { BackendEvents, ToastState } from "@surgecast/protocol";
+import type { BackendEvents, ToastState } from "@opencast/protocol";
 import type { LauncherApi } from "../context";
 import type { EventBus } from "../events";
 import type { NativeApi } from "../native/client";

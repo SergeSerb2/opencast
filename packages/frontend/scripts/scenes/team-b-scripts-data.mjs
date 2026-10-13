@@ -41,7 +41,7 @@ export default [
     url: "main.html",
     steps: [...open("import raycast data"), { click: ".sc-file-picker", wait: 200 }, { click: "input[type=password]" }, { type: "correct horse" }, { press: "Meta+Enter", wait: 1300 }],
   },
-  { name: "b-sd-import-surgecast", url: "main.html", steps: open("import surgecast data") },
+  { name: "b-sd-import-opencast", url: "main.html", steps: open("import opencast data") },
   { name: "b-sd-export", url: "main.html", steps: open("export data") },
   {
     name: "b-sd-export-error",

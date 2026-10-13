@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
-import type { KeyboardShortcut } from "@surgecast/protocol";
+import type { KeyboardShortcut } from "@opencast/protocol";
 import { Menu, type MenuItem } from "../../components/Menu/Menu";
 import { Popover } from "../../components/Popover/Popover";
 import { Shortcut } from "../../components/Keycap/Keycap";

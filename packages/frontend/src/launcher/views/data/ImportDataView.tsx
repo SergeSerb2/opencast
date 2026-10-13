@@ -4,11 +4,11 @@ import { errorMessage } from "../../../bridge/errors";
 import { Action, ActionPanel, Form, showToast, useNavigation } from "../../../components";
 import { sc } from "../../../lib/keyboard";
 import type { LauncherViewProps } from "../registry";
-import { formatCount, importErrorField, importSummary, RAYCONFIG_CATEGORIES, RAYCONFIG_EXTENSION, SURGECAST_EXTENSION, type ImportField } from "./data-format";
+import { formatCount, importErrorField, importSummary, RAYCONFIG_CATEGORIES, RAYCONFIG_EXTENSION, OPENCAST_IMPORT_EXTENSIONS, type ImportField } from "./data-format";
 import { ImportResultsView } from "./ImportResultsView";
 
 export interface ImportDataProps {
-  format?: "rayconfig" | "surgecast";
+  format?: "rayconfig" | "opencast";
   /** Preselected file (e.g. opened from Finder or a deeplink's launch context). */
   path?: string;
 }
@@ -19,10 +19,10 @@ function stringValue(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-/** "Import Raycast Data" (`.rayconfig`) and "Import Surgecast Data": file, password, categories → results. */
+/** "Import Raycast Data" (`.rayconfig`) and "Import OpenCast Data": file, password, categories → results. */
 export function ImportDataView({ props, title, icon }: LauncherViewProps<ImportDataProps>) {
   const navigation = useNavigation();
-  const rayconfig = props.format !== "surgecast";
+  const rayconfig = props.format !== "opencast";
   const [errors, setErrors] = useState<Partial<Record<ImportField, string>>>({});
   const [busy, setBusy] = useState(false);
   const clear = (field: ImportField) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
@@ -63,7 +63,7 @@ export function ImportDataView({ props, title, icon }: LauncherViewProps<ImportD
 
   return (
     <Form
-      navigationTitle={title ?? (rayconfig ? "Import Raycast Data" : "Import Surgecast Data")}
+      navigationTitle={title ?? (rayconfig ? "Import Raycast Data" : "Import OpenCast Data")}
       navigationIcon={icon}
       isLoading={busy}
       actions={
@@ -76,15 +76,15 @@ export function ImportDataView({ props, title, icon }: LauncherViewProps<ImportD
         text={
           rayconfig
             ? "Move your snippets, quicklinks, notes, AI commands, themes and settings over from Raycast."
-            : "Restore everything from a Surgecast export, for example one made on another Mac."
+            : "Restore everything from an OpenCast export, for example one made on another Mac."
         }
       />
       <Form.FilePicker
         id="file"
-        title={rayconfig ? "Raycast Export" : "Surgecast Export"}
+        title={rayconfig ? "Raycast Export" : "OpenCast Export"}
         info={rayconfig ? "In Raycast, run Export Settings & Data to create a .rayconfig file." : "Create one with Export Data."}
         allowMultipleSelection={false}
-        allowedTypes={[rayconfig ? RAYCONFIG_EXTENSION : SURGECAST_EXTENSION]}
+        allowedTypes={rayconfig ? [RAYCONFIG_EXTENSION] : OPENCAST_IMPORT_EXTENSIONS}
         defaultValue={props.path ? [props.path] : []}
         error={errors.file}
         onChange={() => clear("file")}

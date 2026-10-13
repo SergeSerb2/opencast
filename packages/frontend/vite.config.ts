@@ -6,21 +6,21 @@ import { fileURLToPath } from "node:url";
 const pages = ["main", "ai-chat", "notes", "settings"] as const;
 
 /**
- * In `vite dev`, inject `window.__SURGECAST__` when the dev script exports the
- * backend address (SURGECAST_BACKEND_URL / SURGECAST_TOKEN). Without them the
+ * In `vite dev`, inject `window.__OPENCAST__` when the dev script exports the
+ * backend address (OPENCAST_BACKEND_URL / OPENCAST_TOKEN). Without them the
  * pages fall back to URL parameters or the in-browser mock backend.
  */
 function devEnvironment(): Plugin {
   return {
-    name: "surgecast-dev-environment",
+    name: "opencast-dev-environment",
     apply: "serve",
     transformIndexHtml(html, ctx) {
-      const backendUrl = process.env.SURGECAST_BACKEND_URL;
-      const token = process.env.SURGECAST_TOKEN;
+      const backendUrl = (process.env.OPENCAST_BACKEND_URL ?? process.env.SURGECAST_BACKEND_URL);
+      const token = (process.env.OPENCAST_TOKEN ?? process.env.SURGECAST_TOKEN);
       if (!backendUrl || !token) return html;
       const page = ctx.path.replace(/^\//, "").replace(/\.html$/, "") || "main";
       const env = { backendUrl, token, window: page, platform: "macos", macOSMajor: 26, appVersion: "dev", dev: true };
-      return html.replace("<head>", `<head><script>window.__SURGECAST__=${JSON.stringify(env)};</script>`);
+      return html.replace("<head>", `<head><script>window.__OPENCAST__=${JSON.stringify(env)};</script>`);
     },
   };
 }

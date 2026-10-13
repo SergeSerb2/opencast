@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { UINode } from "@surgecast/protocol";
+import type { UINode } from "@opencast/protocol";
 
 export interface Initialization {
   sessionId: string;

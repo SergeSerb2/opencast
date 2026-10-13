@@ -6,13 +6,13 @@ arm64, Swift 5 language mode, macOS 14 deployment target.
 | Check | Result |
 | --- | --- |
 | `swift build -c release --package-path apps/macos` | Passed, no compiler warnings/errors |
-| `./scripts/build-app.sh --skip-web` | Produced `build/Surgecast.app` |
-| `codesign -v build/Surgecast.app` | Passed (ad-hoc signature) |
-| `swift run -c release --package-path apps/macos SurgecastSelfTest` | Passed: two-screen geometry, halves/thirds/sixths, AX conversion, gaps, relative display movement, hotkey mappings, file-root boundaries/traversal and Keychain exclusion including case variants |
+| `./scripts/build-app.sh --skip-web` | Produced `build/OpenCast.app` |
+| `codesign -v build/OpenCast.app` | Passed (ad-hoc signature) |
+| `swift run -c release --package-path apps/macos OpenCastSelfTest` | Passed: two-screen geometry, halves/thirds/sixths, AX conversion, gaps, relative display movement, hotkey mappings, file-root boundaries/traversal and Keychain exclusion including case variants |
 | Dev stub, approximately 15 seconds | `app.info`, 112 applications, one screen, permissions status and unknown-method response received over stdio |
 | Web-view fixture | Document-start config, macOS/appearance HTML attributes, `app.info`, screens, default window-kind height call, unknown-method error and 32px Finder icon scheme passed |
 | Native → backend | `backend.ping` request/response observed |
-| Hotkey registration | Re-registering unchanged `surgecast.toggle` succeeded |
+| Hotkey registration | Re-registering unchanged `opencast.toggle` succeeded |
 | Required params | Missing `visible` returned InvalidParams without changing the status item |
 | Second process | Exited successfully and requested that the first instance show the launcher |
 | Backend restart | Terminated only the test backend once; restart produced a second authenticated frontend report after port/token reinjection and page reload |
@@ -20,7 +20,7 @@ arm64, Swift 5 language mode, macOS 14 deployment target.
 
 Repeatable commands are in `README.md` and `DevStub/smoke-test.py`. Detailed local
 compile/test output is under the ignored `apps/macos/.build/`; backend/native logs
-append under `~/Library/Logs/Surgecast`. App inventories and tokens are not committed.
+append under `~/Library/Logs/OpenCast`. App inventories and tokens are not committed.
 
 The tests did not change system preferences, request permissions, post keyboard
 input, read clipboard contents, capture screens, trash files, sleep/lock/log out,

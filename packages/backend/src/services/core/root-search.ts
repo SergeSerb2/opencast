@@ -1,4 +1,4 @@
-import type { CommandInfo } from "@surgecast/protocol";
+import type { CommandInfo } from "@opencast/protocol";
 import { frecency } from "./ranking";
 
 export const BUILTIN_SUGGESTION_PRIORITIES: Record<string, number> = {
@@ -24,7 +24,7 @@ export function appSuggestionPriority(
   bundleId?: string,
   name?: string,
 ): number | undefined {
-  if (/^(?:Surgecast|Raycast)$/i.test(name ?? "")) return undefined;
+  if (/^(?:OpenCast|Surgecast|Raycast)$/i.test(name ?? "")) return undefined;
   return (bundleId && APP_PRIORITIES[bundleId]) || 1;
 }
 
@@ -54,8 +54,8 @@ export function emptyRootItems(
   const eligible = available.filter(
     (c) =>
       !c.hotkey &&
-      !/^app:.*(?:surgecast|raycast)/i.test(c.id) &&
-      !(c.kind === "app" && /^(Surgecast|Raycast)$/i.test(c.title)),
+      !/^app:.*(?:opencast|surgecast|raycast)/i.test(c.id) &&
+      !(c.kind === "app" && /^(OpenCast|Surgecast|Raycast)$/i.test(c.title)),
   );
   const isNew = (c: CommandInfo) =>
     c.installedAt !== undefined &&

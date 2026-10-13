@@ -47,13 +47,13 @@ export function evaluateMath(source: string): number | Unit | Complex | null {
   if (!/\d/.test(source) || source.length > 512 || /[;\n]/.test(source))
     return null;
   source = source
-    .replace(/([\d.]+)%/g, "surgecastPercent($1)")
+    .replace(/([\d.]+)%/g, "opencastPercent($1)")
     .replace(/\s+of\s+/gi, " * ")
     .replace(/\s+in\s+/gi, " to ");
   try {
     const percent = (node: MathNode): MathNode | undefined => {
       if (math.isParenthesisNode(node)) return percent(node.content);
-      if (math.isFunctionNode(node) && node.fn.name === "surgecastPercent" && node.args.length === 1) return node.args[0];
+      if (math.isFunctionNode(node) && node.fn.name === "opencastPercent" && node.args.length === 1) return node.args[0];
       return undefined;
     };
     const percentages = (node: MathNode): MathNode => {

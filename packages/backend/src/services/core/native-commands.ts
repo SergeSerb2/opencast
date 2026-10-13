@@ -1,4 +1,4 @@
-import type { NativeParams, WindowCommand } from "@surgecast/protocol";
+import type { NativeParams, WindowCommand } from "@opencast/protocol";
 
 export const WINDOW_COMMANDS: readonly WindowCommand[] = [
   "maximize",

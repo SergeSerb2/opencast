@@ -2,7 +2,7 @@ import type {
   CommandArgument,
   CommandInfo,
   LaunchResult,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext, LaunchRequest } from "../../context";
 import {
   WINDOW_COMMANDS,
@@ -32,17 +32,17 @@ const GROUPS: Record<string, [string, string]> = {
   clipboard: ["Clipboard History", "clipboard-16"],
   snippets: ["Snippets", "text-cursor-16"],
   quicklinks: ["Quicklinks", "link-16"],
-  notes: ["Surgecast Notes", "document-16"],
+  notes: ["OpenCast Notes", "document-16"],
   windowManagement: ["Window Management", "window-16"],
   system: ["System Actions", "gear-16"],
   calculator: ["Calculator", "calculator-16"],
   emoji: ["Emoji & Symbols", "face-smile-16"],
   files: ["File Search", "finder-16"],
-  ai: ["Surgecast AI", "stars-16"],
+  ai: ["OpenCast AI", "stars-16"],
   calendar: ["Calendar", "calendar-16"],
   scripts: ["Script Commands", "terminal-16"],
-  settings: ["Surgecast Settings", "gear-16"],
-  core: ["Surgecast", "bolt-16"],
+  settings: ["OpenCast Settings", "gear-16"],
+  core: ["OpenCast", "bolt-16"],
   applications: ["Applications", "app-window-16"],
   web: ["Web Searches", "globe-16"],
   menus: ["Menu Search", "list-16"],
@@ -58,7 +58,7 @@ function info(
   const [extensionTitle, glyph] = GROUPS[group] ?? GROUPS.core;
   const subtitle =
     group === "clipboard" || group === "emoji" || extensionTitle === title
-      ? "Surgecast"
+      ? "OpenCast"
       : group === "menus"
         ? "Navigation"
         : group === "core" && key === "manageExtensions"
@@ -161,7 +161,7 @@ export function builtinCatalog(): Builtin[] {
     view(group, `import${singular}s`, `Import ${singular}s`, `${group}.import`);
     view(group, `export${singular}s`, `Export ${singular}s`, `${group}.export`);
   }
-  add("notes", "open", "Open Surgecast Notes", async (ctx) => {
+  add("notes", "open", "Open OpenCast Notes", async (ctx) => {
     await ctx.native.call("window.show", { kind: "notes" });
     return done();
   });
@@ -316,19 +316,19 @@ export function builtinCatalog(): Builtin[] {
     await ctx.native.call("confetti.show", undefined);
     return done();
   });
-  add("core", "openManual", "Search Surgecast Docs", async (ctx) => {
+  add("core", "openManual", "Search OpenCast Docs", async (ctx) => {
     await ctx.native.call("open.url", {
       url:
-        process.env.SURGECAST_DOCS_URL ??
+        (process.env.OPENCAST_DOCS_URL ?? process.env.SURGECAST_DOCS_URL) ??
         "https://github.com/SergeSerb2/surgecast/tree/main/docs",
     });
     return done();
   });
-  add("core", "quitApp", "Quit Surgecast", async (ctx) => {
+  add("core", "quitApp", "Quit OpenCast", async (ctx) => {
     await ctx.native.call("app.quit", undefined);
     return done();
   });
-  add("core", "copySurgecastVersion", "Copy Surgecast Version", async (ctx) => {
+  add("core", "copyOpenCastVersion", "Copy OpenCast Version", async (ctx) => {
     await ctx.native.call("clipboard.write", {
       content: { kind: "text", text: ctx.version },
     });
@@ -338,8 +338,8 @@ export function builtinCatalog(): Builtin[] {
   view("core", "importRaycastData", "Import Raycast Data", "data.import", {
     format: "rayconfig",
   });
-  view("core", "importData", "Import Surgecast Data", "data.import", {
-    format: "surgecast",
+  view("core", "importData", "Import OpenCast Data", "data.import", {
+    format: "opencast",
   });
   view("core", "exportData", "Export Data", "data.export");
   view("system", "killProcess", "Kill Process", "processes");

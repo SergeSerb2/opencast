@@ -1,4 +1,4 @@
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 import { RpcError } from "../../bridge/errors";
 import { native } from "../../bridge/native";
 import { getEnv } from "../../bridge/env";
@@ -31,7 +31,7 @@ export async function saveTextFile(fileName: string, content: string, mimeType: 
   } catch (error) {
     const unsupported = error instanceof RpcError && (error.code === RpcErrorCode.NativeUnavailable || error.code === RpcErrorCode.MethodNotFound);
     if (!unsupported) throw error;
-    if (getEnv().native) throw new Error("Export requires a Surgecast host with dialog.saveFile support.");
+    if (getEnv().native) throw new Error("Export requires an OpenCast host with dialog.saveFile support.");
   }
   download(fileName, content, mimeType);
   return "downloaded";

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { PermissionKind, PermissionStatus } from "@surgecast/protocol";
+import type { PermissionKind, PermissionStatus } from "@opencast/protocol";
 import { useNativeEvent } from "../../bridge/hooks";
 import { native } from "../../bridge/native";
 import { Button } from "../../components/Button/Button";

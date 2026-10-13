@@ -2,7 +2,7 @@ import type {
   CommandArgument,
   CommandInfo,
   Quicklink,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import {
   importRows,
@@ -106,7 +106,7 @@ export async function openQuicklink(
       arguments: args,
     }),
   );
-  if (/^(surgecast|raycast):\/\//i.test(resolved.text)) {
+  if (/^(opencast|surgecast|raycast):\/\//i.test(resolved.text)) {
     await ctx.rpc.invoke(
       "deeplink.open",
       { url: resolved.text },

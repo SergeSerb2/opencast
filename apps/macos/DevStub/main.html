@@ -1,12 +1,12 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Surgecast Native Dev Stub</title>
+<html><head><meta charset="utf-8"><title>OpenCast Native Dev Stub</title>
 <style>
 :root { color-scheme: dark light; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; }
 body { margin: 0; padding: 24px; background: transparent; }
 input { box-sizing: border-box; width: 100%; padding: 14px; font-size: 20px; border: 1px solid #8885; border-radius: 10px; background: #8882; }
 button { padding: 8px 12px; margin: 4px; } pre { white-space: pre-wrap; font-size: 11px; max-height: 160px; overflow: auto; }
 </style></head><body>
-<input autofocus placeholder="Search Surgecast…" aria-label="Search">
+<input autofocus placeholder="Search OpenCast…" aria-label="Search">
 <p>Native macOS host development page</p>
 <div><button data-method="window.setContentHeight" data-params='{"height":620,"animate":true}'>Expand</button>
 <button data-method="window.setContentHeight" data-params='{"height":475,"animate":true}'>Collapse</button>
@@ -16,18 +16,21 @@ button { padding: 8px 12px; margin: 4px; } pre { white-space: pre-wrap; font-siz
 <pre id="config"></pre><pre id="result" aria-live="polite"></pre>
 <script>
 const call = (method, params = {}) => window.webkit.messageHandlers.native.postMessage({method, params});
-document.querySelector('#config').textContent = JSON.stringify({...window.__SURGECAST__, token: '<redacted>'}, null, 2);
+document.querySelector('#config').textContent = JSON.stringify({...window.__OPENCAST__, token: '<redacted>'}, null, 2);
 for (const button of document.querySelectorAll('button')) button.onclick = async () => document.querySelector('#result').textContent = JSON.stringify(await call(button.dataset.method, JSON.parse(button.dataset.params || '{}')), null, 2);
 document.addEventListener('keydown', event => { if (event.key === 'Escape') call('window.hide', {restoreFocus:true}); });
-window.__surgecastNative.on('window.route', payload => document.querySelector('#result').textContent = JSON.stringify(payload, null, 2));
+window.__opencastNative.on('window.route', payload => document.querySelector('#result').textContent = JSON.stringify(payload, null, 2));
 (async () => {
+  const storageRetained = localStorage.getItem('opencast-notes-count-mode') === '"words"';
+  if (!storageRetained) localStorage.setItem('surgecast-notes-count-mode', '"words"');
+  await import('./storage-migration.js');
   const info = await call('app.info');
   const screens = await call('windows.screens');
   const unknown = await call('not.a.method');
   const height = await call('window.setContentHeight', {height:475});
-  const iconOK = await new Promise(resolve => { const icon = new Image(); icon.onload = () => resolve(icon.naturalWidth === 32); icon.onerror = () => resolve(false); icon.src = 'surgecast-icon://file?path=' + encodeURIComponent('/System/Library/CoreServices/Finder.app') + '&size=32'; });
-  const report = {appVersion:info.result?.version, screens:screens.result?.length, unknownCode:unknown.error?.code, heightOK:'result' in height, iconOK, backendPort:new URL(window.__SURGECAST__.backendUrl).port, macos:document.documentElement.getAttribute('macos'), appearance:document.documentElement.hasAttribute('dark') ? 'dark' : 'light', window:window.__SURGECAST__.window};
-  const socket = new WebSocket(`${window.__SURGECAST__.backendUrl}?token=${encodeURIComponent(window.__SURGECAST__.token)}&window=main`);
+  const iconOK = await new Promise(resolve => { const icon = new Image(); icon.onload = () => resolve(icon.naturalWidth === 32); icon.onerror = () => resolve(false); icon.src = 'opencast-icon://file?path=' + encodeURIComponent('/System/Library/CoreServices/Finder.app') + '&size=32'; });
+  const report = {appVersion:info.result?.version, screens:screens.result?.length, unknownCode:unknown.error?.code, heightOK:'result' in height, iconOK, backendPort:new URL(window.__OPENCAST__.backendUrl).port, macos:document.documentElement.getAttribute('macos'), appearance:document.documentElement.hasAttribute('dark') ? 'dark' : 'light', window:window.__OPENCAST__.window, appScheme:location.protocol, storageMigrated:localStorage.getItem('opencast-notes-count-mode') === '"words"', storageRetained};
+  const socket = new WebSocket(`${window.__OPENCAST__.backendUrl}?token=${encodeURIComponent(window.__OPENCAST__.token)}&window=main`);
   socket.onopen = () => socket.send(JSON.stringify({jsonrpc:'2.0',method:'dev.report',params:report}));
   document.querySelector('#result').textContent = JSON.stringify(report, null, 2);
 })();
