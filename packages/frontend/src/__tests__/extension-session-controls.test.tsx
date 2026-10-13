@@ -20,9 +20,10 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 it("routes native UI controls only to the matching extension session", async () => {
   const view = render(<><ExtensionSessionView sessionId="first" /><ExtensionSessionView sessionId="second" /></>);
   await waitFor(() => expect(view.getAllByRole("textbox")).toHaveLength(2));
-  const [first, second] = view.getAllByRole("textbox");
-  act(() => { for (const listener of listeners.get("ext.ui.control") ?? []) listener({ sessionId: "first", action: "focus", itemId: "project" }); });
-  expect(document.activeElement).toBe(first);
-  act(() => { for (const listener of listeners.get("ext.ui.control") ?? []) listener({ sessionId: "second", action: "focus", itemId: "project" }); });
-  expect(document.activeElement).toBe(second);
+  const focusField = (sessionId: string) =>
+    act(() => { for (const listener of listeners.get("ext.ui.control") ?? []) listener({ sessionId, action: "focus", itemId: "project" }); });
+  // Each session's field holds its session id; re-send inside waitFor so a late re-render cannot drop the control.
+  const focusedValue = () => (document.activeElement as HTMLInputElement | null)?.value;
+  await waitFor(() => { focusField("first"); expect(focusedValue()).toBe("first"); });
+  await waitFor(() => { focusField("second"); expect(focusedValue()).toBe("second"); });
 });
