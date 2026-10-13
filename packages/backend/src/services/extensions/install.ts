@@ -1,8 +1,9 @@
+import { readFileSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readdir, rename, rm, lstat, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import type { InstalledExtension } from "@surgecast/protocol";
 import type { AppContext } from "../../context";
-import { builtRoot, installed, safeName } from "./manifest";
+import { builtRoot, installed, safeName, validateManifest } from "./manifest";
 import { extractArchive } from "./archive";
 import { ExtensionStoreClient } from "./store";
 import type { ExtensionRecord } from "./preferences";
@@ -12,8 +13,16 @@ export class ExtensionInstaller {
   constructor(private readonly ctx: AppContext) {}
   list(): ExtensionRecord[] {
     return this.ctx.entities.list<ExtensionRecord>("extensions").map((x) => {
-      const device = this.ctx.entities.get<{ path: string }>("localState", `ext:${x.id}:install`)?.data;
-      return { ...x.data, path: device?.path };
+      const device = this.ctx.entities.get<{ path: string; installed?: InstalledExtension }>("localState", `ext:${x.id}:install`)?.data;
+      if (device && !device.installed) {
+        // Upgrade old device records from the actual files, never from synced metadata.
+        try {
+          device.installed = installed(validateManifest(JSON.parse(readFileSync(join(device.path, "package.json"), "utf8"))), x.data.source);
+          this.ctx.entities.put("localState", `ext:${x.id}:install`, device);
+        } catch { return { ...x.data, path: undefined }; }
+      }
+      return { ...x.data, ...device?.installed, enabled: x.data.enabled,
+        preferenceValues: x.data.preferenceValues, id: x.data.id, path: device?.path };
     });
   }
   get(name: string): ExtensionRecord {
@@ -51,7 +60,7 @@ export class ExtensionInstaller {
         try {
           this.ctx.db.transaction(() => {
             this.ctx.entities.put("extensions", extension.name, extension);
-            this.ctx.entities.put("localState", `ext:${extension.name}:install`, { path: devicePath, sourcePath: source.source === "store" ? undefined : resolve(source.path) });
+            this.ctx.entities.put("localState", `ext:${extension.name}:install`, { path: devicePath, installed: extension, sourcePath: source.source === "store" ? undefined : resolve(source.path) });
           });
         } catch (error) { if (moved) await rm(target, { recursive: true, force: true }); if (backedUp) await rename(backup, target); throw error; }
         this.changed();

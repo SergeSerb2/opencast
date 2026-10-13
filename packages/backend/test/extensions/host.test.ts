@@ -13,6 +13,23 @@ function setup() { const h = harness(); contexts.push(h); return h; }
 afterEach(async () => { for (const h of contexts.splice(0)) await h.close(); });
 function treeNodes(node: any): any[] { return [node, ...node.children.flatMap(treeNodes), ...Object.values(node.props).filter((x: any) => x?.type && x?.children).flatMap(treeNodes)]; }
 describe("extension host", () => {
+  it("keeps the local installed version and commands when desired metadata syncs", async () => {
+    const h = setup(); await h.call("extensions.install", { source: "local", path: fixture(h.dataDir, { version: "v1" }) });
+    const original = h.host.installer.get("fixture");
+    const record = h.ctx.entities.get("extensions", "fixture")!;
+    h.ctx.entities.applyRemote("extensions", "fixture", { data: { ...original, source: "store", version: "v2", commands: [{ name: "new", title: "New", mode: "no-view" }] }, createdAt: record.createdAt, updatedAt: record.updatedAt + 1, deleted: false }, 1);
+    expect(h.host.installer.get("fixture").version).toBe("v1");
+    expect((await h.ctx.commands.all()).map(c => c.id)).toEqual(["ext:fixture.list", "ext:fixture.task"]);
+    // The updater must compare the files' version, even when desired metadata is current.
+    h.ctx.entities.patch("extensions", "fixture", { source: "store" });
+    const device = h.ctx.entities.get<any>("localState", "ext:fixture:install")!.data;
+    h.ctx.entities.put("localState", "ext:fixture:install", { ...device, installed: { ...original, source: "store" } });
+    vi.spyOn(h.host.installer.store, "raw").mockResolvedValue({ version: "v2" } as any);
+    const install = vi.spyOn(h.host.installer, "install").mockResolvedValue({ ...original, version: "v2" });
+    expect(await h.call("extensions.update", { name: "fixture" })).toEqual({ updated: ["fixture"] });
+    expect(install).toHaveBeenCalled();
+  });
+
   it("installs locally, exposes commands, dispatches search and actions, closes at root", async () => {
     const h = setup(); const path = fixture(h.dataDir); const installed = await h.call("extensions.install", { source: "local", path }) as any;
     expect(installed.path).toBe(join(h.dataDir, "extensions", "fixture"));
