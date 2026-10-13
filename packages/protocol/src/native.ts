@@ -302,10 +302,11 @@ export interface NativeEvents {
   "clipboard.changed": ClipboardSnapshot;
   "window.didShow": { kind: WindowKind };
   /**
-   * A window was asked to show a route (hotkey or deeplink launch, `window.show({ route })`).
-   * Launcher routes: "command:<CommandId>", "root", "quick-ai".
+   * Sent only to the addressed web view when `window.show` passes a route/payload
+   * (hotkey or deeplink launch). Launcher routes: "command:<CommandId>", "root",
+   * "quick-ai"; other windows: a settings page ("ai"), a chat id, a note id.
    */
-  "window.route": { kind: WindowKind; route: string; payload?: unknown };
+  "window.route": { kind: WindowKind; route?: string; payload?: unknown };
   "window.didHide": { kind: WindowKind };
   "window.didBecomeKey": { kind: WindowKind };
   "window.didResignKey": { kind: WindowKind };
@@ -317,11 +318,6 @@ export interface NativeEvents {
   /** A deeplink such as surgecast://extensions/... or raycast://... was opened. */
   "url.opened": { url: string };
   "permissions.changed": { kind: PermissionKind; status: PermissionStatus };
-  /**
-   * Sent only to the addressed web view when `window.show` passes a route/payload
-   * (e.g. "command:<id>" for the launcher, "ai" for settings, a chat or note id).
-   */
-  "window.route": { kind: WindowKind; route?: string; payload?: unknown };
   "system.willSleep": Record<string, never>;
   "system.didWake": Record<string, never>;
 }
