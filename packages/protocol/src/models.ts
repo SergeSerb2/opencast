@@ -83,6 +83,10 @@ export interface CommandInfo {
   acceptsFallbackText?: boolean;
   /** Command needs setup (missing required preferences). */
   needsPreferences?: boolean;
+  /** Higher values fill unused slots in empty-root Suggestions first. */
+  suggestionPriority?: number;
+  /** Installation time in epoch milliseconds, for temporary new-item suggestions. */
+  installedAt?: number;
 }
 
 export interface RootSearchItem extends CommandInfo {

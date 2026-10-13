@@ -61,6 +61,22 @@ are released on shutdown. Secrets are not logged or exported from Keychain.
 - `clipboard.itemsChanged` reports deletion/clear/prune invalidation. The existing
   `clipboard.changed` item event remains unchanged for inserts, deduplication and pins.
 
+Core polish also adds optional `CommandInfo.suggestionPriority` and
+`CommandInfo.installedAt` in `models.ts`. Providers can declare seed order and an
+installation timestamp for the temporary new-item suggestions. Empty root returns
+Favorites, up to five Suggestions, Commands and Applications in that order, omitting
+empty sections and repeated identities. Suggestions use at most two unused new items
+for five minutes, then used commands, then seeds without aliases/hotkeys. Built-ins
+and common apps provide seeds; used items progressively replace them.
+
+Calculator amounts are evaluated before attaching the currency or unit, including
+`2+2*10 usd in eur` and `2+2 km in mi`. Currency display uses `Intl.NumberFormat`
+with two decimals and full `Intl.DisplayNames` labels; copy values use the same
+rounding without symbols or grouping. Units use about six significant digits and
+readable singular/plural names. Input labels and interpretations describe the
+original expression rather than the evaluator's rewritten percentage/conversion
+syntax. Bare numbers and ordinary launcher words do not produce calculator cards.
+
 ## Verification
 
 From the repository root:
@@ -80,6 +96,9 @@ own temporary data. Unit/service tests cover native notifications with a mock ho
 hotkey reconciliation, sync index updates, clipboard retention/image cleanup,
 offline rates, script argument safety/streaming/cancellation and synthetic config
 containers. Native actions and visual rendering require the other teams' integration.
+The calculator regression uses fixed, fresh disk-cached rates to verify the reference
+`€19.66` answer without depending on live exchange rates. Root tests also cover fresh
+seeds, launch replacement, favorite ordering, exclusions, reset and suggestion limits.
 
 ## Compatibility boundaries
 

@@ -38,6 +38,11 @@ export async function fixture() {
           bundleId: "com.apple.Safari",
           path: "/Applications/Safari.app",
         },
+        {
+          name: "Terminal",
+          bundleId: "com.apple.Terminal",
+          path: "/System/Applications/Utilities/Terminal.app",
+        },
       ];
     if (method === "hotkeys.register") return { ok: true };
     if (

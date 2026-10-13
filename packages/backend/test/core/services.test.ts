@@ -231,8 +231,10 @@ describe("registered core services", () => {
       kind: "main",
     });
     await f.call("commands.resetRanking", {});
-    expect(await f.call("search.root", { query: "" })).toMatchObject({
-      sections: [],
+    expect(
+      (await f.call("search.root", { query: "" })).sections[0],
+    ).toMatchObject({
+      id: "suggestions",
     });
     await expect(
       f.call("deeplink.open", {
@@ -367,10 +369,10 @@ describe("edge cases and persistence", () => {
     try {
       expect(
         await f.call("calc.evaluate", { expression: "100 EUR in USD" }),
-      ).toMatchObject({ result: "125" });
+      ).toMatchObject({ result: "$125.00", copyValue: "125.00" });
       expect(
         await f.call("calc.evaluate", { expression: "90 EUR in USD" }),
-      ).toMatchObject({ result: "100" });
+      ).toMatchObject({ result: "$100.00", copyValue: "100.00" });
       await f.call("calc.evaluate", { expression: "90 EUR in USD" });
       expect(fetcher).toHaveBeenCalledTimes(2);
       expect(

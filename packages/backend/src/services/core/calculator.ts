@@ -1,4 +1,3 @@
-import { create, all, type MathNode } from "mathjs";
 import * as chrono from "chrono-node";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
@@ -8,12 +7,22 @@ import type { AppContext, Service } from "../../context";
 import { boundedLimit } from "./shared";
 import { parseColor } from "./colors";
 
-const math = create(all, { number: "number" });
-const FUNCTIONS = new Set(
-  "abs acos acosh asin asinh atan atan2 atanh ceil cos cosh exp floor log log10 log2 max min mod pow round sign sin sinh sqrt tan tanh cbrt factorial gcd lcm hypot nthRoot".split(
-    " ",
-  ),
-);
+import {
+  math,
+  mathSource,
+  prettyMath,
+  evaluateMath,
+  singleNumber,
+} from "./calculator-math";
+import {
+  currencyName,
+  currencyText,
+  isCurrency,
+  unitLabel,
+  unitNumber,
+  zoneLabel,
+} from "./calculator-format";
+
 const ZONES: Record<string, string> = {
   tokyo: "Asia/Tokyo",
   london: "Europe/London",
@@ -78,7 +87,7 @@ function result(
   value: string,
   kind: CalculatorResult["kind"],
   label?: string,
-  interpreted = input,
+  interpreted = input.trim().replace(/\s+/g, " "),
 ): CalculatorResult {
   return {
     input,
@@ -86,41 +95,22 @@ function result(
     result: value,
     copyValue: value,
     kind,
-    resultLabel: label,
+    resultLabel:
+      label ??
+      (kind === "math" || kind === "percentage" ? "Number" : undefined),
+    inputLabel:
+      kind === "math" || kind === "percentage"
+        ? "Expression"
+        : kind === "timezone"
+          ? "Time"
+          : kind === "date"
+            ? "Date"
+            : kind === "color"
+              ? "Color"
+              : kind === "base"
+                ? "Number"
+                : "Expression",
   };
-}
-function unitLabel(unit: string): string {
-  const labels: Record<string, string> = {
-    m: "Meters",
-    meter: "Meters",
-    meters: "Meters",
-    cm: "Centimeters",
-    mm: "Millimeters",
-    km: "Kilometers",
-    ft: "Feet",
-    foot: "Feet",
-    feet: "Feet",
-    inch: "Inches",
-    inches: "Inches",
-    mile: "Miles",
-    miles: "Miles",
-    kg: "Kilograms",
-    g: "Grams",
-    lb: "Pounds",
-    lbs: "Pounds",
-    s: "Seconds",
-    second: "Seconds",
-    seconds: "Seconds",
-    minutes: "Minutes",
-    h: "Hours",
-    hours: "Hours",
-    days: "Days",
-    degC: "Celsius",
-    degF: "Fahrenheit",
-    px: "Pixels",
-    rem: "Root ems",
-  };
-  return labels[unit] ?? unit;
 }
 export interface EvaluateOptions {
   now?: Date;
@@ -133,8 +123,10 @@ export function evaluateExpression(
   input: string,
   options: EvaluateOptions = {},
 ): CalculatorResult | null {
+  if (typeof input !== "string") return null;
   const expression = input.trim();
-  if (!expression || expression.length > 512) return null;
+  if (!expression || expression.length > 512 || /[\r\n]/.test(expression))
+    return null;
   const now = options.now ?? new Date();
   let m: RegExpExecArray | null;
   if (options.colorConversion !== false) {
@@ -149,24 +141,49 @@ export function evaluateExpression(
       };
     }
   }
-  m =
-    /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([a-z]{3})\s+(?:in|to)\s+([a-z]{3})$/i.exec(
-      expression,
-    );
+  const source = mathSource(expression, options.decimalSeparator);
+  const currency = /^(.*?)\s*([a-z]{3})(?:\s+(?:in|to)\s+([a-z]{3}))?$/i.exec(
+    source,
+  );
   if (
-    m &&
-    options.rates?.[m[2].toUpperCase()] &&
-    options.rates[m[3].toUpperCase()]
+    currency &&
+    isCurrency(currency[2], options.rates) &&
+    // A lowercase measurement such as "cup" takes precedence over its ISO currency.
+    !(
+      currency[2] === currency[2].toLowerCase() &&
+      math.Unit.isValuelessUnit(currency[2])
+    ) &&
+    (!currency[3] || isCurrency(currency[3], options.rates))
   ) {
-    const value =
-      (Number(m[1]) / options.rates[m[2].toUpperCase()]) *
-      options.rates[m[3].toUpperCase()];
-    return result(
-      input,
-      Number(value.toFixed(6)).toString(),
-      "currency",
-      m[3].toUpperCase(),
-    );
+    const amount = evaluateMath(currency[1]);
+    if (typeof amount !== "number") return null;
+    const from = currency[2].toUpperCase();
+    const to = (currency[3] ?? currency[2]).toUpperCase();
+    const fromRate = options.rates?.[from];
+    const toRate = options.rates?.[to];
+    if (
+      from !== to &&
+      (!fromRate ||
+        !toRate ||
+        !Number.isFinite(fromRate) ||
+        !Number.isFinite(toRate) ||
+        fromRate <= 0 ||
+        toRate <= 0)
+    )
+      return null;
+    const value = from === to ? amount : (amount / fromRate!) * toRate!;
+    if (!Number.isFinite(value)) return null;
+    return {
+      ...result(
+        input,
+        "",
+        "currency",
+        currencyName(to),
+        `${prettyMath(currency[1])} ${currency[2]}${currency[3] ? ` in ${currency[3]}` : ""}`,
+      ),
+      ...currencyText(value, to),
+      inputLabel: singleNumber(currency[1]) ? currencyName(from) : "Expression",
+    };
   }
   m =
     /^([+-]?(?:0x[\da-f]+|0b[01]+|0o[0-7]+|\d+))\s+(?:in|to)\s+(hex|hexadecimal|bin|binary|oct|octal|dec|decimal)$/i.exec(
@@ -193,7 +210,7 @@ export function evaluateExpression(
       return null;
     }
   }
-  m = /^time\s+in\s+(.+)$/i.exec(expression);
+  m = /^(?:time|now)\s+in\s+(.+)$/i.exec(expression);
   if (m) {
     const zone = timezone(m[1]);
     if (!zone) return null;
@@ -205,7 +222,8 @@ export function evaluateExpression(
         minute: "2-digit",
       }),
       "timezone",
-      zone,
+      zoneLabel(zone, now),
+      `now in ${zone}`,
     );
   }
   m = /^(.+?)\s+([a-z/_ -]+)\s+(?:in|to)\s+([a-z/_ -]+)$/i.exec(expression);
@@ -235,7 +253,8 @@ export function evaluateExpression(
             timeZoneName: "short",
           }),
           "timezone",
-          to,
+          zoneLabel(to, instant),
+          `${parsed.start.get("hour")! % 12 || 12}:${String(parsed.start.get("minute") ?? 0).padStart(2, "0")} ${parsed.start.get("hour")! >= 12 ? "PM" : "AM"} ${from} in ${to}`,
         );
       }
     }
@@ -255,17 +274,20 @@ export function evaluateExpression(
           : /^hour/i.test(m[1])
             ? 3600000
             : 60000;
-      return result(
-        input,
-        String(
-          Math.round(
-            ((parsed.getTime() - now.getTime()) / scale) *
-              (m[2].toLowerCase() === "since" ? -1 : 1),
-          ),
-        ),
-        "date",
-        m[1],
+      const count = Math.round(
+        ((parsed.getTime() - now.getTime()) / scale) *
+          (m[2].toLowerCase() === "since" ? -1 : 1),
       );
+      return {
+        ...result(
+          input,
+          `${count} ${unitLabel(m[1].toLowerCase(), count)}`,
+          "date",
+          unitLabel(m[1].toLowerCase()),
+        ),
+        copyValue: String(count),
+        inputLabel: "Expression",
+      };
     }
   }
   m = /^(\w+)\s+in\s+(\d+)\s+weeks?$/i.exec(expression);
@@ -299,7 +321,7 @@ export function evaluateExpression(
     }
   }
   if (
-    /\b(?:today|tomorrow|yesterday|next|ago|in\s+\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(
+    /\b(?:now|today|tomorrow|yesterday|next|ago|in\s+\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(
       expression,
     )
   ) {
@@ -324,86 +346,85 @@ export function evaluateExpression(
       );
     }
   }
-  m = /^([+-]?[\d.]+)\s*(rem|px)\s+(?:in|to)\s+(rem|px)$/i.exec(expression);
-  if (m) {
-    const rate = options.remToPxRate ?? 16;
-    const value =
-      Number(m[1]) *
-      (m[2].toLowerCase() === m[3].toLowerCase()
-        ? 1
-        : m[2].toLowerCase() === "rem"
-          ? rate
-          : 1 / rate);
-    return result(
-      input,
-      `${value} ${m[3].toLowerCase()}`,
-      "unit",
-      unitLabel(m[3].toLowerCase()),
+  // Evaluate a trailing unit's entire scalar expression before attaching the unit.
+  // Compound quantities ("2 hours + 30 minutes") fall through to dimensional math.
+  const conversion = /^(.+?)\s+(?:in|to)\s+(.+)$/i.exec(source);
+  const quantity =
+    /^(.+?)\s*([a-zA-Z][a-zA-Z0-9]*(?:\s*[\^*/]\s*[a-zA-Z\d+-]+)*)$/.exec(
+      conversion?.[1] ?? source,
     );
-  }
-  let source = expression
-    .replace(/×/g, "*")
-    .replace(/[÷]/g, "/")
-    .replace(/−/g, "-");
-  if (options.decimalSeparator === ",")
-    source = source.replace(/(\d),(\d)/g, "$1.$2");
-  const percent = source.includes("%");
-  source = source
-    .replace(/([\d.]+)%\s+of\s+([\d.]+)/gi, "($1 / 100 * $2)")
-    .replace(/([\d.]+)\s*([+-])\s*([\d.]+)%/g, "($1 $2 ($1 * $3 / 100))")
-    .replace(/([\d.]+)%/g, "($1 / 100)")
-    .replace(/\s+in\s+/gi, " to ");
-  if (!/[\d]/.test(source) || source.includes(";") || source.includes("\n"))
-    return null;
-  try {
-    const node = math.parse(source);
-    let nodes = 0;
-    node.traverse((child: MathNode) => {
-      if (
-        ++nodes > 100 ||
-        ![
-          "ConstantNode",
-          "SymbolNode",
-          "OperatorNode",
-          "ParenthesisNode",
-          "FunctionNode",
-        ].includes(child.type)
-      )
-        throw new Error("Unsupported expression");
-      if (
-        child.type === "ConstantNode" &&
-        typeof (child as unknown as { value: unknown }).value === "string"
-      )
-        throw new Error("Text is not math");
-      if (
-        child.type === "FunctionNode" &&
-        !FUNCTIONS.has((child as unknown as { name: string }).name)
-      )
-        throw new Error("Unsupported function");
-      if (child.type === "OperatorNode") {
-        const operator = child as unknown as { op: string; args: MathNode[] };
-        if (operator.op === "!" && Number(operator.args[0].toString()) > 170)
-          throw new Error("Factorial too large");
+  let value = null;
+  let inputLabel = "Expression";
+  let interpreted = prettyMath(source);
+  if (quantity) {
+    const amount = evaluateMath(quantity[1]);
+    if (typeof amount === "number") {
+      const from = quantity[2];
+      const to = conversion?.[2] ?? from;
+      inputLabel = singleNumber(quantity[1]) ? unitLabel(from) : "Expression";
+      interpreted = `${prettyMath(quantity[1])} ${from}${conversion ? ` in ${to}` : ""}`;
+      if (/^(rem|px)$/i.test(from) && /^(rem|px)$/i.test(to)) {
+        const rate = options.remToPxRate ?? 16;
+        if (!Number.isFinite(rate) || rate <= 0) return null;
+        const number =
+          amount *
+          (from.toLowerCase() === to.toLowerCase()
+            ? 1
+            : from.toLowerCase() === "rem"
+              ? rate
+              : 1 / rate);
+        if (!Number.isFinite(number)) return null;
+        const formatted = unitNumber(number);
+        return {
+          ...result(
+            input,
+            `${formatted} ${unitLabel(to.toLowerCase(), Number(formatted))}`,
+            "unit",
+            unitLabel(to.toLowerCase()),
+            interpreted,
+          ),
+          inputLabel,
+          copyValue: formatted,
+        };
       }
-    });
-    const value = node.compile().evaluate();
-    if (typeof value === "number" && !Number.isFinite(value)) return null;
-    const formatted = math.format(value, { precision: 14 });
-    if (formatted.length > 4096) return null;
-    const kind = value?.isUnit ? "unit" : percent ? "percentage" : "math";
-    return result(
-      input,
-      formatted,
-      kind,
-      value?.isUnit
-        ? unitLabel(String(value.units?.[0]?.unit?.name ?? ""))
-        : undefined,
-      source,
-    );
-  } catch {
-    return null;
+      try {
+        value = math.unit(amount, from).to(to);
+      } catch {
+        // Math expressions and compound units still go through the bounded parser.
+      }
+    }
   }
+  if (singleNumber(source)) return null;
+  value ??= evaluateMath(source);
+  if (value === null) return null;
+  if (math.isUnit(value)) {
+    const unit = value.formatUnits();
+    const number = value.toNumber(unit);
+    if (!Number.isFinite(number)) return null;
+    const formatted = unitNumber(number);
+    return {
+      ...result(
+        input,
+        `${formatted} ${unitLabel(unit, Number(formatted))}`,
+        "unit",
+        unitLabel(unit),
+        interpreted.replace(/\s+to\s+/g, " in "),
+      ),
+      inputLabel,
+      copyValue: formatted,
+    };
+  }
+  const formatted = math.format(value, { precision: 14 });
+  if (formatted.length > 4096) return null;
+  return result(
+    input,
+    formatted,
+    source.includes("%") ? "percentage" : "math",
+    undefined,
+    prettyMath(source),
+  );
 }
+
 interface Rates {
   fetchedAt: number;
   rates: Record<string, number>;
@@ -445,7 +466,21 @@ export class Calculator {
     }
   }
   async evaluate(expression: string): Promise<CalculatorResult | null> {
-    if (/\d\s*[A-Z]{3}\s+(?:in|to)\s+[A-Z]{3}\s*$/i.test(expression)) {
+    if (typeof expression !== "string" || expression.length > 512) return null;
+    const conversion = /^(.*?)\s*([a-z]{3})\s+(?:in|to)\s+([a-z]{3})\s*$/i.exec(
+      expression.trim(),
+    );
+    if (
+      conversion &&
+      isCurrency(conversion[2]) &&
+      isCurrency(conversion[3]) &&
+      typeof evaluateMath(
+        mathSource(
+          conversion[1],
+          this.ctx.settings.get("calculator.decimalSeparator"),
+        ),
+      ) === "number"
+    ) {
       this.refreshing ??= this.refreshRates().finally(() => {
         this.refreshing = undefined;
       });
