@@ -65,7 +65,7 @@ interface TranslatorComponentProps {
 function Translator({ title, icon, initialText, initialPair, defaults, remember, prefillSelection }: TranslatorComponentProps) {
   const [text, setText] = useState(initialText);
   const [pair, setPair] = useState(initialPair);
-  const { data: models } = useBackend("ai.models.list", {});
+  const { data: models, refetch: refreshModels } = useBackend("ai.models.list", {});
   const noModels = models !== undefined && models.length === 0;
   const translation = useTranslation({ text, source: pair.source, target: pair.target, enabled: !noModels });
   const setupProblem = noModels ? "setup" : translation.status === "error" && translation.errorKind !== "other" ? translation.errorKind : undefined;
@@ -104,7 +104,7 @@ function Translator({ title, icon, initialText, initialPair, defaults, remember,
         )
       }
     >
-      <TranslatorBody text={text} setText={setText} pair={pair} setPair={setPair} translation={translation} setupProblem={setupProblem} />
+      <TranslatorBody text={text} setText={setText} pair={pair} setPair={setPair} translation={{ ...translation, retry: () => { refreshModels(); translation.retry(); } }} setupProblem={setupProblem} />
     </ViewFrame>
   );
 }
@@ -159,8 +159,9 @@ function TranslatorBody({ text, setText, pair, setPair, translation, setupProble
   const view = useViewController();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const output = translation.text;
-  const fresh = translation.forText === text && translation.forTarget === pair.target;
-  const swapped = swapLanguagePair(pair, translation.detected);
+  const fresh = translation.forText === text && translation.forSource === pair.source && translation.forTarget === pair.target;
+  const ready = fresh && translation.status === "done" && Boolean(output.trim());
+  const swapped = swapLanguagePair(pair, fresh ? translation.detected : undefined);
   const fontSize = translatorFontSize(text, output);
 
   // Keep typing in the source field: after the action panel or a language menu closes, and for stray keys.
@@ -195,8 +196,8 @@ function TranslatorBody({ text, setText, pair, setPair, translation, setupProble
     </ActionPanel>
   ) : (
     <ActionPanel title="Translator">
-      <Action title="Copy Translation" icon="copy-clipboard-16" shortcut={sc("cmd", "return")} onAction={() => copy(output, "translation")} />
-      <Action title="Paste to Active App" icon="clipboard-16" shortcut={sc("opt", "cmd", "return")} onAction={() => paste(output)} />
+      <Action title="Copy Translation" icon="copy-clipboard-16" shortcut={sc("cmd", "return")} disabled={!ready} onAction={() => copy(output, "translation")} />
+      <Action title="Paste to Active App" icon="clipboard-16" shortcut={sc("opt", "cmd", "return")} disabled={!ready} onAction={() => paste(output)} />
       <Action title="Copy Source Text" icon="copy-clipboard-16" shortcut={sc("opt", "return")} onAction={() => copy(text, "text")} />
       <ActionPanel.Section>
         <Action title="Swap Languages" icon="arrow-left-right-16" shortcut={sc("cmd", "s")} disabled={!swapped} onAction={swap} />
@@ -204,7 +205,7 @@ function TranslatorBody({ text, setText, pair, setPair, translation, setupProble
         <Action title="Change Target Language" icon="flag-16" shortcut={sc("cmd", "p")} onAction={() => document.getElementById(TARGET_ID)?.click()} />
       </ActionPanel.Section>
       <ActionPanel.Section>
-        <Action title="Listen to Translation" icon="speaker-on-16" shortcut={sc("cmd", "l")} disabled={!output.trim()} onAction={() => speak(output)} />
+        <Action title="Listen to Translation" icon="speaker-on-16" shortcut={sc("cmd", "l")} disabled={!ready} onAction={() => speak(output)} />
         <Action title="Listen to Source Text" icon="speaker-on-16" shortcut={sc("cmd", "shift", "l")} disabled={!text.trim()} onAction={() => speak(text)} />
         <Action title="Translate Again" icon="arrow-clockwise-16" shortcut={sc("cmd", "r")} disabled={!text.trim()} onAction={translation.retry} />
         <Action
@@ -280,7 +281,7 @@ function TranslatorBody({ text, setText, pair, setPair, translation, setupProble
           </div>
         </ScrollArea>
         <div className="sc-translator__pane-footer">
-          <IconButton icon="speaker-on-16" label="Listen to Translation" size={28} disabled={!output.trim() || Boolean(showError)} onClick={() => speak(output)} />
+          <IconButton icon="speaker-on-16" label="Listen to Translation" size={28} disabled={!ready} onClick={() => speak(output)} />
           {showError && <span className="sc-translator__count">⌘R to try again</span>}
         </div>
       </section>

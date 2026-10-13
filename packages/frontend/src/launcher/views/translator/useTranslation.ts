@@ -18,6 +18,7 @@ export interface TranslationState {
   errorKind?: "setup" | "auth" | "other";
   /** The source text and target the shown translation belongs to. */
   forText?: string;
+  forSource?: string;
   forTarget?: string;
 }
 
@@ -34,7 +35,12 @@ const IDLE: TranslationState = { status: "idle", text: "" };
 const pendingChats = new Map<string, string>();
 let stopWatching: (() => void) | null = null;
 
-function deleteChatWhenDone(streamId: string, chatId: string): void {
+function deleteChatWhenDone(streamId: string, chatId: string, early: AIStreamEvent[]): void {
+  // A fast provider can finish before the RPC response identifies its stream.
+  if (early.some((event) => event.streamId === streamId && (event.type === "done" || event.type === "error"))) {
+    backend.call("ai.chats.delete", { id: chatId }).catch(() => undefined);
+    return;
+  }
   pendingChats.set(streamId, chatId);
   stopWatching ??= backend.on("ai.stream", (event) => {
     if (event.type !== "done" && event.type !== "error") return;
@@ -54,6 +60,7 @@ interface ActiveRequest {
   raw: string;
   expectsDetection: boolean;
   text: string;
+  source: string;
   target: string;
   /** Stream events that arrived before `ai.ask` returned the stream id. */
   early: AIStreamEvent[];
@@ -81,11 +88,11 @@ export function useTranslation({ text, source, target, enabled }: { text: string
       request.raw += event.delta;
       const parsed = parseTranslationOutput(request.raw, request.expectsDetection);
       if (parsed.pending) return;
-      setState((previous) => ({ status: "translating", text: parsed.text, detected: parsed.detected ?? (request.expectsDetection ? previous.detected : undefined), forText: request.text, forTarget: request.target }));
+      setState((previous) => ({ status: "translating", text: parsed.text, detected: parsed.detected ?? (request.expectsDetection ? previous.detected : undefined), forText: request.text, forSource: request.source, forTarget: request.target }));
     } else if (event.type === "done") {
       active.current = null;
       const parsed = parseTranslationOutput(request.raw, request.expectsDetection);
-      setState((previous) => ({ status: "done", text: parsed.text, detected: parsed.detected ?? (request.expectsDetection ? previous.detected : undefined), forText: request.text, forTarget: request.target }));
+      setState((previous) => ({ status: "done", text: parsed.text, detected: parsed.detected ?? (request.expectsDetection ? previous.detected : undefined), forText: request.text, forSource: request.source, forTarget: request.target }));
     } else if (event.type === "error") {
       active.current = null;
       setState((previous) => ({ ...previous, status: "error", error: event.message, errorKind: translationErrorKind(event.message, event.status) }));
@@ -103,7 +110,11 @@ export function useTranslation({ text, source, target, enabled }: { text: string
   });
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      stopActive();
+      setState(IDLE);
+      return;
+    }
     // Only typing is debounced; the first run, language changes and retries start at once.
     const typing = scheduledText.current !== null && scheduledText.current !== text;
     scheduledText.current = text;
@@ -114,24 +125,32 @@ export function useTranslation({ text, source, target, enabled }: { text: string
     }
     if (source !== AUTO_LANGUAGE && source === target) {
       stopActive();
-      setState({ status: "done", text, forText: text, forTarget: target });
+      setState({ status: "done", text, forText: text, forSource: source, forTarget: target });
       return;
     }
 
     const run = async () => {
       stopActive();
       const { system, prompt, expectsDetection } = buildTranslationPrompt({ text, source, target });
-      const request: ActiveRequest = { raw: "", expectsDetection, text, target, early: [] };
+      const request: ActiveRequest = { raw: "", expectsDetection, text, source, target, early: [] };
       active.current = request;
-      setState((previous) => ({ ...previous, status: "translating", error: undefined, errorKind: undefined }));
+      setState((previous) => ({ ...previous, status: "translating", detected: undefined, error: undefined, errorKind: undefined }));
+      let chatId: string | undefined;
+      let stopEarlyWatcher: (() => void) | undefined;
       try {
         const chat = await backend.call("ai.chats.create", { source: "quick-ai", title: "Translation" });
+        chatId = chat.id;
         if (active.current !== request) {
           backend.call("ai.chats.delete", { id: chat.id }).catch(() => undefined);
           return;
         }
+        // Keep terminal events even when this request was cancelled while awaiting the RPC.
+        const earlyTerminal: AIStreamEvent[] = [];
+        stopEarlyWatcher = backend.on("ai.stream", (event) => {
+          if (event.type === "done" || event.type === "error") earlyTerminal.push(event);
+        });
         const { streamId } = await backend.call("ai.ask", { chatId: chat.id, prompt, system, creativity: "none" });
-        deleteChatWhenDone(streamId, chat.id);
+        deleteChatWhenDone(streamId, chat.id, earlyTerminal);
         if (active.current !== request) {
           backend.call("ai.stop", { streamId }).catch(() => undefined);
           return;
@@ -139,15 +158,21 @@ export function useTranslation({ text, source, target, enabled }: { text: string
         request.streamId = streamId;
         for (const event of request.early.splice(0)) if (event.streamId === streamId && active.current === request) handle(request, event);
       } catch (error) {
+        if (chatId) backend.call("ai.chats.delete", { id: chatId }).catch(() => undefined);
         if (active.current !== request || isCancelled(error)) return;
         active.current = null;
         const message = errorMessage(error);
         setState((previous) => ({ ...previous, status: "error", error: message, errorKind: translationErrorKind(message) }));
+      } finally {
+        stopEarlyWatcher?.();
       }
     };
 
     const timer = setTimeout(run, typing ? TYPING_DEBOUNCE_MS : 0);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      stopActive();
+    };
   }, [text, source, target, enabled, attempt, stopActive, handle]);
 
   useEffect(() => stopActive, [stopActive]);
