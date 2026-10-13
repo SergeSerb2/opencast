@@ -123,7 +123,10 @@ export function TagInput({ value, onChange, options, placeholder, validation, id
             onFocus?.();
             if (options) setOpen(true);
           }}
-          onBlur={onBlur}
+          onBlur={() => {
+            setOpen(false);
+            onBlur?.();
+          }}
           onKeyDown={onKeyDown}
         />
         {options && <Icon name="chevron-down-small-16" size={16} className="sc-tag-input__chevron" />}
@@ -134,6 +137,7 @@ export function TagInput({ value, onChange, options, placeholder, validation, id
             <Menu
               layout={side === "top" ? "up" : "down"}
               showSearch={false}
+              keyboardTarget={inputRef.current}
               sections={[{ items: suggestions.map((o) => ({ id: o.value, title: o.title, icon: o.icon })) }]}
               onSelect={(item) => {
                 add(item.id);

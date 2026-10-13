@@ -44,6 +44,8 @@ export interface MenuProps {
   /** Search field below the list ("up", action panel) or above it ("down", dropdowns). */
   layout?: "up" | "down";
   showSearch?: boolean;
+  /** Route menu navigation through an existing input without moving its focus. */
+  keyboardTarget?: HTMLElement | null;
   searchPlaceholder?: string;
   /** Filter locally (default). When false, the caller filters via onSearchTextChange. */
   filtering?: boolean;
@@ -121,6 +123,7 @@ export function Menu({
   onDismiss,
   layout = "up",
   showSearch = true,
+  keyboardTarget,
   searchPlaceholder = "Search…",
   filtering = true,
   onSearchTextChange,
@@ -158,8 +161,8 @@ export function Menu({
 
   useEffect(() => {
     // Without a search field the menu itself takes focus so arrow keys and ↵ work.
-    (inputRef.current ?? rootRef.current)?.focus({ preventScroll: true });
-  }, []);
+    if (!keyboardTarget) (inputRef.current ?? rootRef.current)?.focus({ preventScroll: true });
+  }, [keyboardTarget]);
 
   const contentHeight = heights.reduce((a, b) => a + b, 0) + listPadding * 2;
   const searchHeight = showSearch ? scaled(40, zoom) : 0;
@@ -177,9 +180,10 @@ export function Menu({
     setSelected(selectable[next]);
   };
 
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
-    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
-    const key = eventKey(event.nativeEvent);
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLElement> | KeyboardEvent) => {
+    const nativeEvent = "nativeEvent" in event ? event.nativeEvent : event;
+    if (nativeEvent.isComposing || event.keyCode === 229) return;
+    const key = eventKey(nativeEvent);
     const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
     if (key === "arrowDown" || (event.ctrlKey && (key === "n" || key === "j"))) {
       event.preventDefault();
@@ -203,7 +207,7 @@ export function Menu({
       }
     } else {
       for (const row of rows) {
-        if (row.kind === "item" && row.item.shortcut && !row.item.disabled && matchesShortcut(event.nativeEvent, row.item.shortcut)) {
+        if (row.kind === "item" && row.item.shortcut && !row.item.disabled && matchesShortcut(nativeEvent, row.item.shortcut)) {
           event.preventDefault();
           event.stopPropagation();
           onSelect(row.item);
@@ -212,6 +216,12 @@ export function Menu({
       }
     }
   };
+
+  useEffect(() => {
+    if (!keyboardTarget) return;
+    keyboardTarget.addEventListener("keydown", onKeyDown);
+    return () => keyboardTarget.removeEventListener("keydown", onKeyDown);
+  });
 
   const changeQuery = (text: string) => {
     setQuery(text);
