@@ -1,0 +1,26 @@
+.sc-icon-picker {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: 0 var(--space-8) 0 var(--space-10);
+  color: var(--color-text-primary);
+  transition: background-color 0.15s ease-out;
+}
+.sc-icon-picker:hover,
+.sc-icon-picker[data-state="open"] {
+  background: var(--fg-10);
+  transition: none;
+}
+.sc-icon-picker:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+.sc-icon-picker__chevron {
+  color: var(--color-text-secondary);
+  transition: transform 0.25s ease;
+}
+.sc-icon-picker[data-state="open"] .sc-icon-picker__chevron {
+  transform: rotate(180deg);
+  color: var(--color-text-primary);
+}

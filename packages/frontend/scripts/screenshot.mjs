@@ -49,6 +49,28 @@ const SCENES = [
   { name: "empty", url: "gallery.html#empty" },
   { name: "toast", url: "gallery.html#toast", steps: [{ wait: 1700 }] },
   { name: "toast-failure", url: "gallery.html#toast-failure", steps: [{ wait: 400 }] },
+  // Content views (clipboard, snippets, quicklinks, emoji, files, notes, calculator history)
+  ...[
+    ["clipboard-history", "clipboard history"],
+    ["snippets", "search snippets"],
+    ["snippet-create", "create snippet"],
+    ["snippets-import", "import snippets"],
+    ["snippets-export", "export snippets"],
+    ["quicklinks", "search quicklinks"],
+    ["quicklink-create", "create quicklink"],
+    ["emoji", "search emoji"],
+    ["file-search", "search files"],
+    ["notes-search", "search notes"],
+    ["calculator-history", "calculator history"],
+    ["paste-sequentially", "paste sequentially"],
+  ].map(([name, query]) => ({ name, url: "main.html", steps: [{ type: query }, { press: "Enter", wait: 600 }] })),
+  { name: "clipboard-actions", url: "main.html", steps: [{ type: "clipboard history" }, { press: "Enter", wait: 600 }, { press: "Meta+k", wait: 350 }] },
+  { name: "clipboard-image", url: "main.html", steps: [{ type: "clipboard history" }, { press: "Enter", wait: 600 }, { press: "ArrowDown" }, { press: "ArrowDown" }, { press: "ArrowDown" }, { press: "ArrowDown", wait: 400 }] },
+  { name: "clipboard-filter", url: "main.html", steps: [{ type: "clipboard history" }, { press: "Enter", wait: 600 }, { click: ".sc-view[data-active] .sc-dropdown[data-variant=nav]", wait: 350 }] },
+  { name: "snippets-empty", url: "main.html", steps: [{ type: "search snippets" }, { press: "Enter", wait: 600 }, { press: "Control+Shift+x", wait: 400 }, { press: "Enter", wait: 600 }] },
+  { name: "snippet-placeholders", url: "main.html", steps: [{ type: "create snippet" }, { press: "Enter", wait: 600 }, { type: "Hello {" }, { wait: 300 }] },
+  { name: "emoji-actions", url: "main.html", steps: [{ type: "search emoji" }, { press: "Enter", wait: 600 }, { press: "Meta+k", wait: 350 }] },
+  { name: "calculator-live", url: "main.html", steps: [{ type: "calculator history" }, { press: "Enter", wait: 600 }, { type: "2+2*10" }, { wait: 300 }] },
   { name: "gallery", url: "gallery.html", size: [1500, 1000], fullPage: true },
 ];
 

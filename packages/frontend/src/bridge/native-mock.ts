@@ -2,6 +2,7 @@ import { RpcErrorCode, type NativeEvents, type NativeMethod, type NativeParams, 
 import type { Emitter } from "./emitter";
 import { RpcError } from "./errors";
 import { getEnv } from "./env";
+import { MOCK_APPS } from "./mock/fixtures/library";
 
 /** DOM events the dev backdrop listens to so browser runs show HUDs and resizes. */
 export const DEV_HUD_EVENT = "surgecast:dev-hud";
@@ -45,12 +46,12 @@ const fallbacks: Fallback = {
   "window.setFloating": () => undefined,
   "window.isVisible": () => true,
   "window.startDrag": () => undefined,
-  "apps.list": () => [],
+  "apps.list": () => MOCK_APPS,
   "apps.running": () => [],
   "apps.frontmost": () => null,
   "apps.previous": () => null,
   "apps.defaultForPath": () => null,
-  "apps.forUrl": () => [],
+  "apps.forUrl": ({ url }) => (/^https?:/i.test(url) ? MOCK_APPS.filter((app) => ["com.apple.Safari", "com.google.Chrome", "org.mozilla.firefox", "company.thebrowser.Browser"].includes(app.bundleId ?? "")) : []),
   "open.url": ({ url }) => {
     window.open(url, "_blank", "noopener");
   },

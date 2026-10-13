@@ -255,6 +255,7 @@ export interface BackendEvents {
   "entities.changed": { collection: string; ids: string[]; source: "local" | "sync" };
   "commands.changed": { reason: string };
   "clipboard.changed": { item: ClipboardItem };
+  "clipboard.itemsChanged": { ids: string[]; deleted?: boolean };
   "notes.changed": { id: string; deleted?: boolean };
   "ai.stream": AIStreamEvent;
   "ai.chats.changed": { chatId: string };
