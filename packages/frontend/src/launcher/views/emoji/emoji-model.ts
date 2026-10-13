@@ -54,6 +54,9 @@ export interface EmojiSection {
   items: EmojiItem[];
 }
 
+/** Emojibase's skin-tone swatches; not pickable emoji. */
+const HIDDEN_SECTIONS = new Set(["Components"]);
+
 /**
  * Shape backend sections for the grid: Frequently Used is capped at two rows
  * and hidden while searching; the Frequently Used filter keeps only that section.
@@ -62,6 +65,7 @@ export function visibleSections(sections: EmojiSection[], options: { query: stri
   const searching = options.query.trim().length > 0;
   return sections
     .filter((section) => {
+      if (HIDDEN_SECTIONS.has(section.title)) return false;
       if (options.filter === FREQUENTLY_USED) return section.title === FREQUENTLY_USED;
       return !(searching && section.title === FREQUENTLY_USED);
     })

@@ -30,6 +30,7 @@ describe("emoji model", () => {
       ["People & Body", 1],
     ]);
     expect(visibleSections([frequent, people], { query: "wave", filter: "all", columns: 8 }).map((s) => s.title)).toEqual(["People & Body"]);
+    expect(visibleSections([people, { title: "Components", items: [wave] }], { query: "", filter: "all", columns: 8 }).map((s) => s.title)).toEqual(["People & Body"]);
     expect(visibleSections([frequent, people], { query: "", filter: FREQUENTLY_USED, columns: 8 }).map((s) => [s.title, s.items.length])).toEqual([[FREQUENTLY_USED, 20]]);
   });
 });
