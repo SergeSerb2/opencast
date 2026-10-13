@@ -11,6 +11,7 @@ import { recentLaunchArguments, scriptExecutions, trackScriptExecutions, type Sc
 import { outputStatus, terminalText, visibleOutput, type OutputPhase, type StatusTone } from "./scripts/output";
 import { basename } from "./scripts/script-list";
 import { ScriptArgumentsForm } from "./scripts/ScriptArgumentsForm";
+import { confirmScriptRun } from "./scripts/confirm-script";
 import "./scripts/scripts.css";
 
 // Chunks can arrive before this view mounts; buffer them from launcher boot.
@@ -94,7 +95,8 @@ export function ScriptOutputView({ props, title, icon }: LauncherViewProps<Scrip
   };
 
   const start = async (args: string[]) => {
-    if (!path) return;
+    if (!path || running) return;
+    if (script && !(await confirmScriptRun(script))) return;
     const previous = run;
     setRun({ args, starting: true, cancelled: false });
     try {

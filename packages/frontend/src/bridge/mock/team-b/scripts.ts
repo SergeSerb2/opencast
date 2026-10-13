@@ -23,6 +23,9 @@ const TEMPLATES: Record<BackendParams<"scripts.create">["language"], [extension:
   bash: ["sh", "/bin/bash"],
   python: ["py", "/usr/bin/env python3"],
   node: ["js", "/usr/bin/env node"],
+  typescript: ["ts", "/usr/bin/env tsx"],
+  go: ["go", "/usr/bin/env -S go run"],
+  csharp: ["cs", "/usr/bin/env -S dotnet run"],
   applescript: ["applescript", "/usr/bin/osascript"],
   swift: ["swift", "/usr/bin/env swift"],
   ruby: ["rb", "/usr/bin/env ruby"],
@@ -346,7 +349,7 @@ export function createScriptsMock(ctx: MockContext): MockArea {
         const result = runScript(script, argumentsFor(script, values ?? []));
         return { exitCode: result.exitCode, output: result.output.trim(), lastLine: lastLine(result.output) };
       },
-      "scripts.create": ({ directory, title, mode, language, packageName, icon }) => {
+      "scripts.create": ({ directory, title, mode, language, packageName, icon, needsConfirmation, refreshTime }) => {
         if (!title.trim()) invalid("Script title is required");
         if (/\r|\n/.test(title + (packageName ?? "") + (icon ?? ""))) invalid("Metadata cannot contain newlines");
         const dir = expand(directory);
@@ -366,9 +369,9 @@ export function createScriptsMock(ctx: MockContext): MockArea {
           mode,
           packageName: packageName || basename(dir).replace(/[-_]/g, " "),
           icon,
-          refreshTime: mode === "inline" ? "1m" : undefined,
           arguments: [],
           language: shebang,
+          ...(mode === "inline" ? { refreshTime: refreshTime ?? "1m" } : needsConfirmation ? { needsConfirmation: true } : {}),
         };
         scripts.push(script);
         syncCommands();

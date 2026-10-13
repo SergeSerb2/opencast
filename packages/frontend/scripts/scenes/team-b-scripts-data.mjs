@@ -19,6 +19,9 @@ export default [
   { name: "b-sd-create", url: "main.html", steps: [...open("create script command"), { type: "Open Pull Request", wait: 200 }] },
   { name: "b-sd-create-error", url: "main.html", steps: [...open("create script command"), { press: "Meta+Enter", wait: 400 }] },
   { name: "b-sd-create-actions", url: "main.html", steps: [...open("create script command"), { press: "Meta+k", wait: 350 }] },
+  { name: "b-sd-create-templates", url: "main.html", steps: [...open("create script command"), { click: "button[aria-label='Template']", wait: 350 }] },
+  { name: "b-sd-create-inline", url: "main.html", steps: [...open("create script command"), { click: "button[aria-label='Mode']" }, { type: "inline" }, { press: "Enter", wait: 300 }, { click: "button[aria-label='Refresh']", wait: 350 }] },
+  { name: "b-sd-scripts-confirm", url: "main.html", steps: [...open("search script commands"), { type: "flush dns", wait: 300 }, { press: "Enter", wait: 350 }] },
 
   // Script output (fullOutput)
   { name: "b-sd-output-running", url: "main.html", steps: [...open("update homebrew", 650)] },

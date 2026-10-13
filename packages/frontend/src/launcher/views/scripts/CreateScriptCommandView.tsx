@@ -9,12 +9,12 @@ import { sc } from "../../../lib/keyboard";
 import { hideLauncher } from "../../launch";
 import type { LauncherViewProps } from "../registry";
 import { AddScriptDirectoryView } from "./AddScriptDirectoryView";
-import { createScriptParams, MODE_HELP, SCRIPT_LANGUAGES, SCRIPT_MODES, scriptDestination, scriptFileName, validateCreateScript, type CreateScriptErrors, type CreateScriptValues } from "./script-create";
+import { createScriptParams, MODE_HELP, REFRESH_INTERVALS, SCRIPT_LANGUAGES, SCRIPT_MODES, scriptDestination, scriptFileName, validateCreateScript, type CreateScriptErrors, type CreateScriptValues } from "./script-create";
 import { abbreviateHome } from "./script-list";
 
 const ADD_DIRECTORY = "__add-directory__";
 
-const INITIAL: CreateScriptValues = { language: "bash", mode: "silent", title: "", packageName: "", icon: "", directory: "" };
+const INITIAL: CreateScriptValues = { language: "bash", mode: "silent", title: "", packageName: "", icon: "", directory: "", needsConfirmation: false, refreshTime: "1m" };
 
 /** "Create Script Command": writes a script from a template into one of the script directories. */
 export function CreateScriptCommandView({ title, icon }: LauncherViewProps) {
@@ -37,6 +37,7 @@ export function CreateScriptCommandView({ title, icon }: LauncherViewProps) {
   const addDirectory = () => navigation.push(<AddScriptDirectoryView icon={icon} onAdded={(paths) => update("directory", paths[0])} />);
 
   const create = async (openAfterwards: boolean) => {
+    if (busy) return;
     const found = validateCreateScript(values, directories);
     setErrors(found);
     if (Object.keys(found).length) {
@@ -86,17 +87,23 @@ export function CreateScriptCommandView({ title, icon }: LauncherViewProps) {
         </ActionPanel>
       }
     >
-      <Form.Dropdown id="language" title="Template" value={values.language} onChange={(v) => update("language", v as CreateScriptValues["language"])}>
+      <Form.Dropdown id="language" title="Template" value={values.language} error={errors.language} onChange={(v) => update("language", v as CreateScriptValues["language"])}>
         {SCRIPT_LANGUAGES.map((language) => (
           <Form.Dropdown.Item key={language.value} value={language.value} title={language.title} />
         ))}
       </Form.Dropdown>
-      <Form.Dropdown id="mode" title="Mode" info={MODE_HELP} value={values.mode} onChange={(v) => update("mode", v as CreateScriptValues["mode"])}>
+      <Form.Dropdown id="mode" title="Mode" info={MODE_HELP} value={values.mode} error={errors.mode} onChange={(v) => update("mode", v as CreateScriptValues["mode"])}>
         {SCRIPT_MODES.map((mode) => (
           <Form.Dropdown.Item key={mode.value} value={mode.value} title={mode.title} />
         ))}
       </Form.Dropdown>
-      {values.mode === "inline" && <Form.Description text="Inline scripts refresh every minute. Change @raycast.refreshTime in the file to adjust." />}
+      {values.mode === "inline" ? (
+        <Form.Dropdown id="refreshTime" title="Refresh" value={values.refreshTime} error={errors.refreshTime} onChange={(v) => update("refreshTime", v)}>
+          {REFRESH_INTERVALS.map((interval) => <Form.Dropdown.Item key={interval.value} value={interval.value} title={interval.title} />)}
+        </Form.Dropdown>
+      ) : (
+        <Form.Checkbox id="needsConfirmation" title="Confirmation" label="Ask before running" value={values.needsConfirmation} onChange={(v) => update("needsConfirmation", v)} />
+      )}
       <Form.TextField id="title" title="Title" placeholder="Command Title" autoFocus value={values.title} error={errors.title} onChange={(v) => update("title", v)} />
       <Form.TextField id="packageName" title="Package Name" placeholder="E.g., Developer Utils" info="Groups related scripts in Search Script Commands and shows as the subtitle in root search." value={values.packageName} onChange={(v) => update("packageName", v)} />
       <Form.TextField id="icon" title="Icon" placeholder="Emoji, image path or URL" value={values.icon} onChange={(v) => update("icon", v)} />

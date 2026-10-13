@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { ScriptCommand } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
+import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { native } from "../../../bridge/native";
 import { useSetting } from "../../../bridge/settings";
@@ -14,6 +15,7 @@ import type { LauncherViewProps } from "../registry";
 import { AddScriptDirectoryView } from "./AddScriptDirectoryView";
 import { CreateScriptCommandView } from "./CreateScriptCommandView";
 import { rememberLaunchArguments } from "./executions";
+import { confirmScriptRun } from "./confirm-script";
 import {
   ALL_PACKAGES,
   argumentValues,
@@ -74,7 +76,7 @@ function ScriptDetail({ script }: { script: ScriptCommand }) {
 /** "Search Script Commands": scripts from the configured directories, grouped by package, with inline arguments. */
 export function ScriptCommandsView({ props, title, icon }: LauncherViewProps<{ query?: string }>) {
   const navigation = useNavigation();
-  const { data: scripts, isLoading, refetch } = useBackend("scripts.list", undefined);
+  const { data: scripts, error, isLoading, refetch } = useBackend("scripts.list", undefined);
   const directories = useSetting("scripts.directories");
   const [query, setQuery] = useState(props.query ?? "");
   const [packageFilter, setPackageFilter] = useState(ALL_PACKAGES);
@@ -137,6 +139,7 @@ export function ScriptCommandsView({ props, title, icon }: LauncherViewProps<{ q
       }
     }
     const values = takesArguments ? Object.fromEntries(script.arguments.map((a) => [a.name, args[a.name] ?? ""])) : {};
+    if (!(await confirmScriptRun(script))) return;
     rememberLaunchArguments(script.path, argumentValues(script, values));
     await launchCommandInfo({ id: `script:${script.path}`, title: script.title, icon: scriptIcon(script) }, { arguments: takesArguments ? values : undefined });
   };
@@ -174,13 +177,15 @@ export function ScriptCommandsView({ props, title, icon }: LauncherViewProps<{ q
     [sections],
   );
 
-  const loaded = scripts !== undefined;
+  const loaded = scripts !== undefined || Boolean(error);
   const hasScripts = all.length > 0;
   const empty = loaded && !isLoading && !sections.length;
 
   let emptyView: ReactNode = null;
   if (empty) {
-    emptyView = noDirectories ? (
+    emptyView = error ? (
+      <EmptyView title="Could Not Load Script Commands" description={errorMessage(error)} icon="warning-16" action={{ title: "Try Again", onAction: refetch }} />
+    ) : noDirectories ? (
       <EmptyView title="No Script Directories" description="Add a folder with your scripts to run them from Surgecast." action={{ title: "Add Script Directory", onAction: openAddDirectory }} />
     ) : !hasScripts ? (
       <EmptyView title="No Script Commands" description="Create a script command, or put scripts with Raycast-style metadata into one of your script directories." action={{ title: "Create Script Command", onAction: openCreate }} />
