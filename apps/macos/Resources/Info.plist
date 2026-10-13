@@ -7,7 +7,8 @@
 	<key>CFBundleExecutable</key>
 	<string>OpenCast</string>
 	<key>CFBundleIdentifier</key>
-	<string>app.opencast.OpenCast</string>
+	<!-- Keep the installed app identity stable for permissions, login items, and WebKit storage. -->
+	<string>app.surgecast.Surgecast</string>
 	<key>CFBundleName</key>
 	<string>OpenCast</string>
 	<key>CFBundleDisplayName</key>

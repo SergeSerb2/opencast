@@ -55,7 +55,7 @@ describe("validateExportPassword", () => {
 
 describe("paths", () => {
   it("names exports with the local date and time", () => {
-    expect(exportFileName(new Date(2026, 9, 3, 7, 5, 9))).toBe("OpenCast 2026-10-03 07.05.09.opencast");
+    expect(exportFileName(new Date(2026, 9, 3, 7, 5, 9))).toBe("OpenCast 2026-10-03 07.05.09.openconfig");
   });
 
   it("joins and finds the home folder", () => {

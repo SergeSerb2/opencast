@@ -16,7 +16,7 @@ export interface MarkdownProps {
   onOpenLink?: (url: string) => void;
 }
 
-const SAFE_URL = /^(https?:|mailto:|opencast:|raycast:|opencast-file:|file:|data:image\/)/i;
+const SAFE_URL = /^(https?:|mailto:|opencast:|surgecast:|raycast:|opencast-file:|surgecast-file:|file:|data:image\/)/i;
 
 /** Allow web links, app deeplinks, local files and inline images; drop script-like schemes. */
 export function markdownUrlTransform(url: string): string {

@@ -81,10 +81,10 @@ secrets, `.surgeconfig` backups, deep links, and encrypted sync vaults remain re
 New exports use `.openconfig`, links use `opencast://`, and development variables use
 `OPENCAST_*` (with `SURGECAST_*` aliases).
 
-The app now uses bundle ID `app.opencast.OpenCast`. macOS permissions and Open at
-Login may need to be granted again for the renamed app. Existing sync deployments
-can keep their Worker URL and D1 database; use their current resource names when
-deploying an update.
+The private bundle ID and WebKit page origin stay stable to preserve macOS grants
+and stored window preferences. Legacy preference keys are copied to the OpenCast
+names before the UI loads. Existing sync deployments can keep their Worker URL and
+D1 database; use their current resource names when deploying an update.
 
 ## Set up AI
 

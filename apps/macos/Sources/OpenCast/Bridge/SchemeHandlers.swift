@@ -47,7 +47,7 @@ import WebKit
         var mime = "application/octet-stream"
         let data: Data
         switch url.scheme {
-        case "opencast-app":
+        case "opencast-app", "surgecast-app":
           guard url.host == "app" else { throw RpcError.invalid("Invalid app host") }
           let root = Environment.resources.appendingPathComponent("frontend")
             .resolvingSymlinksInPath()

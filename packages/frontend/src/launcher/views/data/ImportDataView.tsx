@@ -4,7 +4,7 @@ import { errorMessage } from "../../../bridge/errors";
 import { Action, ActionPanel, Form, showToast, useNavigation } from "../../../components";
 import { sc } from "../../../lib/keyboard";
 import type { LauncherViewProps } from "../registry";
-import { formatCount, importErrorField, importSummary, RAYCONFIG_CATEGORIES, RAYCONFIG_EXTENSION, OPENCAST_EXTENSION, type ImportField } from "./data-format";
+import { formatCount, importErrorField, importSummary, RAYCONFIG_CATEGORIES, RAYCONFIG_EXTENSION, OPENCAST_IMPORT_EXTENSIONS, type ImportField } from "./data-format";
 import { ImportResultsView } from "./ImportResultsView";
 
 export interface ImportDataProps {
@@ -84,7 +84,7 @@ export function ImportDataView({ props, title, icon }: LauncherViewProps<ImportD
         title={rayconfig ? "Raycast Export" : "OpenCast Export"}
         info={rayconfig ? "In Raycast, run Export Settings & Data to create a .rayconfig file." : "Create one with Export Data."}
         allowMultipleSelection={false}
-        allowedTypes={[rayconfig ? RAYCONFIG_EXTENSION : OPENCAST_EXTENSION]}
+        allowedTypes={rayconfig ? [RAYCONFIG_EXTENSION] : OPENCAST_IMPORT_EXTENSIONS}
         defaultValue={props.path ? [props.path] : []}
         error={errors.file}
         onChange={() => clear("file")}

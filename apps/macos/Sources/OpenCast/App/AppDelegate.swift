@@ -9,7 +9,7 @@ import Carbon
   private let hub = EventHub()
   private var status: NSStatusItem?
   private var observers: [NSObjectProtocol] = []
-  private let showNotification = Notification.Name("app.opencast.showLauncher")
+  private let showNotifications = ["app.opencast.showLauncher", "app.surgecast.showLauncher"].map { Notification.Name($0) }
   private var instanceFD: Int32 = -1
   private var ownsInstance = false
   private var quitting = false
@@ -27,8 +27,10 @@ import Carbon
     instanceFD = open(
       Environment.dataDir.appendingPathComponent("native.lock").path, O_CREAT | O_RDWR, 0o600)
     guard instanceFD >= 0, flock(instanceFD, LOCK_EX | LOCK_NB) == 0 else {
-      DistributedNotificationCenter.default().postNotificationName(
-        showNotification, object: nil, userInfo: nil, deliverImmediately: true)
+      for name in showNotifications {
+        DistributedNotificationCenter.default().postNotificationName(
+          name, object: nil, userInfo: nil, deliverImmediately: true)
+      }
       NSApp.terminate(nil)
       return
     }
@@ -73,10 +75,15 @@ import Carbon
         "opencast.toggle", hotkey: ["modifiers": ["opt"], "key": "space"])
       if result["ok"] as? Bool != true { Environment.log("Default launcher hotkey unavailable") }
     } catch { Environment.log("Default hotkey registration failed") }
-    observers.append(
-      DistributedNotificationCenter.default().addObserver(
-        forName: showNotification, object: nil, queue: .main
-      ) { [weak self] _ in Task { @MainActor in self?.windows.launcher.show() } })
+    for name in showNotifications {
+      observers.append(
+        DistributedNotificationCenter.default().addObserver(
+          forName: name, object: nil, queue: .main
+        ) { [weak self] _ in Task { @MainActor in
+          Environment.log("Launcher activation requested (\(name.rawValue))")
+          self?.windows.launcher.show()
+        } })
+    }
     for (name, topic) in [
       (NSWorkspace.willSleepNotification, "system.willSleep"),
       (NSWorkspace.didWakeNotification, "system.didWake"),

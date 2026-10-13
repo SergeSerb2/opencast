@@ -120,7 +120,7 @@ Node 22.13 or newer is required (`node:sqlite`).
 
 ## Web content loading
 
-Native serves the frontend through the custom scheme `opencast-app://app/<page>.html`
+Native serves the frontend through the stable private scheme `surgecast-app://app/<page>.html`
 (WKURLSchemeHandler) from `Resources/frontend`. In dev, `OPENCAST_DEV_URL`
 (e.g. `http://localhost:5173`) replaces it.
 

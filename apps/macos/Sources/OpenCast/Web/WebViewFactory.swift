@@ -12,6 +12,8 @@ import WebKit
   weak var router: NativeRouter?
   let hub: EventHub
   private let schemes = SchemeHandlers()
+  private let websiteDataStore: WKWebsiteDataStore = Environment.env["OPENCAST_EPHEMERAL_WEB_STORAGE"] == "1"
+    ? .nonPersistent() : .default()
   private var views: [String: AppearanceWebView] = [:]
   private var ready: [String: Any]?
   private var routes: [String: [String: Any]] = [:]
@@ -21,7 +23,7 @@ import WebKit
     hub.web = { [weak self] topic, payload in self?.broadcast(topic, payload) }
   }
   static func trusted(_ url: URL) -> Bool {
-    if url.scheme == "opencast-app" { return url.host == "app" }
+    if ["opencast-app", "surgecast-app"].contains(url.scheme ?? "") { return url.host == "app" }
     guard let dev = Environment.env["OPENCAST_DEV_URL"].flatMap(URL.init(string:)) else {
       return false
     }
@@ -29,7 +31,8 @@ import WebKit
   }
   func create(_ kind: String) -> WKWebView {
     let configuration = WKWebViewConfiguration()
-    for name in ["opencast-app", "opencast-icon", "opencast-file", "surgecast-icon", "surgecast-file"] {
+    configuration.websiteDataStore = websiteDataStore
+    for name in ["opencast-app", "surgecast-app", "opencast-icon", "opencast-file", "surgecast-icon", "surgecast-file"] {
       configuration.setURLSchemeHandler(schemes, forURLScheme: name)
     }
     if let router {
@@ -81,7 +84,8 @@ import WebKit
     web.evaluateJavaScript(appearanceScript(web), completionHandler: nil)
   }
   private func load(_ web: WKWebView, kind: String) {
-    let base = Environment.env["OPENCAST_DEV_URL"] ?? "opencast-app://app"
+    // Keep this private origin stable: WebKit scopes stored preferences by origin.
+    let base = Environment.env["OPENCAST_DEV_URL"] ?? "surgecast-app://app"
     if let url = URL(
       string: base.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         + "/\(kind == "main" ? "main" : kind).html")

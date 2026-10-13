@@ -13,6 +13,7 @@ import { PathListEditor } from "../ui/paths";
 import { useSettingState } from "../ui/controls";
 import { ExportDialog, ImportDialog } from "./DataDialogs";
 import { BackupPassphraseRow } from "./BackupPassphrase";
+import { OPENCAST_IMPORT_EXTENSIONS } from "../../launcher/views/data/data-format";
 
 const BACKUP_FREQUENCY = [
   { value: "never", title: "Never" },
@@ -72,7 +73,7 @@ export function AdvancedPage() {
     const path = await pick({
       canChooseFiles: true,
       canChooseDirectories: false,
-      allowedTypes: format === "rayconfig" ? ["rayconfig"] : ["openconfig", "surgeconfig"],
+      allowedTypes: format === "rayconfig" ? ["rayconfig"] : OPENCAST_IMPORT_EXTENSIONS,
       title: format === "rayconfig" ? "Choose a Raycast Export" : "Choose an OpenCast Export",
       prompt: "Import",
     });

@@ -103,11 +103,13 @@ an unsubscribe function. Call native with
 | `OPENCAST_RESOURCES` | Resources root containing `frontend/`, optionally backend/runtime/Node |
 | `OPENCAST_DATA_DIR` | Isolated application data directory for development or tests |
 | `OPENCAST_LOG_DIR` | Native/backend log directory override |
+| `OPENCAST_EPHEMERAL_WEB_STORAGE=1` | Keep test WebKit storage in memory, separate from installed app preferences |
 | `OPENCAST_DEV_URL` | Vite base URL, e.g. `http://localhost:5173` |
 | `OPENCAST_KEEP_OPEN=1` | Keep launcher visible after losing key status |
 | `OPENCAST_SHOW_ON_START=1` | Show launcher immediately for development |
 
-Native bridge access is limited to the main frame on `opencast-app://app` or the exact
+Native bridge access is limited to the main frame on `surgecast-app://app` (the stable
+private storage origin), `opencast-app://app`, or the exact
 configured development origin. External links open in the default browser. Asset
 paths are canonicalized to prevent traversal and symlink escapes. Configuration is
 injected only after `backend.ready`; every restart replaces the token/port scripts and

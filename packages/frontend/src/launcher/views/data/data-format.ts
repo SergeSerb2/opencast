@@ -88,12 +88,14 @@ export function validateExportPassword(password: string, confirmation: string): 
   return {};
 }
 
-export const OPENCAST_EXTENSION = "opencast";
+export const OPENCAST_EXTENSION = "openconfig";
+/** Accept both previous export suffixes as well as the transitional OpenCast suffix. */
+export const OPENCAST_IMPORT_EXTENSIONS = [OPENCAST_EXTENSION, "opencast", "surgecast", "surgeconfig"];
 export const RAYCONFIG_EXTENSION = "rayconfig";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** `OpenCast 2026-10-13 14.05.09.opencast` (local time, Finder-safe characters). */
+/** `OpenCast 2026-10-13 14.05.09.openconfig` (local time, Finder-safe characters). */
 export function exportFileName(date: Date): string {
   const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   const time = `${pad(date.getHours())}.${pad(date.getMinutes())}.${pad(date.getSeconds())}`;

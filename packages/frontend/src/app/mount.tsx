@@ -1,3 +1,4 @@
+import "../lib/migrate-storage";
 import { StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/inter/wght.css";
