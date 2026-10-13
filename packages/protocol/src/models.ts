@@ -483,6 +483,8 @@ export interface ExtensionCommandManifest {
 }
 
 export interface ExtensionToolManifest {
+  input?: Record<string, unknown>;
+  confirmation?: boolean;
   name: string;
   title: string;
   description: string;

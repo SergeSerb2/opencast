@@ -21,5 +21,7 @@
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
     "vitest": "^5.0.4"
-  }
+  },
+  "main": "./dist/runtime.cjs",
+  "types": "./dist/index.d.ts"
 }
