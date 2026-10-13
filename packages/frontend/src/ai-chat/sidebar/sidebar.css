@@ -8,6 +8,8 @@
   display: flex;
   flex-direction: column;
   background: rgb(255 255 255 / 0.02);
+}
+.transitions-ready .sc-ai-sidebar {
   animation: sc-ai-sidebar-in 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 .theme-root[light] .sc-ai-sidebar {

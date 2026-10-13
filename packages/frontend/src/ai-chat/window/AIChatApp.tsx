@@ -160,21 +160,29 @@ export function AIChatApp() {
   const sidebarOffset = sidebarOpen && sidebarInline ? SIDEBAR_WIDTH : 0;
   const settingsInline = width >= sidebarOffset + SETTINGS_WIDTH + MIN_CHAT_WIDTH;
 
-  const focusComposer = () => requestAnimationFrame(() => composer.current?.focus());
+  const focusComposer = useCallback(() => requestAnimationFrame(() => composer.current?.focus()), []);
 
-  const newChat = useCallback((init: ChatSetup = {}) => {
-    setSelectedId(null);
-    setSetup(init);
-    setDrafts((all) => ({ ...all, [NEW_KEY]: EMPTY_DRAFT }));
-    setRenamingId(null);
-    requestAnimationFrame(() => composer.current?.focus());
-  }, []);
+  const newChat = useCallback(
+    (init: ChatSetup = {}) => {
+      setSelectedId(null);
+      setSetup(init);
+      setDrafts((all) => ({ ...all, [NEW_KEY]: EMPTY_DRAFT }));
+      setRenamingId(null);
+      focusComposer();
+    },
+    [focusComposer],
+  );
 
-  const selectChat = useCallback((target: AIChat) => {
-    setSelectedId(target.id);
-    setRenamingId(null);
-    requestAnimationFrame(() => composer.current?.focus());
-  }, []);
+  const renamingRef = useLatest(renamingId);
+  const selectChat = useCallback(
+    (target: AIChat) => {
+      setSelectedId(target.id);
+      setRenamingId(null);
+      // A double-click renames instead: don't pull focus out of the rename field.
+      requestAnimationFrame(() => !renamingRef.current && composer.current?.focus());
+    },
+    [renamingRef],
+  );
 
   // The backend announces every chat change (`ai.chats.changed`); the list and the open chat refetch on it.
   const updateChat = useCallback(async (id: string, patch: BackendParams<"ai.chats.update">["patch"]) => {
@@ -305,8 +313,11 @@ export function AIChatApp() {
     newChat: () => newChat(),
     newFolder: () => newFolder(target ?? undefined),
     searchChats: () => {
-      setSidebarOpen(true);
-      requestAnimationFrame(() => search.current?.focus());
+      if (search.current) search.current.focus();
+      else {
+        setSidebarOpen(true);
+        requestAnimationFrame(() => search.current?.focus());
+      }
     },
     toggleSidebar: () => setSidebarOpen((open) => !open),
     toggleSettings: () => setSettingsOpen((open) => !open),
@@ -365,6 +376,13 @@ export function AIChatApp() {
         return;
       }
       if (panelOpen) return;
+      // Typing anywhere outside a text field goes to the composer.
+      const target = event.target as HTMLElement | null;
+      const editable = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (!editable && event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        composer.current?.focus();
+        return;
+      }
       if (matchesShortcut(event, sc("shift", "cmd", "s")) || matchesShortcut(event, sc("cmd", "p"))) {
         event.preventDefault();
         if (matchesShortcut(event, sc("cmd", "p"))) handlersFor(chat).searchChats();
@@ -494,7 +512,7 @@ export function AIChatApp() {
             <NoProvider onOpenSettings={openPreferences} />
           ) : (
             <Transcript
-              topFade={headerHeight * 2}
+              topFade={headerHeight + 16}
               session={session}
               variant="chat"
               models={models}

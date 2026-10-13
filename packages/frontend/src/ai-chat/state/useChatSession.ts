@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AIAttachment, AIChat, AIMessage } from "@surgecast/protocol";
 import { backend } from "../../bridge/backend";
 import { errorMessage, isCancelled } from "../../bridge/errors";
@@ -56,8 +56,11 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
   const [pending, setPending] = useState<{ content: string; attachments: AIAttachment[] } | null>(null);
   const [leafOverride, setLeafOverride] = useState<string | null>(null);
   const [requestedId, setRequestedId] = useState<string | null>(chatId);
-  // Read by async callbacks; updated synchronously whenever `currentId` changes.
+  // Read by async callbacks. `run` also sets it directly so the refetch after creating a chat targets it.
   const idRef = useRef<string | null>(currentId);
+  useLayoutEffect(() => {
+    idRef.current = currentId;
+  }, [currentId]);
   const request = useRef<AbortController | null>(null);
   const onCreated = useLatest(onChatCreated);
 
@@ -65,7 +68,6 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
   if (chatId !== requestedId) {
     setRequestedId(chatId);
     if (chatId !== currentId) {
-      idRef.current = chatId;
       setCurrentId(chatId);
       setChat(null);
       setMessages(EMPTY);

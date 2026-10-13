@@ -145,6 +145,24 @@
   left: auto;
   right: calc(-1 * var(--ai-sidebar-width) + var(--space-8));
 }
+/* macOS 26: with the sidebar open its controls sit inside the glass panel as plain 28px buttons. */
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] :is(.sc-ai-sidebar-toggle, .sc-ai-new-group) {
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  -apple-visual-effect: none;
+}
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] :is(.sc-ai-sidebar-toggle, .sc-ai-new-group)::after {
+  display: none;
+}
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] .sc-ai-sidebar-toggle:hover {
+  background: var(--fg-5);
+}
+.theme-root[macos="26"] .sc-ai-window[data-sidebar] .sc-ai-new-group[data-sidebar] {
+  right: calc(-1 * var(--ai-sidebar-width) + var(--space-12));
+}
+
 .sc-ai-traffic-lights {
   position: absolute;
   top: calc(var(--ai-header-height) / 2 - 7px);
@@ -267,7 +285,7 @@
 .sc-ai-settings[data-overlay] {
   top: calc(var(--ai-header-height) + var(--space-4));
   right: var(--space-8);
-  bottom: var(--space-8);
+  bottom: calc(var(--ai-bottom-clearance) - var(--space-16));
   padding-top: 0;
   border-radius: var(--radius-popover);
   animation: sc-ai-appear 0.15s ease-out;

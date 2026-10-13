@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
 import type { AIMessage, ModelRef } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
 import { native } from "../../../bridge/native";
@@ -56,7 +56,7 @@ interface BodyProps {
   setDraft: (draft: ComposerDraft) => void;
   send: (draft: ComposerDraft) => void;
   runPrimary: () => boolean;
-  composer: React.RefObject<ComposerHandle | null>;
+  composer: RefObject<ComposerHandle | null>;
   resources: ReturnType<typeof useAIResources>;
 }
 
@@ -64,6 +64,7 @@ interface BodyProps {
 function QuickAiBody({ session, draft, setDraft, send, runPrimary, composer, resources }: BodyProps) {
   const view = useViewController();
   const sendKey = useSetting("ai.sendMessage");
+  const zoom = useSetting("general.uiZoom");
   const [addAnchor, setAddAnchor] = useState<HTMLElement | null>(null);
   const footer = useRef<HTMLDivElement>(null);
   const [footerHeight, setFooterHeight] = useState(44);
@@ -100,7 +101,7 @@ function QuickAiBody({ session, draft, setDraft, send, runPrimary, composer, res
   const style = { "--ai-top-clearance": "calc(var(--main-window-header-height) + var(--space-16))", "--ai-bottom-clearance": `${footerHeight + 8 + 16}px` } as CSSProperties;
   return (
     <div className="sc-quick-ai" style={style}>
-      <Transcript topFade={96} session={session} variant="quick-ai" models={resources.models} toolsets={resources.toolsets} empty={<Welcome />} onCopy={(message) => void copyText(message.content)} />
+      <Transcript topFade={Math.round(80 * zoom)} session={session} variant="quick-ai" models={resources.models} toolsets={resources.toolsets} empty={<Welcome />} onCopy={(message) => void copyText(message.content)} />
       <div ref={footer} className="sc-quick-ai__footer">
         <IconButton icon="plus-16" iconSize={20} size={36} variant="glass" className="sc-quick-ai__slot" label="Add Context (⇧⌘K)" data-state={addAnchor ? "open" : undefined} onClick={(e) => setAddAnchor(addAnchor ? null : e.currentTarget)} />
         <div className="sc-quick-ai__composer">

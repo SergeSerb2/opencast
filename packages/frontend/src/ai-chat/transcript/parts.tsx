@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import type { AIAttachment, AIToolCall } from "@surgecast/protocol";
 import { Button } from "../../components/Button/Button";
 import { ActivityIndicator, type ActivityState } from "../../components/Spinner/Spinner";
@@ -27,7 +27,7 @@ export function BranchSwitcher({ branch, onSelect }: { branch: BranchInfo; onSel
 }
 
 /** The small spinning diamond shown while a response is on its way (§6.9). */
-export function LoadingDiamond({ style }: { style?: React.CSSProperties }) {
+export function LoadingDiamond({ style }: { style?: CSSProperties }) {
   return <span className="sc-ai-diamond" style={style} role="progressbar" aria-label="Generating response" />;
 }
 
@@ -178,7 +178,7 @@ export function AttachmentCards({ attachments }: { attachments: readonly AIAttac
 }
 
 /** Small ghost icon button used in message action rows. */
-export function MessageAction({ icon, label, onClick, children }: { icon: string; label: string; onClick: (event: React.MouseEvent<HTMLButtonElement>) => void; children?: ReactNode }) {
+export function MessageAction({ icon, label, onClick, children }: { icon: string; label: string; onClick: (event: MouseEvent<HTMLButtonElement>) => void; children?: ReactNode }) {
   return (
     <button type="button" className="sc-ai-message-action" aria-label={label} title={label} onClick={onClick}>
       <Icon name={icon} size={16} />

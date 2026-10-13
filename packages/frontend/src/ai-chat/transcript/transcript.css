@@ -10,6 +10,8 @@
   padding: var(--ai-top-clearance, 0) var(--ai-side-gutter, 24px) var(--ai-bottom-clearance, 0);
 }
 .sc-ai-transcript .sc-scroll-area__viewport {
+  /* The header fade is positional: whatever scrolls under the header disappears. */
+  --fade-top-strength: 1 !important;
   overflow-anchor: none;
   scroll-padding-top: var(--ai-top-clearance, 0);
 }
