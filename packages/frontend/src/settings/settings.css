@@ -8,7 +8,7 @@
   position: absolute;
   inset: 0;
   display: flex;
-  height: 100vh;
+  height: 100%;
   color: var(--color-text-primary);
 }
 .theme-root[macos="26"] .sc-s-window {
@@ -129,6 +129,10 @@
 .sc-s-sidebar__scroll {
   flex: 1;
 }
+.sc-s-sidebar__scroll .sc-scroll-area__viewport {
+  clip-path: inset(var(--sidebar-content-top) 0 0);
+  scroll-padding-top: var(--sidebar-content-top);
+}
 
 .sc-s-sidebar__content {
   display: flex;
@@ -144,7 +148,6 @@
 }
 
 .sc-s-nav-item {
-  scroll-margin-top: var(--sidebar-content-top);
   display: flex;
   align-items: center;
   gap: var(--space-8);

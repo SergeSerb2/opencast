@@ -72,6 +72,22 @@ try {
     await page.locator(".sc-s-nav-row", { hasText: "Recognition Mode" }).click();
     await page.locator('[data-setting-id="recognition-mode"]').waitFor();
   });
+  await scenario("sidebar-scroll-isolated", "extensions/github", async (page) => {
+    const assertFrame = async () => {
+      const bounds = await page.evaluate(() => ({
+        frameTop: document.querySelector(".sc-dev-window").getBoundingClientRect().top,
+        contentTop: document.querySelector(".sc-s-window").getBoundingClientRect().top,
+        outerScroll: document.querySelector(".sc-dev-window").scrollTop,
+      }));
+      assert.equal(bounds.frameTop, bounds.contentTop);
+      assert.equal(bounds.outerScroll, 0);
+    };
+    await assertFrame();
+    await route(page, "translator");
+    await assertFrame();
+    await route(page, "general");
+    await assertFrame();
+  });
   await scenario("provider-create-and-models", "ai/providers/new/cliproxyapi", async (page) => {
     await page.getByRole("textbox", { name: "Name", exact: true }).fill("Local Proxy");
     await page.getByLabel("API Key", { exact: true }).fill("test-only-key");

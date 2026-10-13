@@ -13,6 +13,7 @@ import { MenuButton } from "../../ui/MenuButton";
 import { BuiltinPage } from "../BuiltinPage";
 import { OnboardingCard } from "./onboarding";
 import { ModelPicker, useEnabledModels } from "./shared";
+import { validateBaseUrl } from "./provider-form";
 import "./ai.css";
 
 type WebSearchProvider = SettingsValues["ai.webSearchProvider"];
@@ -131,7 +132,7 @@ function WebSearchKeyRow({ provider }: { provider: Exclude<WebSearchProvider, "n
           <Button size="small" onClick={() => void save(key.trim())} disabled={!key.trim()}>
             Save
           </Button>
-          {replacing && <IconButton icon="xmark-16" label="Cancel" onClick={() => setReplacing(false)} />}
+          {replacing && <IconButton icon="xmark-16" label="Cancel" onClick={() => { setReplacing(false); setKey(""); }} />}
         </Controls>
       ) : (
         <Controls>
@@ -214,12 +215,7 @@ function ToolsSection() {
             width={220}
             validate={(value) => {
               if (!value.trim()) return option?.needsUrl ? "SearXNG needs a URL" : null;
-              try {
-                const url = new URL(value.trim());
-                return url.protocol === "http:" || url.protocol === "https:" ? null : "Use an http(s) URL";
-              } catch {
-                return "Enter a valid URL";
-              }
+              return validateBaseUrl(value);
             }}
             label="Web Search Base URL"
           />

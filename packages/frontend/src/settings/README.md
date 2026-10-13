@@ -90,7 +90,7 @@ node packages/frontend/scripts/screenshot.mjs --settings --out-dir /tmp/surgecas
 
 Vitest covers search ranking/filtering, catalog anchors, provider validation/key
 handling, routing/history, shortcuts/hotkey conflicts, MCP parsing/import, sync setup,
-agent portability and mock event/redaction contracts. The final run passed 122 tests in 14 Vitest files and 10 browser workflows.
+agent portability and mock event/redaction contracts. The final run passed 122 tests in 14 Vitest files and 11 browser workflows.
 Browser checks exercise live
 mock writes/events, provider setup/key removal/models, agent create/import/export/reset,
 MCP secrets/import validation, sync setup/category/device removal, alias cancel/save,

@@ -82,7 +82,11 @@ export function PageFrame({ title, titleMode = "scroll", actions, children }: Pa
         .map((id) => contentRef.current?.querySelector<HTMLElement>(`[data-setting-id="${CSS.escape(id)}"]`))
         .find(Boolean);
       if (target) {
-        target.scrollIntoView({ block: "center" });
+        const viewport = contentRef.current?.closest<HTMLElement>(".sc-scroll-area__viewport");
+        if (viewport) {
+          const offset = target.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
+          viewport.scrollTop += offset - (viewport.clientHeight - target.clientHeight) / 2;
+        }
         target.classList.remove("sc-s-highlight");
         void target.offsetWidth;
         target.classList.add("sc-s-highlight");

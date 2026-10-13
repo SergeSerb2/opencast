@@ -50,7 +50,16 @@ export function Sidebar({ route, installed }: SidebarProps) {
 
   useLayoutEffect(() => {
     if (query.trim()) return;
-    sidebarRef.current?.querySelector<HTMLElement>(".sc-s-nav-item[data-selected]")?.scrollIntoView({ block: "nearest" });
+    const sidebar = sidebarRef.current;
+    const viewport = sidebar?.querySelector<HTMLElement>(".sc-scroll-area__viewport");
+    const selected = sidebar?.querySelector<HTMLElement>(".sc-s-nav-item[data-selected]");
+    const search = sidebar?.querySelector<HTMLElement>(".sc-s-search");
+    if (!viewport || !selected || !search) return;
+    const selectedBounds = selected.getBoundingClientRect();
+    const top = search.getBoundingClientRect().bottom + 16;
+    const bottom = viewport.getBoundingClientRect().bottom - 16;
+    if (selectedBounds.top < top) viewport.scrollTop -= top - selectedBounds.top;
+    else if (selectedBounds.bottom > bottom) viewport.scrollTop += selectedBounds.bottom - bottom;
   }, [selectedId, installed, query]);
 
   const openResult = (page: PageEntry, row?: string) => navigate(page.id, row ? { highlight: settingId(row) } : undefined);
