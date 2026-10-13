@@ -280,6 +280,11 @@ export interface NativeMethods {
   "hud.show": { params: { text: string; icon?: string; durationMs?: number }; result: void };
   "confetti.show": { params: void; result: void };
   "alert.show": { params: { title: string; message?: string; buttons: string[]; style?: "informational" | "warning" | "critical" }; result: { index: number } };
+  /** NSOpenPanel for Form.FilePicker and file/directory/app preferences. Resolves null when cancelled. */
+  "dialog.openFiles": {
+    params: { canChooseFiles?: boolean; canChooseDirectories?: boolean; allowMultipleSelection?: boolean; allowedTypes?: string[]; directory?: string; title?: string; prompt?: string };
+    result: string[] | null;
+  };
 
   // --- menu bar extras (extension "menu-bar" commands) --------------------------
   "menubar.set": { params: { id: string; title?: string; icon?: ImageLike; tooltip?: string; items: MenuBarExtraItem[] }; result: void };
@@ -296,6 +301,11 @@ export interface NativeEvents {
   "hotkey.pressed": { id: string };
   "clipboard.changed": ClipboardSnapshot;
   "window.didShow": { kind: WindowKind };
+  /**
+   * A window was asked to show a route (hotkey or deeplink launch, `window.show({ route })`).
+   * Launcher routes: "command:<CommandId>", "root", "quick-ai".
+   */
+  "window.route": { kind: WindowKind; route: string; payload?: unknown };
   "window.didHide": { kind: WindowKind };
   "window.didBecomeKey": { kind: WindowKind };
   "window.didResignKey": { kind: WindowKind };

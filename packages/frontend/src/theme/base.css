@@ -1,0 +1,219 @@
+/* Global reset and typography shared by every Surgecast window. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+html {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-13);
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0.1px;
+  font-feature-settings: var(--font-features);
+  font-synthesis: none;
+  font-optical-sizing: none;
+  -webkit-font-smoothing: subpixel-antialiased;
+  -webkit-text-size-adjust: none;
+  text-rendering: optimizeLegibility;
+  word-break: break-word;
+}
+
+#root {
+  position: relative;
+  height: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  margin: 0;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+input,
+textarea {
+  caret-color: var(--fg);
+  background: transparent;
+  border: 0;
+  outline: none;
+  padding: 0;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+::placeholder {
+  color: var(--color-text-placeholder);
+  opacity: 1;
+}
+
+::selection {
+  background: var(--color-text-selection);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  -webkit-user-drag: none;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ul,
+ol,
+figure,
+blockquote {
+  margin: 0;
+}
+
+[data-selectable="true"],
+[data-selectable="true"] * {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 0;
+}
+
+/* Text inputs draw their focus on the surrounding field, not the element. */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* Hide native scrollbars; ScrollArea draws its own thumb. */
+.sc-no-scrollbar {
+  scrollbar-width: none;
+}
+.sc-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* No CSS transitions until two frames after boot (avoids animating first paint). */
+.theme-root:not(.transitions-ready) *,
+.theme-root:not(.transitions-ready) *::before,
+.theme-root:not(.transitions-ready) *::after {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-root *,
+  .theme-root *::before,
+  .theme-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---- text variants (§9.3) with Inter letter-spacing per size (§9.2) ---- */
+.sc-text-mini {
+  font-size: var(--font-size-8);
+  letter-spacing: 0.1px;
+}
+.sc-text-small {
+  font-size: var(--font-size-11);
+  letter-spacing: 0.1px;
+}
+.sc-text-small-strong {
+  font-size: var(--font-size-11);
+  font-weight: 500;
+  letter-spacing: 0.11px;
+}
+.sc-text {
+  font-size: var(--font-size-13);
+  letter-spacing: 0.1px;
+}
+.sc-text-strong {
+  font-size: var(--font-size-13);
+  font-weight: 500;
+  letter-spacing: 0.11px;
+}
+.sc-text-large {
+  font-size: var(--font-size-16);
+  letter-spacing: 0;
+}
+.sc-text-large-strong {
+  font-size: var(--font-size-16);
+  font-weight: 500;
+  letter-spacing: 0.01px;
+}
+.sc-text-xl {
+  font-size: var(--font-size-18);
+  letter-spacing: -0.1px;
+}
+.sc-heading-2 {
+  font-size: var(--font-size-18);
+  font-weight: 600;
+  letter-spacing: -0.12px;
+}
+.sc-heading-1 {
+  font-size: var(--font-size-24);
+  font-weight: 600;
+  letter-spacing: -0.17px;
+}
+.sc-mono {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-13);
+  letter-spacing: 0;
+  font-feature-settings: normal;
+}
+
+.sc-color-secondary {
+  color: var(--color-text-secondary);
+}
+.sc-color-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+.sc-truncate {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

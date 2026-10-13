@@ -1,0 +1,132 @@
+.sc-spinner {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  opacity: 0.65;
+  color: currentColor;
+}
+.sc-spinner__leaf {
+  position: absolute;
+  left: 43.75%;
+  top: 0;
+  width: 12.5%;
+  height: 100%;
+}
+.sc-spinner__leaf::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 30%;
+  border-radius: var(--radius-6);
+  background: currentColor;
+  animation: sc-spinner-fade 0.8s linear infinite;
+  animation-delay: inherit;
+}
+@keyframes sc-spinner-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.25;
+  }
+}
+
+.sc-activity {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  --activity-color: var(--color-text-primary);
+}
+.sc-activity__ring {
+  position: absolute;
+  inset: 0;
+  transition:
+    transform 0.8s var(--ease-out-expo),
+    opacity 0.8s var(--ease-out-expo);
+}
+.sc-activity__track,
+.sc-activity__arc {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.sc-activity__track {
+  stroke: var(--color-text-quaternary);
+}
+.sc-activity__arc {
+  stroke: var(--color-text-primary);
+  stroke-dasharray: 25 75;
+  transform-origin: 8px 8px;
+  animation: sc-activity-spin 0.8s linear infinite;
+}
+@keyframes sc-activity-spin {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+.sc-activity__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--activity-color);
+  box-shadow: 0 0 12px 8px rgb(from var(--activity-color) r g b / 20%);
+  transform: scale(0.8);
+  opacity: 0;
+  transition:
+    transform 0.8s var(--ease-out-expo),
+    opacity 0.8s var(--ease-out-expo);
+}
+.sc-activity:not([data-state="pending"]) .sc-activity__ring {
+  transform: scale(0.6);
+  opacity: 0;
+}
+.sc-activity:not([data-state="pending"]) .sc-activity__dot {
+  transform: scale(1);
+  opacity: 1;
+}
+.sc-activity[data-state="success"] {
+  --activity-color: var(--green);
+}
+.sc-activity[data-state="warning"] {
+  --activity-color: var(--yellow);
+}
+.sc-activity[data-state="failure"] {
+  --activity-color: var(--red);
+}
+
+.sc-loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity 0.7s ease-out;
+}
+.sc-loading-bar[data-loading] {
+  opacity: 1;
+  transition: opacity 0.3s ease-in var(--loading-delay, 300ms);
+}
+.sc-loading-bar__line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, var(--loader-0), var(--loader), var(--loader-0));
+  animation: sc-loading-sweep 1.5s var(--ease-loader) infinite;
+  animation-play-state: paused;
+}
+.sc-loading-bar[data-loading] .sc-loading-bar__line {
+  animation-play-state: running;
+}
+@keyframes sc-loading-sweep {
+  0%,
+  100% {
+    transform: translateX(-35%);
+  }
+  50% {
+    transform: translateX(35%);
+  }
+}

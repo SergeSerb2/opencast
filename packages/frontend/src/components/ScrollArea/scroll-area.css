@@ -1,0 +1,79 @@
+.sc-scroll-area {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sc-scroll-area__viewport {
+  --fade-top-strength: 0;
+  --fade-bottom-strength: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+/* Fades: opacity 1 − s at the edge, lerp(1, min, s) at the midpoint, 1 past the fade. */
+.sc-scroll-area__viewport[data-fade-top],
+.sc-scroll-area__viewport[data-fade-bottom] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / calc(1 - var(--fade-top-strength))) 0,
+    rgb(0 0 0 / calc(1 - var(--fade-top-strength) * (1 - var(--fade-top-min)))) calc(var(--fade-top) / 2),
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    rgb(0 0 0 / calc(1 - var(--fade-bottom-strength) * (1 - var(--fade-bottom-min)))) calc(100% - var(--fade-bottom) / 2),
+    rgb(0 0 0 / calc(1 - var(--fade-bottom-strength))) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / calc(1 - var(--fade-top-strength))) 0,
+    rgb(0 0 0 / calc(1 - var(--fade-top-strength) * (1 - var(--fade-top-min)))) calc(var(--fade-top) / 2),
+    #000 var(--fade-top),
+    #000 calc(100% - var(--fade-bottom)),
+    rgb(0 0 0 / calc(1 - var(--fade-bottom-strength) * (1 - var(--fade-bottom-min)))) calc(100% - var(--fade-bottom) / 2),
+    rgb(0 0 0 / calc(1 - var(--fade-bottom-strength))) 100%
+  );
+}
+
+.sc-scroll-area__track {
+  position: absolute;
+  right: 2px;
+  width: 6px;
+  border-radius: var(--radius-full);
+  opacity: 0;
+  transition:
+    opacity 0.3s ease-out,
+    width 0.18s ease-out 2s,
+    background-color 0.18s ease-out 2s;
+  pointer-events: none;
+}
+.sc-scroll-area__track[data-scrollable="true"] {
+  pointer-events: auto;
+}
+.sc-scroll-area__track[data-visible="true"],
+.sc-scroll-area__track[data-dragging="true"],
+.sc-scroll-area:hover .sc-scroll-area__track[data-scrollable="true"]:hover {
+  opacity: 1;
+  transition-duration: 0s, 0.18s, 0.18s;
+}
+.sc-scroll-area__track[data-scrollable="true"]:hover,
+.sc-scroll-area__track[data-dragging="true"] {
+  width: 11px;
+  background: var(--fg-5);
+  transition-delay: 0s;
+}
+.sc-scroll-area__track[data-scrollable="false"] {
+  display: none;
+}
+.sc-scroll-area__thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-radius: var(--radius-full);
+  background: var(--fg-40);
+  box-shadow: 0 0 1px var(--bg-10);
+}

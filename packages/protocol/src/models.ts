@@ -95,6 +95,8 @@ export interface RootSearchItem extends CommandInfo {
   /** Extra right-side accessories (e.g. "Running", hotkey). */
   accessories?: { text?: string; icon?: ImageLike; tooltip?: string }[];
   score?: number;
+  /** Applications: the app is running (the launcher draws a dot under the icon). */
+  running?: boolean;
 }
 
 export interface CalculatorResult {

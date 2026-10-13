@@ -1,0 +1,64 @@
+.sc-overlay-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sc-overlay-root > * {
+  pointer-events: auto;
+}
+
+.sc-popover-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.sc-popover {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-popover);
+  overflow: hidden;
+  color: var(--color-text-primary);
+  transform-origin: top left;
+  animation: sc-popover-open var(--dur-popover-open) var(--ease-popover-open) both;
+}
+.sc-popover[data-side="top"][data-align="end"] {
+  transform-origin: bottom right;
+}
+.sc-popover[data-side="top"][data-align="start"] {
+  transform-origin: bottom left;
+}
+.sc-popover[data-side="bottom"][data-align="end"] {
+  transform-origin: top right;
+}
+.sc-popover[data-align="center"] {
+  transform-origin: top center;
+}
+.sc-popover[data-state="closed"] {
+  animation: sc-popover-close var(--dur-popover-close) ease-out both;
+  pointer-events: none;
+}
+.sc-popover[data-align="center"][data-state] {
+  animation-name: none;
+}
+
+/*
+ * Opacity only: transforming an element with backdrop-filter makes Chromium
+ * and WebKit sample a stale backdrop rectangle (content shows through unblurred).
+ */
+@keyframes sc-popover-open {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sc-popover-close {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

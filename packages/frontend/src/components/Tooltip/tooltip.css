@@ -1,0 +1,29 @@
+.sc-tooltip {
+  position: absolute;
+  z-index: 60;
+  transform: translateX(-50%);
+  max-width: 300px;
+  width: max-content;
+  padding: var(--space-6) calc(var(--space-6) + var(--space-4));
+  border-radius: var(--radius-8);
+  font-size: var(--font-size-11);
+  line-height: 1.35;
+  white-space: pre-line;
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-window-base) 92%, transparent);
+  box-shadow:
+    inset 0 0 0 0.5px var(--fg-20),
+    var(--shadow-panel);
+  -webkit-backdrop-filter: blur(var(--blur-3));
+  backdrop-filter: blur(var(--blur-3));
+  pointer-events: none;
+  animation: sc-tooltip-in 0.12s ease-out;
+}
+.sc-tooltip[data-tone="error"] {
+  color: var(--red-contrast);
+}
+@keyframes sc-tooltip-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,99 @@
+.sc-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+/* "…-filled" variants: solid outer shape, inner strokes knocked out. */
+.sc-icon--filled :is(circle, rect, polygon):first-of-type,
+.sc-icon--filled path:only-of-type {
+  fill: currentColor;
+}
+.sc-icon--filled :is(circle, rect):first-of-type ~ :is(path, line, polyline) {
+  stroke: var(--color-icon-knockout);
+}
+
+.sc-icon-empty {
+  display: inline-block;
+  flex-shrink: 0;
+  border: 1px dashed var(--fg-20);
+  border-radius: var(--radius-4);
+}
+
+/* ---- Image ------------------------------------------------------------- */
+.sc-image {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  line-height: 1;
+}
+.sc-image > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.sc-image[data-mask="circle"] {
+  clip-path: circle(closest-side);
+}
+.sc-image[data-mask="circle"] > img {
+  object-fit: cover;
+}
+.sc-image[data-mask="roundedRectangle"] {
+  border-radius: 25%;
+}
+.sc-image[data-mask="roundedRectangle"] > img {
+  object-fit: cover;
+}
+.sc-image-tinted {
+  width: 100%;
+  height: 100%;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.sc-emoji {
+  font-family: var(--font-emoji);
+  line-height: 1;
+  text-align: center;
+}
+.sc-emoji[data-tinted] {
+  color: transparent;
+  text-shadow: 0 0 0 var(--sc-emoji-tint);
+}
+
+/* ---- Tile image: rounded-square command tile --------------------------- */
+.sc-tile {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border-radius: 23%;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    inset 0 0.5px 0 rgb(255 255 255 / 0.45),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.14),
+    inset 0 -0.5px 0 rgb(0 0 0 / 0.22),
+    0 0.5px 1px rgb(0 0 0 / 0.22);
+}
+.sc-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 70% at 30% 0%, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0) 60%);
+}
+.sc-tile > .sc-icon {
+  filter: drop-shadow(0 0.5px 0.6px rgb(0 0 0 / 0.28));
+}

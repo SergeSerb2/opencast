@@ -1,0 +1,201 @@
+/* ---- section header (§3.3): 11px secondary, x = 16, text 3px above center ---- */
+.sc-list-section {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-12);
+  padding: 0 calc(var(--list-padding-x) + var(--list-item-padding-x)) 7px;
+  font-size: var(--font-size-11);
+  line-height: 12px;
+  color: var(--color-text-secondary);
+}
+.sc-list-section__title {
+  flex: 0 1 auto;
+}
+.sc-list-section__subtitle {
+  color: var(--color-text-tertiary);
+  flex: 0 1 auto;
+}
+.sc-list-section__accessory {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: -2px;
+}
+
+/* ---- rows ---- */
+.sc-list-item {
+  position: relative;
+  height: 100%;
+  margin-inline: var(--list-padding-x);
+  border-radius: var(--radius-row-large);
+  overflow: hidden;
+  background-color: transparent;
+  transition: background-color var(--dur-hover-out) linear;
+}
+.sc-list-item:hover:not([data-selected]):not([data-disabled]) {
+  background-color: var(--selection-5);
+  transition: none;
+}
+.sc-list-item[data-selected] {
+  background-color: var(--selection-10);
+  transition: none;
+}
+.sc-list-item[data-disabled] {
+  opacity: 0.3;
+}
+.sc-list-item[data-size="small"] {
+  border-radius: var(--radius-row-small);
+}
+
+.sc-list-item__content {
+  --hint-mask: #000;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding-inline: var(--list-item-padding-x);
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(to left, var(--hint-mask) round(calc(23 * var(--spx)), 1px), #000 calc(var(--list-item-padding-x) + round(calc(100 * var(--spx)), 1px)));
+  mask-image: linear-gradient(to left, var(--hint-mask) round(calc(23 * var(--spx)), 1px), #000 calc(var(--list-item-padding-x) + round(calc(100 * var(--spx)), 1px)));
+}
+.sc-list-item__content[data-hint] {
+  --hint-mask: #0000;
+}
+.sc-list-item[data-size="small"] .sc-list-item__content {
+  gap: var(--space-8);
+}
+
+.sc-list-item__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--fg);
+}
+.sc-list-item__dot {
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: round(calc(3 * var(--spx)), 1px);
+  height: round(calc(3 * var(--spx)), 1px);
+  margin-left: round(calc(-1.5 * var(--spx)), 1px);
+  border-radius: var(--radius-full);
+  background: var(--fg-40);
+}
+.sc-list-item__dot[data-tone="accent"] {
+  background: var(--orange);
+}
+
+.sc-list-item__text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.sc-list-item__title,
+.sc-list-item__subtitle {
+  flex: 0 1 auto;
+  max-width: max-content;
+  font-size: var(--font-size-13);
+  line-height: 1.8;
+  font-feature-settings: var(--font-features-list);
+}
+.sc-list-item__title {
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.sc-list-item__subtitle {
+  color: var(--color-text-secondary);
+  min-width: 0;
+}
+.sc-list-item[data-size="multiline"] .sc-list-item__text {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.sc-list-item[data-size="multiline"] .sc-list-item__title,
+.sc-list-item[data-size="multiline"] .sc-list-item__subtitle {
+  line-height: 1.3;
+}
+
+.sc-list-item__accessories {
+  margin-left: auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding-left: var(--space-16);
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: max-content;
+}
+.sc-list-item[data-size="small"] .sc-list-item__accessories {
+  gap: var(--space-8);
+  padding-left: var(--space-8);
+}
+.sc-list-accessory {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+  color: var(--color-text-secondary);
+}
+.sc-list-accessory__text {
+  font-size: var(--font-size-13);
+  line-height: 1.8;
+  color: var(--color-text-secondary);
+}
+
+.sc-list-item__hint {
+  position: absolute;
+  top: 50%;
+  right: var(--list-item-padding-x);
+  width: round(calc(23 * var(--spx)), 1px);
+  display: flex;
+  justify-content: center;
+  transform: translateY(-50%);
+  animation: sc-hint-in var(--dur-hint) ease-out var(--delay-hint) both;
+}
+.sc-list-item__content:not([data-hint]) {
+  transition: --hint-mask 0s;
+}
+@keyframes sc-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(100%);
+  }
+}
+
+/* ---- list with detail pane (§5.1) ---- */
+.sc-list-split {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.sc-list-split__master {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sc-list-split__detail {
+  position: relative;
+  flex: 0 0 var(--detail-width, var(--detail-width-large));
+  min-width: 0;
+}
+.sc-list-split__detail::before {
+  content: "";
+  position: absolute;
+  top: var(--window-header-height);
+  bottom: 0;
+  left: -1px;
+  width: 1px;
+  background: var(--color-border-separator);
+  -webkit-mask-image: linear-gradient(to bottom, #0000 0%, #000 8% 92%, #0000 100%);
+  mask-image: linear-gradient(to bottom, #0000 0%, #000 8% 92%, #0000 100%);
+}
+.sc-list-split .sc-list-item {
+  --list-padding-x: var(--space-8);
+}
