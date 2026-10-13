@@ -1,6 +1,8 @@
 import type { ImageLike } from "@surgecast/protocol";
+import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { EmptyView, ViewFrame } from "../../../components";
+import { sc } from "../../../lib/keyboard";
 import type { LauncherViewProps } from "../registry";
 import { WindowLayoutEditor, type LayoutTemplate } from "./WindowLayoutEditor";
 import { WindowLayoutsList } from "./WindowLayoutsList";
@@ -27,12 +29,12 @@ export function WindowManagementView({ props, title, icon, view }: LauncherViewP
 }
 
 function EditSavedLayout({ id, navigationIcon }: { id: string; navigationIcon?: ImageLike }) {
-  const { data, isLoading } = useBackend("windows.layouts.list", undefined);
+  const { data, error, isLoading, refetch } = useBackend("windows.layouts.list", undefined);
   const layout = data?.find((l) => l.id === id);
   if (layout) return <WindowLayoutEditor key={layout.id} layout={layout} navigationIcon={navigationIcon} />;
   return (
-    <ViewFrame navigationTitle="Edit Window Command" navigationIcon={navigationIcon} isLoading={isLoading}>
-      {!isLoading && <EmptyView title="Window Command Not Found" description="It may have been deleted on this or another device." />}
+    <ViewFrame navigationTitle="Edit Window Command" navigationIcon={navigationIcon} isLoading={isLoading} actions={error ? { sections: [{ actions: [{ id: "retry", title: "Try Again", shortcut: sc("cmd", "r"), onAction: refetch }] }] } : undefined}>
+      {!isLoading && <EmptyView title={error ? "Could Not Load Window Command" : "Window Command Not Found"} description={error ? errorMessage(error) : "It may have been deleted on this or another device."} />}
     </ViewFrame>
   );
 }

@@ -110,6 +110,7 @@ function EditorBody({ draft, setDraft, saved, setSaved, dirty, errors, setErrors
   const shown = useTheme();
   const nameRef = useRef<HTMLInputElement>(null);
   const fieldsRef = useRef<HTMLDivElement>(null);
+  const saving = useRef(false);
 
   // The preview keeps the last complete color of a field while it is being typed.
   const lastPreview = useRef(basePalette);
@@ -156,6 +157,7 @@ function EditorBody({ draft, setDraft, saved, setSaved, dirty, errors, setErrors
   };
 
   const save = async (apply: boolean) => {
+    if (saving.current) return;
     const found = validateDraft(draft);
     setErrors(() => found);
     if (hasErrors(found)) {
@@ -164,6 +166,7 @@ function EditorBody({ draft, setDraft, saved, setSaved, dirty, errors, setErrors
       showToast({ style: "failure", title: "Can't save theme", message: first === "name" ? found.name : "Some colors aren't valid hex values" });
       return;
     }
+    saving.current = true;
     setSaving(true);
     const toast = showToast({ style: "animated", title: "Saving theme…" });
     try {
@@ -187,6 +190,7 @@ function EditorBody({ draft, setDraft, saved, setSaved, dirty, errors, setErrors
       toast.hide();
       showFailureToast("Failed to save theme", error);
     } finally {
+      saving.current = false;
       setSaving(false);
     }
   };

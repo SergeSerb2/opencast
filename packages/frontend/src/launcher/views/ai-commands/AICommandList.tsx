@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { AICommand, ImageLike } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
+import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { useSetting } from "../../../bridge/settings";
 import { Action, ActionPanel, confirmAlert, Dropdown, EmptyView, ListBox, showFailureToast, showToast, useRegisterActions, useViewController, ViewFrame } from "../../../components";
@@ -31,7 +32,7 @@ export interface AICommandListProps {
  * search text (as in root search).
  */
 export function AICommandList({ navigationTitle, navigationIcon, initialQuery = "" }: AICommandListProps) {
-  const { data: commands, isLoading } = useBackend("ai.commands.list", undefined);
+  const { data: commands, error, isLoading, refetch } = useBackend("ai.commands.list", undefined);
   const [query, setQuery] = useState(initialQuery);
   const [tag, setTag] = useState(ALL_TAGS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -111,6 +112,8 @@ export function AICommandList({ navigationTitle, navigationIcon, initialQuery = 
         selected={selected}
         onSelect={setSelectedId}
         isLoading={isLoading}
+        error={error}
+        retry={refetch}
         searching={Boolean(query) || activeTag !== ALL_TAGS}
         navigationIcon={navigationIcon}
         run={run}
@@ -141,16 +144,18 @@ interface ContentProps {
   selected: AICommand | undefined;
   onSelect: (id: string | null) => void;
   isLoading: boolean;
+  error: unknown;
+  retry: () => void;
   searching: boolean;
   navigationIcon?: ImageLike;
   run: (command: AICommand) => unknown;
 }
 
-function CommandListContent({ sections, selected, onSelect, isLoading, searching, navigationIcon, run }: ContentProps) {
+function CommandListContent({ sections, selected, onSelect, isLoading, error, retry, searching, navigationIcon, run }: ContentProps) {
   const view = useViewController();
   const { data: models } = useBackend("ai.models.list", {});
   const commandsModel = useSetting("ai.commandsModel");
-  const registered = useRegisterActions(commandActions(selected, run, navigationIcon));
+  const registered = useRegisterActions(error ? <ActionPanel><Action title="Try Again" shortcut={sc("cmd", "r")} onAction={retry} /></ActionPanel> : commandActions(selected, run, navigationIcon));
   const primary = primaryActions(registered).primary;
 
   const listSections = useMemo<ListSectionModel[]>(
@@ -162,8 +167,8 @@ function CommandListContent({ sections, selected, onSelect, isLoading, searching
     if (isLoading) return null;
     return (
       <EmptyView
-        title="No AI Commands Found"
-        description={searching ? undefined : "Turn prompts you use often into commands you can run from anywhere."}
+        title={error ? "Could Not Load AI Commands" : "No AI Commands Found"}
+        description={error ? errorMessage(error) : searching ? undefined : "Turn prompts you use often into commands you can run from anywhere."}
         action={primary ? { title: primary.title, onAction: () => view.runAction(primary) } : undefined}
       />
     );

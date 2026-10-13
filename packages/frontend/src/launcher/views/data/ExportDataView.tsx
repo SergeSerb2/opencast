@@ -29,6 +29,7 @@ export function ExportDataView({ title, icon }: LauncherViewProps) {
   const ready = info !== undefined || infoError !== undefined;
 
   const submit = async (values: Record<string, unknown>) => {
+    if (busy) return;
     const directory = Array.isArray(values.destination) ? stringValue(values.destination[0]) : "";
     const password = stringValue(values.password);
     const selected = EXPORT_CATEGORIES.filter((c) => values[categoryField(c.id)] === true).map((c) => c.id);

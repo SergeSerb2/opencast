@@ -26,7 +26,7 @@ export default [
   { name: "b-tt-editor-light", url: "main.html?appearance=light", steps: [...openSwitch, ...down(9), { press: "Meta+e", wait: 700 }] },
   { name: "b-tt-studio", url: "main.html", steps: openStudio },
   { name: "b-tt-translator-empty", url: "main.html", steps: [{ type: "translate to spanish", wait: 300 }, { press: "Enter", wait: 600 }] },
-  { name: "b-tt-translator-streaming", url: "main.html", steps: [...openTranslate(SPANISH), { wait: 420 }] },
+  { name: "b-tt-translator-streaming", url: "main.html", steps: [...openTranslate(SPANISH), { wait: 80 }] },
   { name: "b-tt-translator", url: "main.html", steps: [...openTranslate(SPANISH), { wait: 2000 }] },
   { name: "b-tt-translator-long", url: "main.html?set.translator.defaultTargetLanguage=%22de%22", steps: [...openTranslate(LONG), { wait: 3000 }] },
   { name: "b-tt-translator-actions", url: "main.html", steps: [...openTranslate(SPANISH), { wait: 2000 }, { press: "Meta+k", wait: 400 }] },

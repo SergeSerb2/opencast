@@ -68,7 +68,7 @@ export function StoreView({ props, title, icon }: LauncherViewProps<StoreViewPro
   const [category, setCategory] = useState<string>();
   const showInstalled = category === INSTALLED_FILTER;
   const search = useStoreSearch({ query, category: category === ALL_CATEGORIES || showInstalled ? undefined : category, enabled: category !== undefined && !showInstalled });
-  const { data: installedList, isLoading: loadingInstalled } = useBackend("extensions.list", undefined);
+  const { data: installedList, error: installedError, isLoading: loadingInstalled, refetch: refreshInstalled } = useBackend("extensions.list", undefined);
   const { data: commands } = useBackend("commands.list", { includeDisabled: true });
 
   useEffect(() => {
@@ -84,6 +84,7 @@ export function StoreView({ props, title, icon }: LauncherViewProps<StoreViewPro
   const entries: StoreEntry[] = showInstalled ? installedStore.map((e) => ({ idOrSlug: installedStoreSlug(e) })) : search.items.map((item) => ({ idOrSlug: storeSlug(item), preview: item }));
   const showDetails = (index: number) => navigation.push(<StoreExtensionDetail entries={entries} initialIndex={index} />);
   const retry: ActionPanelModel = { sections: [{ actions: [{ id: "retry", title: "Try Again", icon: "arrow-clockwise-16", shortcut: sc("cmd", "r"), onAction: search.reload }] }] };
+  const retryInstalled: ActionPanelModel = { sections: [{ actions: [{ id: "retry", title: "Try Again", icon: "arrow-clockwise-16", shortcut: sc("cmd", "r"), onAction: refreshInstalled }] }] };
 
   return (
     <div className="sc-store-list">
@@ -96,7 +97,7 @@ export function StoreView({ props, title, icon }: LauncherViewProps<StoreViewPro
         navigationIcon={icon}
         isLoading={category === undefined || (showInstalled ? loadingInstalled : search.isLoading)}
         pagination={showInstalled ? undefined : { hasMore: search.hasMore, onLoadMore: search.loadMore }}
-        actions={search.error && !showInstalled ? retry : undefined}
+        actions={showInstalled && installedError ? retryInstalled : search.error && !showInstalled ? retry : undefined}
         searchBarAccessory={
           <List.Dropdown tooltip="Filter by Category" id="store-category" storeValue defaultValue={ALL_CATEGORIES} onChange={setCategory} placeholder="Search categories…">
             <List.Dropdown.Section>
@@ -140,7 +141,9 @@ export function StoreView({ props, title, icon }: LauncherViewProps<StoreViewPro
             ))}
           </List.Section>
         )}
-        {search.error && !showInstalled ? (
+        {showInstalled && installedError ? (
+          <List.EmptyView title="Could Not Load Installed Extensions" description={errorMessage(installedError)} icon="warning-16" actions={retryInstalled} />
+        ) : search.error && !showInstalled ? (
           <List.EmptyView title="Couldn't Load the Store" description={errorMessage(search.error)} icon="warning-16" actions={retry} />
         ) : showInstalled ? (
           <List.EmptyView

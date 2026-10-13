@@ -1,7 +1,9 @@
 import type { AICommand } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
+import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { EmptyView, ViewFrame } from "../../../components";
+import { sc } from "../../../lib/keyboard";
 import { launchCommandInfo } from "../../launch";
 import type { LauncherViewProps } from "../registry";
 import { AICommandEditor } from "./AICommandEditor";
@@ -49,13 +51,18 @@ export interface AICommandEditorViewProps {
 /** `ai.commands.create`: create, edit (`command` or `id`) or duplicate an AI command. */
 export function AICommandEditorView({ props, title, icon }: LauncherViewProps<AICommandEditorViewProps>) {
   const lookup = !props.command && Boolean(props.id);
-  const { data: commands, isLoading } = useBackend("ai.commands.list", undefined, undefined, { enabled: lookup });
+  const { data: commands, isLoading, error, refetch } = useBackend("ai.commands.list", undefined, undefined, { enabled: lookup });
   const command = props.command ?? commands?.find((c) => c.id === props.id);
   const mode = props.duplicate ? "duplicate" : command || props.id ? "edit" : "create";
   const navigationTitle = title ?? (mode === "edit" ? "Edit AI Command" : mode === "duplicate" ? "Duplicate AI Command" : "Create AI Command");
 
   if (lookup && !command) {
-    if (isLoading || !commands) return <AICommandEditor key="loading" mode="edit" navigationTitle={navigationTitle} navigationIcon={icon} isLoading />;
+    if (isLoading) return <ViewFrame navigationTitle={navigationTitle} navigationIcon={icon} isLoading>{null}</ViewFrame>;
+    if (error) return (
+      <ViewFrame navigationTitle={navigationTitle} navigationIcon={icon} actions={{ sections: [{ actions: [{ id: "retry", title: "Try Again", shortcut: sc("cmd", "r"), onAction: refetch }] }] }}>
+        <EmptyView title="Could Not Load AI Command" description={errorMessage(error)} icon="warning-16" />
+      </ViewFrame>
+    );
     return (
       <ViewFrame navigationTitle={navigationTitle} navigationIcon={icon}>
         <EmptyView title="AI Command Not Found" description="It may have been deleted on this or another device." />

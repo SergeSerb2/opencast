@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import type { ImageLike } from "@surgecast/protocol";
 import { useBackend } from "../../../bridge/hooks";
+import { errorMessage } from "../../../bridge/errors";
 import { useSettings } from "../../../bridge/settings";
-import { useNavigation, ViewFrame } from "../../../components";
+import { EmptyView, useNavigation, ViewFrame } from "../../../components";
+import { sc } from "../../../lib/keyboard";
 import { useTheme } from "../../../theme/ThemeProvider";
 import type { LauncherViewProps } from "../registry";
 import { SwitchThemeView } from "./SwitchThemeView";
@@ -26,10 +28,14 @@ function StudioEditor({ title, icon }: { title: string; icon?: ImageLike }) {
   const navigation = useNavigation();
   const shown = useTheme();
   const { settings, loaded } = useSettings();
-  const { data: themes } = useBackend("themes.list", undefined);
+  const { data: themes, error, isLoading, refetch } = useBackend("themes.list", undefined);
   const catalog = useMemo(() => (themes ? buildThemeCatalog(themes) : null), [themes]);
 
-  if (!catalog || !loaded) return <ViewFrame isLoading navigationTitle={title} navigationIcon={icon}>{null}</ViewFrame>;
+  if (!catalog || !loaded) return (
+    <ViewFrame isLoading={isLoading || !loaded} navigationTitle={title} navigationIcon={icon} actions={error ? { sections: [{ actions: [{ id: "retry", title: "Try Again", shortcut: sc("cmd", "r"), onAction: refetch }] }] } : undefined}>
+      {Boolean(error) && <EmptyView title="Could Not Load Themes" description={errorMessage(error)} icon="warning-16" />}
+    </ViewFrame>
+  );
 
   const id = shown.appearance === "dark" ? settings["general.themeDark"] : settings["general.themeLight"];
   const entry = themeInUse(catalog, id, shown.appearance);

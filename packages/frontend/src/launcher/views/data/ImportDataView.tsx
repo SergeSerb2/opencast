@@ -28,6 +28,7 @@ export function ImportDataView({ props, title, icon }: LauncherViewProps<ImportD
   const clear = (field: ImportField) => setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
 
   const submit = async (values: Record<string, unknown>) => {
+    if (busy) return;
     const file = Array.isArray(values.file) ? stringValue(values.file[0]) : "";
     const password = stringValue(values.password) || undefined;
     const categories = rayconfig ? RAYCONFIG_CATEGORIES.filter((c) => values[categoryField(c.id)] === true).map((c) => c.id) : undefined;

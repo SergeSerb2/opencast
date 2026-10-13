@@ -49,5 +49,3 @@ import { ThemeStudioView } from "./theme-studio/ThemeStudioView";
 registerView("theme-studio", ThemeStudioView);
 import { TranslatorView } from "./translator/TranslatorView";
 registerView("translator", TranslatorView);
-
-void registerView;

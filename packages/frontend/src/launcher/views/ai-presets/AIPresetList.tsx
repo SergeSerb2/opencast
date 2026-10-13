@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { AIPreset, ImageLike } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
+import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { useSetting } from "../../../bridge/settings";
 import { Action, ActionPanel, confirmAlert, List, showFailureToast, showToast } from "../../../components";
@@ -42,7 +43,7 @@ async function deletePreset(preset: AIPreset) {
 
 /** Manage Presets: reusable chat setups (Raycast calls them agents) with an instructions preview. */
 export function AIPresetList({ navigationTitle, navigationIcon, initialQuery = "" }: AIPresetListProps) {
-  const { data: presets, isLoading } = useBackend("ai.presets.list", undefined);
+  const { data: presets, error, isLoading, refetch } = useBackend("ai.presets.list", undefined);
   const { data: models } = useBackend("ai.models.list", {});
   const { data: tools } = useBackend("ai.tools.list", undefined);
   const chatModel = useSetting("ai.chatModel");
@@ -50,6 +51,7 @@ export function AIPresetList({ navigationTitle, navigationIcon, initialQuery = "
   const sections = useMemo(() => presetSections(presets ?? [], query), [presets, query]);
 
   const create = <Action.Push title="Create Preset" icon="plus-square-16" shortcut={sc("cmd", "n")} target={<AIPresetEditor mode="create" navigationTitle="Create Preset" navigationIcon={navigationIcon} />} />;
+  const emptyActions = <ActionPanel>{error ? <Action title="Try Again" shortcut={sc("cmd", "r")} onAction={refetch} /> : create}</ActionPanel>;
 
   return (
     <List
@@ -60,7 +62,7 @@ export function AIPresetList({ navigationTitle, navigationIcon, initialQuery = "
       isShowingDetail
       navigationTitle={navigationTitle}
       navigationIcon={navigationIcon}
-      actions={<ActionPanel>{create}</ActionPanel>}
+      actions={emptyActions}
     >
       {sections.map((section) => (
         <List.Section key={section.id} id={section.id} title={section.title}>
@@ -97,10 +99,10 @@ export function AIPresetList({ navigationTitle, navigationIcon, initialQuery = "
         </List.Section>
       ))}
       <List.EmptyView
-        title="No Presets Found"
-        description={query ? undefined : "Save instructions, a model and tools as a preset to start focused chats in one step."}
+        title={error ? "Could Not Load Presets" : "No Presets Found"}
+        description={error ? errorMessage(error) : query ? undefined : "Save instructions, a model and tools as a preset to start focused chats in one step."}
         icon={query ? undefined : DEFAULT_AI_ICON}
-        actions={<ActionPanel>{create}</ActionPanel>}
+        actions={emptyActions}
       />
     </List>
   );
