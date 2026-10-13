@@ -35,7 +35,7 @@ export function parseScriptMetadata(
 ): ScriptCommand | null {
   const metadata: Record<string, string> = {};
   for (const line of source.split(/\r?\n/)) {
-    const m = /^(?:#|REM|::|\/\/)\s*@raycast\.(\w+)\s+(.*)/i.exec(line);
+    const m = /^(?:#|REM|::|\/\/)\s*@(?:raycast|opencast|surgecast)\.(\w+)\s+(.*)/i.exec(line);
     if (m) metadata[m[1].toLowerCase()] = m[2].trim();
   }
   if (

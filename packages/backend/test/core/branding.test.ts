@@ -1,18 +1,44 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Database } from "../../src/db/database";
 import { databasePath, defaultDataDirectory } from "../../src/util/app-storage";
 import { SyncHttp } from "../../src/services/sync/http";
 import { fixture } from "./fixture";
 import type { CommandPrefs } from "@opencast/protocol";
 import { migrateVersionCommandState } from "../../src/util/legacy-branding";
+import { encodeConfig } from "../../src/services/core/config-format";
 
 let f: Awaited<ReturnType<typeof fixture>> | undefined;
 afterEach(async () => { await f?.close(); f = undefined; });
 
 describe("OpenCast upgrade compatibility", () => {
+  it("imports legacy settings with canonical values in storage and live notifications", async () => {
+    f = await fixture();
+    const path = join(f.ctx.dataDir, "legacy.surgeconfig");
+    await writeFile(path, await encodeConfig({ schemaVersion: 1, collections: { settings: [
+      { id: "general.themeDark", data: { value: "surgecast-midnight" } },
+      { id: "general.themeLight", data: { value: "surgecast-dawn" } },
+      { id: "developer.openSurgecastInDevelopmentMode", data: { value: false } },
+    ] } }));
+    const changed = vi.fn();
+    f.ctx.settings.onChange(changed);
+    const broadcast = vi.fn();
+    f.ctx.events.addSink(broadcast);
+    expect(await f.call("data.import", { path })).toEqual({ results: [{ category: "settings", imported: 3 }] });
+    for (const [key, value] of [
+      ["general.themeDark", "opencast-midnight"],
+      ["general.themeLight", "opencast-dawn"],
+      ["developer.openOpenCastInDevelopmentMode", false],
+    ] as const) {
+      expect(f.ctx.settings.getAll()[key]).toBe(value);
+      expect(changed).toHaveBeenCalledWith(key, value);
+      expect(broadcast).toHaveBeenCalledWith("settings.changed", { key, value });
+    }
+    expect(f.ctx.entities.get("settings", "general.themeDark")?.data).toEqual({ value: "opencast-midnight" });
+    expect(f.ctx.entities.get("settings", "general.themeLight")?.data).toEqual({ value: "opencast-dawn" });
+  });
   it.each([false, true])("keeps ranking without custom preferences; current visits=%s", async hasCurrent => {
     f = await fixture();
     const id = "builtin:core.copyOpenCastVersion", oldId = "builtin:core.copySurgecastVersion";

@@ -415,7 +415,7 @@ const GridCell = memo(function GridCell({ item, cellWidth, aspectRatio, fit, ins
       </>
     );
   } else if (image !== undefined) {
-    const isUrl = typeof image === "string" && /^(https?|data|opencast-file|file):|^\//.test(image);
+    const isUrl = typeof image === "string" && /^(https?|data|opencast-file|surgecast-file|file):|^\//i.test(image);
     body = isUrl ? (
       <span className="sc-grid-cell__image" data-fit={fit} style={{ padding: inset }}>
         <Image source={image} size={Math.max(cellWidth, cellHeight)} className="sc-grid-cell__img" />
