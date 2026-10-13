@@ -21,12 +21,19 @@ import WebKit
     hidesOnDeactivate = false
     delegate = self
     let radius: CGFloat = Environment.major >= 27 ? 20 : Environment.major >= 26 ? 26 : 12
+    var glassContainer: NSView?
+    // NSGlassEffectView needs the macOS 26 SDK (Swift 6.2+); older toolchains use the fallback.
+    #if compiler(>=6.2)
+      if #available(macOS 26, *) {
+        let glass = NSGlassEffectView()
+        glass.cornerRadius = radius
+        glass.contentView = web
+        glassContainer = glass
+      }
+    #endif
     let container: NSView
-    if #available(macOS 26, *) {
-      let glass = NSGlassEffectView()
-      glass.cornerRadius = radius
-      glass.contentView = web
-      container = glass
+    if let glassContainer {
+      container = glassContainer
     } else {
       let effect = NSVisualEffectView()
       effect.material = .hudWindow
