@@ -59,7 +59,7 @@ export function trivialPdfText(data: Buffer): string {
   const text = lines.join(" ").trim();
   if (!text || /\/ToUnicode\b/.test(source))
     throw new Error(
-      "This PDF needs a document-capable model (Anthropic or Gemini), or attach its extracted text instead",
+      "This PDF needs a document-capable model (Responses API, Anthropic or Gemini), or attach its extracted text instead",
     );
   return text;
 }
@@ -120,7 +120,9 @@ export async function prepareTurns(
           });
         } else if (mimeType === "application/pdf") {
           if (
-            (provider.api === "anthropic" || provider.api === "google") &&
+            (provider.api === "anthropic" ||
+              provider.api === "google" ||
+              provider.api === "openai-responses") &&
             model.capabilities.pdf !== false
           )
             parts.push({

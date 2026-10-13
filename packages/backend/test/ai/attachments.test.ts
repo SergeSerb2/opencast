@@ -96,6 +96,11 @@ it("sends native PDFs to document-capable vendors and extracts trivial PDFs othe
     (await prepareTurns(turns, { ...provider, api: "anthropic" }, model))[0]
       .parts[0],
   ).toMatchObject({ type: "pdf", mimeType: "application/pdf" });
+  expect(
+    (
+      await prepareTurns(turns, { ...provider, api: "openai-responses" }, model)
+    )[0].parts[0],
+  ).toMatchObject({ type: "pdf", data: pdf.toString("base64") });
   expect(() => trivialPdfText(Buffer.from("%PDF /Encrypt"))).toThrow(
     "Encrypted",
   );

@@ -4,6 +4,7 @@ import type { AICompletionResult } from "../../context";
 import { checkedFetch, objectArguments, ProviderError, redact } from "./common";
 import { parseSSE } from "./sse";
 import { mapRequest, toolName, type AdapterRequest } from "./request-mapping";
+import { streamResponses } from "./responses";
 export { mapRequest } from "./request-mapping";
 export type { AdapterRequest } from "./request-mapping";
 interface PendingCall {
@@ -33,6 +34,8 @@ export async function streamAdapter(
   );
   if (!response.body)
     throw new ProviderError("Provider returned no response body");
+  if (provider.api === "openai-responses")
+    return streamResponses(response.body, input);
   const calls = new Map<number, PendingCall>();
   const names = new Map(
     (request.tools ?? []).map((t) => [toolName(t.name), t.name]),

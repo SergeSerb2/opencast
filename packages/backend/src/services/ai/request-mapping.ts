@@ -83,6 +83,80 @@ export function mapRequest(input: AdapterRequest): {
     request.maxOutputTokens ?? model.maxOutputTokens ?? 4096,
     model.maxOutputTokens ?? Infinity,
   );
+  if (provider.api === "openai-responses") {
+    const items: object[] = [];
+    for (const turn of turns.filter((t) => t.role !== "system")) {
+      if (turn.role === "tool") {
+        if (!turn.toolCallId)
+          throw new Error("Tool output is missing its call ID");
+        items.push({
+          type: "function_call_output",
+          call_id: turn.toolCallId,
+          output: turn.content,
+        });
+        continue;
+      }
+      const metadata = turn.toolCalls?.[0]?.providerMetadata;
+      if (
+        turn.role === "assistant" &&
+        metadata?.sourceModelRef === `${provider.id}/${model.id}` &&
+        Array.isArray(metadata.responsesOutput)
+      ) {
+        // Stateless reasoning models need their complete output items on tool continuation.
+        items.push(...metadata.responsesOutput);
+        continue;
+      }
+      const content = turn.parts.map((p) => {
+        if (p.type === "text") return { type: "input_text", text: p.text };
+        if (p.type === "image")
+          return {
+            type: "input_image",
+            image_url: `data:${p.mimeType};base64,${p.data}`,
+            detail: "auto",
+          };
+        return {
+          type: "input_file",
+          filename: p.name,
+          file_data: `data:${p.mimeType};base64,${p.data}`,
+        };
+      });
+      if (content.length) items.push({ role: turn.role, content });
+      for (const call of turn.toolCalls ?? [])
+        items.push({
+          type: "function_call",
+          call_id: call.id,
+          name: toolName(call.name),
+          arguments: JSON.stringify(call.arguments),
+        });
+    }
+    return {
+      url: endpoint(provider.baseUrl, "/responses"),
+      body: {
+        model: model.id,
+        instructions: system || undefined,
+        input: items,
+        stream: true,
+        store: false,
+        include: model.capabilities.reasoning
+          ? ["reasoning.encrypted_content"]
+          : undefined,
+        reasoning: model.capabilities.reasoning
+          ? { effort: wireReasoningEffort(input), summary: "auto" }
+          : undefined,
+        temperature: temp,
+        max_output_tokens: maxTokens,
+        tools: tools.length
+          ? tools.map((t) => ({
+              type: "function",
+              name: toolName(t.name),
+              description: t.description,
+              parameters: t.inputSchema,
+              strict: false,
+            }))
+          : undefined,
+      },
+    };
+  }
   if (provider.api === "anthropic") {
     const budget = { low: 1024, medium: 4096, high: 8192 }[
       request.reasoningEffort === "none"
