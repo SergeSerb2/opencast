@@ -103,7 +103,8 @@ export class ExtensionBroker {
       case "initOAuth": {
         for (const [state, flow] of this.flows) if (flow.expires < Date.now()) this.flows.delete(state);
         const state = randomBytes(32).toString("base64url"); this.flows.set(state, { sessionId: session.id, callbackId: p.onRedirect, expires: Date.now() + 600000 });
-        return { state, redirectURI: "opencast://oauth" };
+        // OAuth providers match the registered redirect URI exactly.
+        return { state, redirectURI: "surgecast://oauth" };
       }
       case "authorizeOAuth": {
         const url = new URL(p.url); if (url.protocol !== "https:" && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") throw new Error("OAuth authorization URLs must use HTTPS");

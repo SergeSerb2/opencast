@@ -106,9 +106,10 @@ ID, or an explicit local alias. The host rejects missing models clearly. Decisio
 requests also use the configured engine and validate their JSON answers.
 
 PKCE authorization generates a random state/verifier and SHA-256 challenge. The
-host opens the provider URL and accepts a matching state from `opencast://oauth`
+host opens the provider URL and accepts a matching state from `surgecast://oauth`
 or `raycast://oauth` native URL events. Flows expire and state cannot be reused.
-Providers must accept the OpenCast redirect and the extension's own client ID.
+Providers must accept the stable `surgecast://oauth` redirect and the extension's own
+client ID. OpenCast retains that callback so existing provider registrations keep working.
 OpenCast does not use Raycast's OAuth proxy or client metadata servers. Bundles
 that hardcode Raycast-owned OAuth clients/redirects need provider-side configuration
 or an extension change. Token refresh and exchange remain the extension's job.

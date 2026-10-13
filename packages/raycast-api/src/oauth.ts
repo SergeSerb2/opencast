@@ -64,4 +64,5 @@ class PKCEClient {
   async getTokens(): Promise<TokenSet | undefined> { const result = await request("getOAuthTokens", { providerId: this.providerId }); return result.tokenSet ? new TokenSet(result.tokenSet) : undefined; }
   removeTokens(): Promise<void> { return request("removeOAuthTokens", { providerId: this.providerId }); }
 }
-export const OAuth = { PKCEClient, TokenSet, RedirectMethod, clientIdMetadataDocument: "opencast://oauth-client-metadata" };
+// Keep provider registrations using this private metadata URI valid.
+export const OAuth = { PKCEClient, TokenSet, RedirectMethod, clientIdMetadataDocument: "surgecast://oauth-client-metadata" };

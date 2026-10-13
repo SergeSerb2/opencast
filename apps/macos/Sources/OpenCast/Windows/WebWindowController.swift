@@ -33,7 +33,8 @@ import WebKit
     if kind == "ai-chat" { window.minSize = NSSize(width: 640, height: 420) }
     window.contentView = web
     window.center()
-    window.setFrameAutosaveName("OpenCast.\(kind)")
+    // AppKit persists existing window frames under this stable, private identifier.
+    window.setFrameAutosaveName("Surgecast.\(kind)")
     super.init(window: window)
     window.delegate = self
   }

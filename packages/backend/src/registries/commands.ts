@@ -4,6 +4,7 @@ import type { EntityStore } from "../db/entities";
 import type { EventBus } from "../events";
 import { RpcError } from "../util/errors";
 import { createLogger } from "../util/log";
+import { LEGACY_VERSION_COMMAND_ID, VERSION_COMMAND_ID } from "../util/legacy-branding";
 
 const log = createLogger("commands");
 
@@ -45,8 +46,9 @@ export class DefaultCommandRegistry implements CommandRegistry {
     const out: CommandInfo[] = [];
     for (const provider of this.providers.values()) {
       for (const cmd of await this.listProvider(provider)) {
-        const merged = applyPrefs(cmd, prefs.get(cmd.id) ?? (cmd.id === "builtin:core.copyOpenCastVersion"
-          ? prefs.get("builtin:core.copySurgecastVersion") : undefined));
+        const legacy = cmd.id === VERSION_COMMAND_ID ? prefs.get(LEGACY_VERSION_COMMAND_ID) : undefined;
+        const current = prefs.get(cmd.id);
+        const merged = applyPrefs(cmd, legacy ? { ...legacy, ...current } : current);
         if (merged.enabled || options?.includeDisabled) out.push(merged);
       }
     }

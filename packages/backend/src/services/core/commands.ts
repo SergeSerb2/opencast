@@ -16,6 +16,7 @@ import { appSuggestionPriority, emptyRootItems } from "./root-search";
 import { background, list, observeCollection } from "./shared";
 import { builtinHotkey } from "./hotkey-presets";
 import { RpcError } from "../../util/errors";
+import { migrateVersionCommandPrefs } from "../../util/legacy-branding";
 
 interface Visit {
   id: string;
@@ -353,6 +354,7 @@ export const commandsService: Service = {
           .catch(() => ctx.log.warn("Hotkey registration failed"));
     };
     ctx.onReady(async () => {
+      migrateVersionCommandPrefs(ctx);
       ready = true;
       await syncHotkeys();
     });
@@ -426,6 +428,7 @@ export const commandsService: Service = {
         ctx.commands.launch(params.id, { ...params, source }),
       "commands.setPrefs": async ({ id, prefs, unset }) => {
         if (!(await ctx.commands.get(id))) throw RpcError.notFound(id);
+        migrateVersionCommandPrefs(ctx);
         const value: CommandPrefs = {
           ...(ctx.entities.get<CommandPrefs>("commandPrefs", id)?.data ?? {}),
           ...prefs,
@@ -454,6 +457,7 @@ export const commandsService: Service = {
           toIndex < 0
         )
           throw RpcError.invalidParams("Invalid favorite command or index");
+        migrateVersionCommandPrefs(ctx);
         const favorite = ctx.entities
           .list<CommandPrefs>("commandPrefs")
           .filter((r) => r.data.favoriteOrder !== undefined && r.id !== id)

@@ -82,7 +82,8 @@ New exports use `.openconfig`, links use `opencast://`, and development variable
 `OPENCAST_*` (with `SURGECAST_*` aliases).
 
 The private bundle ID and WebKit page origin stay stable to preserve macOS grants
-and stored window preferences. Legacy preference keys are copied to the OpenCast
+and stored window preferences. Native autosave identifiers and the registered OAuth
+callback also stay stable. Legacy preference keys are copied to the OpenCast
 names before the UI loads. Existing sync deployments can keep their Worker URL and
 D1 database; use their current resource names when deploying an update.
 

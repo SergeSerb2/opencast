@@ -128,10 +128,11 @@ describe("API services", () => {
     expect(new api.OAuth.TokenSet({ accessToken: "sample" }).isExpired()).toBe(false);
   });
   it("creates PKCE requests with explicit provider client identity and local redirect", async () => {
-    const requests = vi.fn(async () => ({ state: "random-state", redirectURI: "opencast://oauth" })); configure({ ...initialization }, requests, vi.fn());
+    const requests = vi.fn(async () => ({ state: "random-state", redirectURI: "surgecast://oauth" })); configure({ ...initialization }, requests, vi.fn());
     const client = new api.OAuth.PKCEClient({ redirectMethod: "app", providerName: "Example" });
     const auth = await client.authorizationRequest({ endpoint: "https://example.com/auth", clientId: "own-client", scope: "read" });
     expect(auth.codeVerifier).toHaveLength(43); expect(auth.codeChallenge).toHaveLength(43);
-    const url = new URL(auth.toURL()); expect(url.searchParams.get("redirect_uri")).toBe("opencast://oauth"); expect(url.searchParams.get("client_id")).toBe("own-client");
+    const url = new URL(auth.toURL()); expect(url.searchParams.get("redirect_uri")).toBe("surgecast://oauth"); expect(url.searchParams.get("client_id")).toBe("own-client");
+    expect(api.OAuth.clientIdMetadataDocument).toBe("surgecast://oauth-client-metadata");
   });
 });
