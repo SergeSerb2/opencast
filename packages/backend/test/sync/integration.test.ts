@@ -75,9 +75,9 @@ describe("two independent backend stores through the production worker handler",
     a.ctx.entities.put("notes", "large-0", { content: randomBytes(1100 * 1024).toString("base64") });
     a.ctx.entities.put("quicklinks", "valid", { link: "https://example.com" });
     const status = await sync(a);
-    expect(status.lastError).toContain("1 record");
     await sync(b);
     expect(b.ctx.entities.get("quicklinks", "valid")).toBeDefined();
+    expect(status.lastError).toContain("1 record");
     expect(a.ctx.entities.get("notes", "large-0")?.syncDirty).toBe(true);
     a.ctx.entities.patch("notes", "large-0", { content: "small" });
     await sync(a); await sync(b);

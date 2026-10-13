@@ -111,3 +111,24 @@ it("passes configured outer gap to built-in window commands", async () => {
   await f.call("commands.launch", { id: "builtin:windowManagement.leftHalf" });
   expect(f.nativeCall).toHaveBeenCalledWith("windows.run", { command: "leftHalf", gap: 0, outerGap: 12 });
 });
+
+it.each(["emptyTrash", "quitActiveApplication", "hibernate", "dismissNotifications"])("rejects unapproved external destructive system commands: %s", async action => {
+  f = await fixture(); f.nativeCall.mockClear();
+  await f.call("deeplink.open", { url: `surgecast://extensions/surgecast/system/${action}` });
+  expect(f.nativeCall.mock.calls.some(([method]) => method === "alert.show")).toBe(true);
+  expect(f.nativeCall.mock.calls.some(([method]) => method === "system.run")).toBe(false);
+});
+it("discards nested transaction notifications on rollback and preserves committed outer changes", async () => {
+  f = await fixture();
+  const changed = vi.fn(); f.ctx.settings.onChange(changed);
+  f.ctx.db.transaction(() => {
+    f.ctx.settings.set("general.appearance", "light");
+    expect(() => f.ctx.db.transaction(() => {
+      f.ctx.settings.set("general.appearance", "dark");
+      throw new Error("rollback fixture");
+    })).toThrow("rollback fixture");
+    expect(changed).not.toHaveBeenCalled();
+  });
+  expect(changed.mock.calls).toEqual([["general.appearance", "light"]]);
+  expect(f.ctx.settings.get("general.appearance")).toBe("light");
+});

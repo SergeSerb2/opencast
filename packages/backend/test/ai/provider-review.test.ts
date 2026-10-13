@@ -5,7 +5,7 @@ let h: Awaited<ReturnType<typeof harness>>;
 afterEach(async () => { await h?.close(); vi.unstubAllGlobals(); });
 it("does not persist or throw provider credentials from invalid model JSON", async () => {
   h = await harness();
-  const credential = randomUUID().slice(0, 8);
+  const credential = `key-${randomUUID().slice(0, 8)}`;
   const provider = await h.rpc("ai.providers.upsert", { provider: configuredProvider, apiKey: credential });
   vi.stubGlobal("fetch", async () => new Response(credential));
   let error: unknown;

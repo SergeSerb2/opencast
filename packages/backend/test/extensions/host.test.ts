@@ -27,9 +27,10 @@ describe("extension host", () => {
     expect(h.secrets.size).toBe(0);
   });
 
-  it("keeps the local installed version and commands when desired metadata syncs", async () => {
+  it.each([false, true])("keeps local files and metadata aligned after sync (legacy install: %s)", async legacy => {
     const h = setup(); await h.call("extensions.install", { source: "local", path: fixture(h.dataDir, { version: "v1" }) });
     const original = h.host.installer.get("fixture");
+    if (legacy) h.ctx.entities.put("localState", "ext:fixture:install", { path: original.path });
     const record = h.ctx.entities.get("extensions", "fixture")!;
     h.ctx.entities.applyRemote("extensions", "fixture", { data: { ...original, source: "store", version: "v2", commands: [{ name: "new", title: "New", mode: "no-view" }] }, createdAt: record.createdAt, updatedAt: record.updatedAt + 1, deleted: false }, 1);
     expect(h.host.installer.get("fixture").version).toBe("v1");

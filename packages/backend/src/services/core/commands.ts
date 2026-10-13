@@ -278,7 +278,7 @@ export const commandsService: Service = {
         );
       if (request.source === "deeplink" && (
         id === "builtin:clipboard.clearClipboardHistory" ||
-        ["emptyTrash", "restart", "shutDown", "logOut", "sleep", "quitAllApplications", "quitAllApplicationsExceptFrontmost", "ejectAllDisks"].some(action => id === `builtin:system.${action}`) ||
+        ["emptyTrash", "restart", "shutDown", "logOut", "sleep", "quitAllApplications", "quitAllApplicationsExceptFrontmost", "quitActiveApplication", "hibernate", "dismissNotifications", "ejectAllDisks"].some(action => id === `builtin:system.${action}`) ||
         id === "builtin:core.quitApp"
       )) {
         const { index } = await ctx.native.call("alert.show", {

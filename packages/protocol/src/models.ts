@@ -314,7 +314,7 @@ export interface AIAttachment {
   kind: "image" | "file" | "text" | "url" | "selection" | "screenshot";
   name: string;
   mimeType?: string;
-  /** Local path (images/files) — the backend reads it when sending. */
+  /** Original local path (images/files) — the backend snapshots it on first submission. */
   path?: string;
   /** Immutable base64 snapshot of a submitted local file. Older attachments may have only a path. */
   snapshot?: { data: string; mimeType: string };
