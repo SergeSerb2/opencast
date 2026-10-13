@@ -1,6 +1,6 @@
 # OpenCast macOS releases
 
-Download the DMG from [the latest GitHub release](https://github.com/SergeSerb2/surgecast/releases/latest).
+Download the DMG from [the latest GitHub release](https://github.com/SergeSerb2/opencast/releases/latest).
 These builds target Apple silicon and macOS 14 or later. Node is included. Drag
 OpenCast.app to Applications, then open it from Applications.
 

@@ -16,7 +16,9 @@ APP="$MOUNT/OpenCast.app"
 PLIST="$APP/Contents/Info.plist"
 codesign --verify --deep --strict "$APP"
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST")" = OpenCast
+test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleName' "$PLIST")" = OpenCast
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$PLIST")" = OpenCast
+test "$(diskutil info -plist "$MOUNT" | plutil -extract VolumeName raw -o - -)" = OpenCast
 test "$(readlink "$MOUNT/Applications")" = /Applications
 REVISION="$(/usr/libexec/PlistBuddy -c 'Print :OpenCastSourceRevision' "$PLIST")"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"

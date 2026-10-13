@@ -1,4 +1,4 @@
-import { useId, type SVGProps } from "react";
+import type { SVGProps } from "react";
 
 /** OpenCast's own glyphs, drawn on a 24×24 grid like lucide (stroke = currentColor). */
 
@@ -12,18 +12,12 @@ function Svg({ size = 16, children, ...rest }: GlyphProps) {
   );
 }
 
-/** The OpenCast mark: a rounded diamond with a wave cut through it. */
+/** The OpenCast mark: an open ring with a command prompt at its center. */
 export function OpenCastLogo({ size = 22, ...rest }: GlyphProps) {
-  const id = `sc-logo-${useId().replace(/:/g, "")}`;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...rest}>
-      <defs>
-        <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
-          <path d="M10.2 2.9a2.6 2.6 0 0 1 3.6 0l7.3 7.3a2.6 2.6 0 0 1 0 3.6l-7.3 7.3a2.6 2.6 0 0 1-3.6 0l-7.3-7.3a2.6 2.6 0 0 1 0-3.6z" fill="#fff" />
-          <path d="M5.6 13.6c1.6 0 2.4-1.2 3.2-2.4.8-1.2 1.6-2.4 3.2-2.4s2.4 1.2 3.2 2.4c.8 1.2 1.6 2.4 3.2 2.4" fill="none" stroke="#000" strokeWidth="2.1" strokeLinecap="round" />
-        </mask>
-      </defs>
-      <rect width="24" height="24" fill="currentColor" mask={`url(#${id})`} />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...rest}>
+      <path d="M17.85 5.45a8.8 8.8 0 1 0 0 13.1" strokeWidth="3" />
+      <path d="m13.6 8.5 3.5 3.5-3.5 3.5" strokeWidth="2.7" />
     </svg>
   );
 }

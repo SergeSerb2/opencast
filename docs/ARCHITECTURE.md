@@ -173,4 +173,4 @@ Images:
   Raycast. Only install extensions you trust.
 
 Existing installs reuse legacy SurgeCast data and log directories and read legacy
-Keychain services. See [upgrade notes](../README.md#upgrade-from-surgecast). New installs and writes use the OpenCast names.
+Keychain services. New installs and writes use the OpenCast names.

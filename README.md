@@ -1,123 +1,109 @@
-<img src="assets/icon.svg" width="64" height="64" alt="">
+<img src="assets/icon.svg" width="88" height="88" alt="OpenCast logo">
 
 # OpenCast
 
-An open-source launcher for macOS that works and looks like Raycast — with **your own AI
-keys**, **your own sync server**, and **no paywalls**.
+**A small command window for the things you do all day.**
 
-- **Bring your own AI.** Quick AI, AI Chat, AI Commands, presets, tools and MCP servers run
-  through providers you configure: OpenAI, Anthropic, Gemini, OpenRouter, Groq, Mistral, xAI,
-  DeepSeek, Ollama, LM Studio, or any OpenAI-compatible URL such as
-  [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) or LiteLLM. Keys stay in your
-  Keychain.
-- **Self-hosted, end-to-end encrypted Cloud Sync.** Deploy the sync server to your own
-  Cloudflare account (Workers + D1) with one script. Your data is encrypted on your Mac
-  before it leaves it.
-- **Everything unlocked.** Unlimited notes, unlimited clipboard history, custom themes,
-  custom window management commands, Translator, AI — all free and local.
-- **Raycast extensions.** OpenCast runs Raycast store extensions through a clean-room
-  implementation of the `@raycast/api` runtime.
-- **Import from Raycast.** Bring your snippets, quicklinks, notes and AI commands over from
-  a Raycast `.rayconfig` export.
+OpenCast is an open-source macOS launcher inspired by Raycast. Press **⌥Space**,
+type what you need, and get back to work. Apps, notes, clipboard history, window
+controls, and AI share the same keyboard-first home.
 
-> OpenCast is an independent project. It is not affiliated with, endorsed by, or
-> sponsored by Raycast Technologies Ltd. "Raycast" is a trademark of its owner.
+I’m building it around a simple idea: you should be able to open your everyday
+tools, read their source, and make them your own. Use the AI provider you like.
+Run sync on your own server. Change the bits that get in your way.
 
-## Features
+This is an early project. There are rough edges, and a good bug report is very
+welcome.
 
-| Area | What you get |
-|---|---|
-| Root search | Apps, commands, quicklinks, AI commands, scripts; fuzzy search with frecency, aliases, favorites, hotkeys, fallback commands, inline arguments |
-| Calculator | Math, units, currencies, percentages, dates, time zones, number bases, colors, history |
-| Clipboard History | Text, links, images, files, colors; search, pin, paste as plain text, paste sequentially, retention up to unlimited |
-| Snippets | Keyword expansion in any app, dynamic placeholders (`{clipboard}`, `{date}`, `{cursor}`, `{argument}`, …) |
-| Quicklinks | Templated links with `{query}` and arguments, open-with app, favicons |
-| Notes | Floating Markdown notes with checklists and code, unlimited |
-| Window Management | Halves, thirds, quarters, sixths, displays, Spaces, custom layouts, gaps |
-| System | Lock, sleep, restart, volume, appearance, trash, eject, hidden files, … |
-| AI | Quick AI (Tab from search), AI Chat window with branches and attachments, AI Commands, presets, web search, MCP tools, extension tools |
-| Extensions | Raycast store browser, local/dev extensions, menu bar commands, background refresh |
-| More | Emoji & symbols, file search, search menu items, My Schedule, script commands, translator, theme studio, confetti |
+## Try it
 
-## Architecture
+**[Download the latest OpenCast DMG](https://github.com/SergeSerb2/opencast/releases/latest)**
 
-OpenCast follows Raycast 2's design: a thin Swift/AppKit host, a React UI in WebKit
-views, and a Node backend. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+The download is for **Apple silicon Macs running macOS 14 or later**. Open the
+DMG, drag **OpenCast.app** to **Applications**, then launch it. Node is bundled;
+you don’t need developer tools to use the app.
 
-```
-apps/macos            Swift host: windows, hotkeys, clipboard, accessibility, Keychain
-packages/backend      Node backend: data, search, AI, extensions, sync client
-packages/frontend     React UI: launcher, AI Chat, Notes, Settings
-packages/raycast-api  Clean-room @raycast/api runtime for extensions
-packages/sync-worker  Cloudflare Worker + D1 sync server
-packages/protocol     Shared TypeScript contracts
-```
+These first builds are ad-hoc signed and are not notarized. If macOS blocks the
+app, follow [Apple’s Open Anyway instructions](https://support.apple.com/guide/mac-help/mh40616/mac).
 
-## Build and run
+Press **⌥Space** to bring up the launcher. Allow **Accessibility** when prompted
+to use window controls, snippet expansion, and pasting into other apps.
 
-Requirements: macOS 14+, Xcode 16+ (Swift 6), Node 22.13+, pnpm 10.
+## What’s inside
 
-Apple silicon DMGs are available from [the latest release](https://github.com/SergeSerb2/surgecast/releases/latest).
-Node is included. Open the DMG and drag OpenCast.app to Applications. Current releases
-are ad-hoc signed and are not notarized; macOS may require **Open Anyway** in
-**System Settings → Privacy & Security** after the first launch attempt.
+- **A place to start.** Search apps, files, commands, and quicklinks. Add aliases,
+  hotkeys, and favorites for the things you reach for often.
+- **The useful little tools.** Clipboard history, text snippets, floating Markdown
+  notes, a calculator, emoji search, translation, and custom window layouts.
+- **AI on your terms.** Ask a quick question from search, open a longer chat, or
+  save a prompt as a command. Connect your own provider or a local model.
+- **Room to extend it.** Run Raycast extensions and your own script commands.
+  Import snippets, quicklinks, notes, and AI commands from a Raycast export.
+- **Sync you can host.** A small Cloudflare Worker and D1 database carry your
+  encrypted vault between Macs. The app encrypts the data before it leaves your
+  machine.
 
-```sh
-pnpm install
-./scripts/build-app.sh --open          # builds everything into build/OpenCast.app
-./scripts/build-app.sh --bundle-node   # also embeds the current node binary
-./scripts/build-dmg.sh                 # builds and verifies a DMG, checksum, and source manifest
-```
+There’s more in the command list: calendars, menu search, system actions, theme
+controls, and a bit of confetti. The launcher is the best way to explore it.
 
-Press **⌥Space** to open OpenCast. Grant **Accessibility** permission when asked (needed for
-window management, snippet expansion, selected text and pasting).
+## Make it yours
 
-Browser development without the native host:
+For AI, open **Settings → AI → Models & Providers**. Add your provider and choose
+the models you want to use. API keys stay in your Mac’s Keychain. OpenAI,
+Anthropic, Gemini, OpenRouter, and local tools such as Ollama and LM Studio are
+supported. An OpenAI-compatible proxy such as
+[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) works too.
+
+For sync, follow the [Cloud Sync guide](docs/SYNC.md). You deploy the Worker to
+your Cloudflare account, then connect each Mac with the server URL, token, and
+the same encryption passphrase.
+
+## Build it yourself
+
+You’ll need macOS 14+, Xcode 16+ with Swift 6, Node 22.13+, and pnpm 10.
 
 ```sh
-./scripts/dev.sh          # backend + Vite; macOS CLI fallbacks for native features
-./scripts/dev.sh --mock   # UI only, in-browser mock data
+git clone https://github.com/SergeSerb2/opencast.git
+cd opencast
+pnpm install --frozen-lockfile
+./scripts/build-app.sh --bundle-node --open
 ```
 
-## Upgrade from SurgeCast
-
-OpenCast reuses an existing SurgeCast data directory and database in place. Fresh
-installs use `~/Library/Application Support/OpenCast/opencast.db`. Existing Keychain
-secrets, `.surgeconfig` backups, deep links, and encrypted sync vaults remain readable.
-New exports use `.openconfig`, links use `opencast://`, and development variables use
-`OPENCAST_*` (with `SURGECAST_*` aliases).
-
-The private bundle ID and WebKit page origin stay stable to preserve macOS grants
-and stored window preferences. Native autosave identifiers and the registered OAuth
-callback also stay stable. Legacy preference keys are copied to the OpenCast
-names before the UI loads. Existing sync deployments can keep their Worker URL and
-D1 database; use their current resource names when deploying an update.
-
-## Set up AI
-
-Open **Settings → AI → Models & Providers**, add a provider, paste a key (or a base URL for a
-local / proxy endpoint), and pick default models. Example for CLIProxyAPI running locally:
-template **CLIProxyAPI**, base URL `http://127.0.0.1:8317/v1`, your proxy API key.
-
-## Set up Cloud Sync
-
-See [docs/SYNC.md](docs/SYNC.md). In short:
+The app lands in `build/OpenCast.app`. To make a DMG instead:
 
 ```sh
-./scripts/deploy-sync.sh   # creates the D1 database, sets a token, deploys the Worker
+./scripts/build-dmg.sh
 ```
 
-Then open **Settings → Cloud Sync**, enter the Worker URL, the token, and an encryption
-passphrase. Use the same passphrase on your other Macs.
+For UI work, `./scripts/dev.sh --mock` runs the browser development setup with
+sample data. `./scripts/dev.sh` runs the frontend with the local backend.
 
-## Documentation
+The Mac app is a Swift/AppKit host, with React views in WebKit and a Node backend.
+The main pieces live in:
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Cloud Sync](docs/SYNC.md)
-- [Extensions](docs/EXTENSIONS.md) and the [extension UI contract](docs/EXTENSION-UI.md)
-- [macOS releases and the local runner](docs/RELEASES.md)
+```text
+apps/macos            Native windows and macOS services
+packages/frontend     Launcher, chat, notes, and settings
+packages/backend      Commands, data, AI, and sync
+packages/raycast-api   Extension runtime
+packages/sync-worker   Self-hosted sync server
+packages/protocol      Shared contracts
+```
+
+## Help shape it
+
+If something breaks, [open an issue](https://github.com/SergeSerb2/opencast/issues/new)
+with your macOS version, what you tried, and what you expected to happen. Small,
+focused pull requests are welcome too.
+
+Useful reading: [architecture](docs/ARCHITECTURE.md),
+[extensions](docs/EXTENSIONS.md), [extension UI](docs/EXTENSION-UI.md), and
+[Mac releases](docs/RELEASES.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Bundled fonts: Inter and JetBrains Mono (SIL Open Font
-License). Icons: Lucide (ISC).
+MIT. See [LICENSE](LICENSE). Inter and JetBrains Mono use the SIL Open Font
+License; Lucide icons use the ISC license.
+
+OpenCast is an independent project and is not affiliated with Raycast
+Technologies Ltd. Raycast is a trademark of its owner.
