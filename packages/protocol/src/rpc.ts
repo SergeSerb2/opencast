@@ -155,7 +155,7 @@ export interface BackendMethods {
   "ai.chats.list": { params: { query?: string; includeArchived?: boolean; source?: AIChat["source"] }; result: AIChat[] };
   "ai.chats.get": { params: { id: string }; result: { chat: AIChat; messages: AIMessage[] } | null };
   "ai.chats.create": { params: { presetId?: string; model?: ModelRef; source?: AIChat["source"]; title?: string }; result: AIChat };
-  "ai.chats.update": { params: { id: string; patch: Partial<Pick<AIChat, "title" | "pinned" | "archived" | "model" | "presetId" | "creativity" | "webSearch" | "tools" | "folderId" | "currentLeafId">> }; result: AIChat };
+  "ai.chats.update": { params: { id: string; patch: Partial<Pick<AIChat, "title" | "pinned" | "archived" | "model" | "presetId" | "creativity" | "webSearch" | "tools" | "folderId" | "currentLeafId" | "source" | "reasoningEffort" | "systemInstructions">> }; result: AIChat };
   "ai.chats.delete": { params: { id: string }; result: Void };
   "ai.chats.export": { params: { id: string; format: "markdown" | "json" }; result: { content: string; fileName: string } };
   /**
@@ -177,7 +177,7 @@ export interface BackendMethods {
   "ai.commands.delete": { params: { id: string }; result: Void };
   "ai.commands.reset": { params: { id: string }; result: AICommand };
   /** Expand placeholders (selection, clipboard, arguments) and run. Output mode decides where the text goes. */
-  "ai.commands.run": { params: { id: string; arguments?: Record<string, string>; selection?: string }; result: { streamId: string; chatId?: string; prompt: string } };
+  "ai.commands.run": { params: { id: string; arguments?: Record<string, string>; selection?: string; input?: { selectedText?: string } }; result: { streamId: string; chatId?: string; prompt: string } };
   "ai.commands.import": { params: { json: string }; result: { imported: number } };
   "ai.commands.export": { params: Void; result: { json: string } };
   "ai.presets.list": { params: Void; result: AIPreset[] };
@@ -187,6 +187,7 @@ export interface BackendMethods {
   "ai.mcp.list": { params: Void; result: (MCPServer & { status: "connected" | "disconnected" | "error"; toolCount: number; error?: string })[] };
   "ai.mcp.upsert": { params: Partial<MCPServer> & { name: string; transport: MCPServer["transport"] }; result: MCPServer };
   "ai.mcp.delete": { params: { id: string }; result: Void };
+  "ai.mcp.import": { params: { json: string }; result: { imported: number } };
   "ai.mcp.test": { params: { id: string }; result: { ok: boolean; message: string; tools: string[] } };
 
   // ---- extensions ---------------------------------------------------------------------------------
