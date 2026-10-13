@@ -19,13 +19,19 @@ describe("preset drafts", () => {
     expect(validatePresetDraft({ ...emptyPresetDraft(), name: "Helper" })).toEqual({});
   });
 
+  it("sends explicit clears for default overrides through JSON", () => {
+    const existing = preset({ model: "local/mock", reasoningEffort: "high" });
+    const params = presetUpsertParams({ ...presetDraft(existing, "edit"), model: "", reasoningEffort: "" }, existing);
+    expect(JSON.parse(JSON.stringify(params))).toMatchObject({ id: existing.id, model: null, reasoningEffort: null });
+  });
+
   it("builds upsert params", () => {
     expect(presetUpsertParams({ ...emptyPresetDraft(), name: " Helper ", description: " Short ", tools: ["builtin", "web"], webSearch: true, reasoningEffort: "high" })).toEqual({
       name: "Helper",
       icon: undefined,
       description: "Short",
       instructions: "",
-      model: undefined,
+      model: null,
       creativity: "medium",
       reasoningEffort: "high",
       webSearch: true,

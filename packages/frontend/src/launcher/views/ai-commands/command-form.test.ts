@@ -49,7 +49,7 @@ describe("command drafts", () => {
       name: "Fix",
       prompt: "Fix {selection}",
       icon: undefined,
-      model: undefined,
+      model: null,
       creativity: "medium",
       output: "quick-ai",
       reasoningEffort: "low",
@@ -68,6 +68,12 @@ describe("command drafts", () => {
 
   it("lists tags once, sorted", () => {
     expect(commandTags([command({ tags: ["Writing", "Email"] }), command({ tags: ["Code", "Writing"] }), command({})])).toEqual(["Code", "Email", "Writing"]);
+  });
+
+  it("sends explicit clears for default overrides through JSON", () => {
+    const existing = command({ model: "local/mock", reasoningEffort: "high" });
+    const params = commandUpsertParams({ ...commandDraft(existing, "edit"), model: "", reasoningEffort: "" }, existing);
+    expect(JSON.parse(JSON.stringify(params))).toMatchObject({ id: existing.id, model: null, reasoningEffort: null });
   });
 });
 

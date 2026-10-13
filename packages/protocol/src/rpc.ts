@@ -51,6 +51,12 @@ import type { CalendarEvent, MenuItemInfo, WindowCommand } from "./native";
 type Void = void;
 type WebSearchProvider = Exclude<SettingsValues["ai.webSearchProvider"], "none">;
 
+/** Omitted overrides are preserved on upsert; null explicitly restores the default. */
+type AIOverrideInput = {
+  model?: ModelRef | null;
+  reasoningEffort?: AICommand["reasoningEffort"] | null;
+};
+
 export interface BackendMethods {
   // ---- meta -------------------------------------------------------------------
   "app.info": { params: Void; result: { version: string; dataDir: string; nativeAvailable: boolean; methods: string[] } };
@@ -178,7 +184,7 @@ export interface BackendMethods {
   /** One-shot ask without a stored chat (used by Quick AI before "Continue in Chat" and by AI.ask). */
   "ai.ask": { params: { prompt: string; system?: string; model?: ModelRef; creativity?: Creativity; attachments?: AIAttachment[]; chatId?: string }; result: { streamId: string; chatId?: string } };
   "ai.commands.list": { params: Void; result: AICommand[] };
-  "ai.commands.upsert": { params: Partial<AICommand> & { name: string; prompt: string }; result: AICommand };
+  "ai.commands.upsert": { params: Omit<Partial<AICommand>, keyof AIOverrideInput> & AIOverrideInput & { name: string; prompt: string }; result: AICommand };
   "ai.commands.delete": { params: { id: string }; result: Void };
   "ai.commands.reset": { params: { id: string }; result: AICommand };
   /** Expand placeholders (selection, clipboard, arguments) and run. Output mode decides where the text goes. */
@@ -186,7 +192,7 @@ export interface BackendMethods {
   "ai.commands.import": { params: { json: string }; result: { imported: number } };
   "ai.commands.export": { params: Void; result: { json: string } };
   "ai.presets.list": { params: Void; result: AIPreset[] };
-  "ai.presets.upsert": { params: Partial<AIPreset> & { name: string }; result: AIPreset };
+  "ai.presets.upsert": { params: Omit<Partial<AIPreset>, keyof AIOverrideInput> & AIOverrideInput & { name: string }; result: AIPreset };
   "ai.presets.delete": { params: { id: string }; result: Void };
   /** Restore the shipped definition of a built-in preset. */
   "ai.presets.reset": { params: { id: string }; result: AIPreset };

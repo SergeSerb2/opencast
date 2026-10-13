@@ -64,10 +64,13 @@ export class Commands {
       name: input.name.trim(),
       prompt: input.prompt,
       icon: input.icon ?? old?.icon,
-      model: input.model ?? old?.model,
+      model: input.model === null ? undefined : input.model ?? old?.model,
       creativity: input.creativity ?? old?.creativity ?? "medium",
       output: input.output ?? old?.output ?? "quick-ai",
-      reasoningEffort: input.reasoningEffort ?? old?.reasoningEffort,
+      reasoningEffort:
+        input.reasoningEffort === null
+          ? undefined
+          : input.reasoningEffort ?? old?.reasoningEffort,
       highlightEdits: input.highlightEdits ?? old?.highlightEdits,
       tags: input.tags ?? old?.tags,
       webSearch: input.webSearch ?? old?.webSearch,
@@ -90,9 +93,12 @@ export class Commands {
       icon: input.icon ?? old?.icon,
       description: input.description ?? old?.description,
       instructions: input.instructions ?? old?.instructions ?? "",
-      model: input.model ?? old?.model,
+      model: input.model === null ? undefined : input.model ?? old?.model,
       creativity: input.creativity ?? old?.creativity ?? "medium",
-      reasoningEffort: input.reasoningEffort ?? old?.reasoningEffort,
+      reasoningEffort:
+        input.reasoningEffort === null
+          ? undefined
+          : input.reasoningEffort ?? old?.reasoningEffort,
       webSearch: input.webSearch ?? old?.webSearch ?? false,
       tools: input.tools ?? old?.tools ?? [],
       builtin: old?.builtin ?? false,

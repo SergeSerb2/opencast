@@ -1,4 +1,4 @@
-import { RpcErrorCode, type AICommand, type AIPreset, type AIToolInfo, type CommandInfo, type Creativity } from "@surgecast/protocol";
+import { RpcErrorCode, type AICommand, type AIPreset, type AIToolInfo, type BackendParams, type CommandInfo, type Creativity } from "@surgecast/protocol";
 import { promptArguments, promptProblem } from "../../../launcher/views/ai-commands/placeholders";
 import { RpcError } from "../../errors";
 import type { MockArea, MockContext } from "./types";
@@ -176,7 +176,7 @@ export function createAiMock(ctx: MockContext): MockArea {
   const sorted = () => [...commands].sort((a, b) => Number(Boolean(b.builtin)) - Number(Boolean(a.builtin)) || a.name.localeCompare(b.name));
   const findCommand = (id: string) => commands.find((c) => c.id === id) ?? notFound(`AI command ${id}`);
 
-  const upsertCommand = (input: Partial<AICommand> & { name: string; prompt: string }): AICommand => {
+  const upsertCommand = (input: BackendParams<"ai.commands.upsert">): AICommand => {
     if (!input.name?.trim() || !input.prompt?.trim()) invalid("AI command needs a name and prompt");
     const problem = promptProblem(input.prompt);
     if (problem) invalid(problem);
@@ -189,10 +189,10 @@ export function createAiMock(ctx: MockContext): MockArea {
       name: input.name.trim(),
       prompt: input.prompt,
       icon: input.icon ?? old?.icon,
-      model: input.model ?? old?.model,
+      model: input.model === null ? undefined : input.model ?? old?.model,
       creativity: input.creativity ?? old?.creativity ?? "medium",
       output: input.output ?? old?.output ?? "quick-ai",
-      reasoningEffort: input.reasoningEffort ?? old?.reasoningEffort,
+      reasoningEffort: input.reasoningEffort === null ? undefined : input.reasoningEffort ?? old?.reasoningEffort,
       highlightEdits: input.highlightEdits ?? old?.highlightEdits,
       tags: input.tags ?? old?.tags,
       webSearch: input.webSearch ?? old?.webSearch,
@@ -292,9 +292,9 @@ export function createAiMock(ctx: MockContext): MockArea {
           icon: input.icon ?? old?.icon,
           description: input.description ?? old?.description,
           instructions: input.instructions ?? old?.instructions ?? "",
-          model: input.model ?? old?.model,
+          model: input.model === null ? undefined : input.model ?? old?.model,
           creativity: input.creativity ?? old?.creativity ?? "medium",
-          reasoningEffort: input.reasoningEffort ?? old?.reasoningEffort,
+          reasoningEffort: input.reasoningEffort === null ? undefined : input.reasoningEffort ?? old?.reasoningEffort,
           webSearch: input.webSearch ?? old?.webSearch ?? false,
           tools: input.tools ?? old?.tools ?? [],
           builtin: old?.builtin ?? false,

@@ -480,7 +480,7 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     "ai.commands.list": () => structuredClone(aiCommands),
     "ai.commands.upsert": (input) => {
       const existing = input.id ? aiCommands.find((c) => c.id === input.id) : undefined;
-      const command: AICommand = { creativity: "medium", output: "quick-ai", createdAt: Date.now(), ...existing, ...input, id: existing?.id ?? newId("command"), updatedAt: Date.now() };
+      const command: AICommand = { creativity: "medium", output: "quick-ai", createdAt: Date.now(), ...existing, ...input, model: input.model === null ? undefined : input.model ?? existing?.model, reasoningEffort: input.reasoningEffort === null ? undefined : input.reasoningEffort ?? existing?.reasoningEffort, id: existing?.id ?? newId("command"), updatedAt: Date.now() };
       if (existing) Object.assign(existing, command);
       else aiCommands.push(command);
       entitiesChanged("aiCommands", [command.id]);
@@ -545,6 +545,8 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
         createdAt: Date.now(),
         ...existing,
         ...input,
+        model: input.model === null ? undefined : input.model ?? existing?.model,
+        reasoningEffort: input.reasoningEffort === null ? undefined : input.reasoningEffort ?? existing?.reasoningEffort,
         id: existing?.id ?? newId("preset"),
         updatedAt: Date.now(),
       };

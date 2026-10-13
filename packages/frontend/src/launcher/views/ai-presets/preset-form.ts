@@ -55,9 +55,9 @@ export function presetUpsertParams(draft: PresetDraft, existing?: AIPreset): Bac
     icon: draft.icon || (clearedIcon ? DEFAULT_AI_ICON : undefined),
     description: draft.description.trim(),
     instructions: draft.instructions,
-    model: draft.model || undefined,
+    model: draft.model || null,
     creativity: draft.creativity,
-    reasoningEffort: draft.reasoningEffort || undefined,
+    reasoningEffort: draft.reasoningEffort || null,
     webSearch: draft.webSearch,
     tools: draft.tools.filter((t) => t !== WEB_TOOLSET),
   };

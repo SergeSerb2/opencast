@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AICommand, AICommandOutput, AIPreset, Creativity, ImageLike } from "@surgecast/protocol";
+import type { AICommand, AICommandOutput, AIPreset, BackendParams, Creativity, ImageLike } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
@@ -80,10 +80,10 @@ export function promptProblem(prompt: string): string | null {
 
 /** Create or edit an AI Command. */
 export function CommandEditor({ command, onClose }: { command: AICommand | null; onClose: () => void }) {
-  const [draft, setDraft] = useState<Partial<AICommand> & { name: string; prompt: string }>(() => command ?? { name: "", prompt: "", creativity: "low", output: "quick-ai", icon: "stars-16" });
+  const [draft, setDraft] = useState<BackendParams<"ai.commands.upsert">>(() => command ?? { name: "", prompt: "", creativity: "low", output: "quick-ai", icon: "stars-16" });
   const [errors, setErrors] = useState<{ name?: string; prompt?: string; save?: string }>({});
   const [busy, setBusy] = useState(false);
-  const update = (patch: Partial<AICommand>) => {
+  const update = (patch: Partial<BackendParams<"ai.commands.upsert">>) => {
     setDraft({ ...draft, ...patch });
     setErrors({});
   };
@@ -145,7 +145,7 @@ export function CommandEditor({ command, onClose }: { command: AICommand | null;
           />
         </DialogField>
         <DialogField label="Model">
-          <ModelPicker value={draft.model ?? null} onChange={(model) => update({ model: model ?? undefined })} label="Model" automaticTitle="Default for AI Commands" />
+          <ModelPicker value={draft.model ?? null} onChange={(model) => update({ model })} label="Model" automaticTitle="Default for AI Commands" />
         </DialogField>
         <DialogField label="Creativity">
           <Select variant="field" value={draft.creativity ?? "medium"} options={CREATIVITY} onChange={(creativity) => update({ creativity })} label="Creativity" />
@@ -155,7 +155,7 @@ export function CommandEditor({ command, onClose }: { command: AICommand | null;
             variant="field"
             value={draft.reasoningEffort ?? null}
             options={REASONING}
-            onChange={(effort) => update({ reasoningEffort: effort ?? undefined })}
+            onChange={(effort) => update({ reasoningEffort: effort })}
             label="Reasoning Effort"
           />
         </DialogField>
@@ -170,10 +170,10 @@ export function CommandEditor({ command, onClose }: { command: AICommand | null;
 export function PresetEditor({ preset, onClose }: { preset: AIPreset | null; onClose: () => void }) {
   const { data: tools } = useBackend("ai.tools.list", undefined);
   const toolsets = [...new Map((tools ?? []).filter((t) => t.toolset !== "web").map((t) => [t.toolset, t.toolsetTitle]))];
-  const [draft, setDraft] = useState<Partial<AIPreset> & { name: string }>(() => preset ?? { name: "", instructions: "", creativity: "medium", webSearch: false, tools: [], icon: "stars-16" });
+  const [draft, setDraft] = useState<BackendParams<"ai.presets.upsert">>(() => preset ?? { name: "", instructions: "", creativity: "medium", webSearch: false, tools: [], icon: "stars-16" });
   const [errors, setErrors] = useState<{ name?: string; save?: string }>({});
   const [busy, setBusy] = useState(false);
-  const update = (patch: Partial<AIPreset>) => {
+  const update = (patch: Partial<BackendParams<"ai.presets.upsert">>) => {
     setDraft({ ...draft, ...patch });
     setErrors({});
   };
@@ -228,7 +228,7 @@ export function PresetEditor({ preset, onClose }: { preset: AIPreset | null; onC
       </DialogField>
       <div className="sc-s-editor-grid">
         <DialogField label="Model">
-          <ModelPicker value={draft.model ?? null} onChange={(model) => update({ model: model ?? undefined })} label="Model" automaticTitle="Default for AI Chat" />
+          <ModelPicker value={draft.model ?? null} onChange={(model) => update({ model })} label="Model" automaticTitle="Default for AI Chat" />
         </DialogField>
         <DialogField label="Creativity">
           <Select variant="field" value={draft.creativity ?? "medium"} options={CREATIVITY} onChange={(creativity) => update({ creativity })} label="Creativity" />
@@ -238,7 +238,7 @@ export function PresetEditor({ preset, onClose }: { preset: AIPreset | null; onC
             variant="field"
             value={draft.reasoningEffort ?? null}
             options={REASONING}
-            onChange={(effort) => update({ reasoningEffort: effort ?? undefined })}
+            onChange={(effort) => update({ reasoningEffort: effort })}
             label="Reasoning Effort"
           />
         </DialogField>
