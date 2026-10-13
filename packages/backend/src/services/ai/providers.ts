@@ -257,16 +257,16 @@ export class Providers {
     let url: string | undefined = path;
     const discovered: AIModel[] = [];
     for (let page = 0; url && page < 20; page++) {
-      const json = (await (
-        await checkedFetch(
-          url,
-          {
-            headers: auth.headers,
-            signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]),
-          },
-          auth.secrets,
-        )
-      ).json()) as any;
+      const response = await checkedFetch(url, {
+        headers: auth.headers,
+        signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]),
+      }, auth.secrets);
+      let json: any;
+      try {
+        json = await response.json();
+      } catch {
+        throw new Error("Provider model list was not valid JSON");
+      }
       const rows =
         provider.api === "ollama"
           ? json.models
@@ -327,6 +327,7 @@ export class Providers {
       if (!merged.some((m) => m.id === old.id))
         merged.push(old.manual ? old : { ...old, enabled: false });
     const result = { ...current, models: merged, updatedAt: Date.now() };
+    delete result.modelFetchError;
     this.ctx.entities.put("aiProviders", id, result);
     return result;
   }
