@@ -1,0 +1,20 @@
+{
+  "name": "surgecast",
+  "private": true,
+  "version": "0.1.0",
+  "description": "An open-source, Raycast-style launcher for macOS. Bring your own AI keys, self-host your sync.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.18.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter=!@surgecast/sync-worker run build",
+    "build:app": "./scripts/build-app.sh",
+    "dev": "./scripts/dev.sh",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint"
+  }
+}
