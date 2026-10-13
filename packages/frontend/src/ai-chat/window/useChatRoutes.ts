@@ -7,6 +7,7 @@ import type { ChatSetup } from "../state/send";
 
 export interface ChatRouteHandlers {
   openChat: (chatId: string) => void;
+  searchChats: (query: string) => void;
   newChat: (setup?: ChatSetup) => void;
   insertText: (text: string) => void;
   addAttachment: (path: string) => void;
@@ -17,6 +18,7 @@ export interface ChatRouteHandlers {
 
 /** Route payloads: deeplink query parameters or the launcher's AI hand-off. */
 interface RoutePayload {
+  query?: string;
   text?: string;
   filepath?: string;
   prompt?: string;
@@ -27,6 +29,7 @@ interface RoutePayload {
 
 export type ChatRoute =
   | { kind: "none" }
+  | { kind: "search"; query: string }
   | { kind: "new"; presetId?: string }
   | { kind: "chat"; chatId: string }
   | { kind: "text"; text: string }
@@ -36,13 +39,13 @@ export type ChatRoute =
 
 /**
  * Interpret a `window.route` for the AI Chat window:
- * "new", "add-text"/"append-text" (?text), "add-attachment" (?filepath),
+ * "search" (?query), "new", "add-text"/"append-text" (?text), "add-attachment" (?filepath),
  * a chat id (optionally "chat/<id>"), or a launcher payload { prompt, presetId, aiCommandId }.
  */
 export function parseChatRoute(route: string | undefined, payload: unknown): ChatRoute {
   const input = (payload && typeof payload === "object" ? payload : {}) as Record<string, unknown>;
   const data: RoutePayload = {};
-  for (const key of ["text", "filepath", "prompt", "presetId", "aiCommandId"] as const) {
+  for (const key of ["text", "filepath", "prompt", "presetId", "aiCommandId", "query"] as const) {
     if (typeof input[key] === "string") data[key] = input[key];
   }
   if (input.arguments && typeof input.arguments === "object" && !Array.isArray(input.arguments)) {
@@ -53,6 +56,7 @@ export function parseChatRoute(route: string | undefined, payload: unknown): Cha
   catch { return { kind: "none" }; }
   if (path === "add-text" || path === "append-text") return data.text?.trim() ? { kind: "text", text: data.text } : { kind: "none" };
   if (path === "add-attachment") return data.filepath ? { kind: "attachment", path: data.filepath } : { kind: "none" };
+  if (path === "search") return { kind: "search", query: data.query ?? "" };
   if (path === "new") return { kind: "new", presetId: data.presetId };
   if (path) return { kind: "chat", chatId: path.replace(/^chat\//, "") };
   if (data.aiCommandId) return { kind: "command", commandId: data.aiCommandId, arguments: data.arguments };
@@ -76,6 +80,9 @@ export function useChatRoutes(handlers: ChatRouteHandlers): void {
   const apply = (route: ChatRoute) => {
     const h = latest.current;
     switch (route.kind) {
+      case "search":
+        h.searchChats(route.query);
+        break;
       case "new":
         h.newChat(route.presetId ? { presetId: route.presetId } : {});
         break;

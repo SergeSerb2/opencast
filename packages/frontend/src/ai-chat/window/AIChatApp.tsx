@@ -326,16 +326,16 @@ export function AIChatApp() {
     }
   };
 
+  const searchChats = (query?: string) => {
+    if (query !== undefined) setQuery(query);
+    setSidebarOpen(true);
+    requestAnimationFrame(() => search.current?.focus());
+  };
+
   const handlersFor = (target: AIChat | null): ChatActionHandlers => ({
     newChat: () => newChat(),
     newFolder: () => newFolder(target ?? undefined),
-    searchChats: () => {
-      if (search.current) search.current.focus();
-      else {
-        setSidebarOpen(true);
-        requestAnimationFrame(() => search.current?.focus());
-      }
-    },
+    searchChats: () => searchChats(),
     toggleSidebar: () => setSidebarOpen((open) => !open),
     toggleSettings: () => setSettingsOpen((open) => !open),
     openPreferences,
@@ -441,6 +441,7 @@ export function AIChatApp() {
 
   // ---- routes (deeplinks, launcher hand-offs) and window lifecycle -----------------------
   useChatRoutes({
+    searchChats,
     openChat: (id) => {
       setSelectedId(id);
       focusComposer();

@@ -360,7 +360,10 @@ export function builtinCatalog(): Builtin[] {
     await ctx.native.call("window.show", { kind: "ai-chat" });
     return done();
   });
-  view("ai", "searchAiChats", "Search AI Chats", "ai.chats");
+  add("ai", "searchAiChats", "Search AI Chats", async (ctx, request) => {
+    await ctx.native.call("window.show", { kind: "ai-chat", route: "search", payload: { query: request.fallbackText ?? "" } });
+    return done();
+  }, "view");
   view("ai", "searchAiCommands", "Search AI Commands", "ai.commands");
   view("ai", "createAiCommand", "Create AI Command", "ai.commands", {
     action: "create",
