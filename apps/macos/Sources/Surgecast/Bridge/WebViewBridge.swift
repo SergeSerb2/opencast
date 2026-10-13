@@ -39,8 +39,16 @@ import WebKit
   static let listeners = """
     (() => {
       const listeners = new Map();
+      // Events with no listener yet are queued: WebKit can finish loading before the page's
+      // modules run, and the frontend drains `pending` when it installs its own receiver.
+      const pending = [];
       window.__surgecastNative = {
-        emit(topic, payload) { for (const fn of [...(listeners.get(topic) || [])]) { try { fn(payload); } catch (error) { console.error(error); } } },
+        pending,
+        emit(topic, payload) {
+          const fns = [...(listeners.get(topic) || [])];
+          if (fns.length === 0) { pending.push([topic, payload]); if (pending.length > 50) pending.shift(); }
+          for (const fn of fns) { try { fn(payload); } catch (error) { console.error(error); } }
+        },
         on(topic, fn) { if (!listeners.has(topic)) listeners.set(topic, new Set()); listeners.get(topic).add(fn); return () => listeners.get(topic)?.delete(fn); }
       };
     })();

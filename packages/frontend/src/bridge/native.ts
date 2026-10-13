@@ -20,18 +20,33 @@ declare global {
 
 const events = new Emitter<NativeEvents>();
 
+let receiver: NativeReceiver | undefined;
+/** A `window.route` that arrived before any subscriber (first window open races React mount). */
+let pendingRoute: NativeEvents["window.route"] | undefined;
+let routeSubscribers = 0;
+
 /**
- * Install `window.__surgecastNative` as early as possible: events the host
- * emits before it exists are lost. Safe to call more than once.
+ * Install `window.__surgecastNative` as early as possible. Safe to call more than once.
+ *
+ * The Swift host injects a placeholder receiver at document start that queues
+ * events nobody listens to yet (WebKit can finish loading before modules run);
+ * replace it and replay its queue so host events reach `native.on` subscribers.
  */
 export function installNativeReceiver(): NativeReceiver {
-  if (!window.__surgecastNative) {
-    window.__surgecastNative = {
-      emit: (topic, payload) => events.emit(topic, payload),
+  if (!receiver) {
+    const placeholder = window.__surgecastNative as (NativeReceiver & { pending?: [keyof NativeEvents, unknown][] }) | undefined;
+    const installed: NativeReceiver = {
+      emit: (topic, payload) => {
+        if (topic === "window.route" && routeSubscribers === 0) pendingRoute = payload as NativeEvents["window.route"];
+        events.emit(topic, payload);
+      },
       on: (topic, fn) => events.on(topic, fn),
     };
+    receiver = installed;
+    window.__surgecastNative = installed;
+    for (const [topic, payload] of placeholder?.pending?.splice(0) ?? []) installed.emit(topic, payload as never);
   }
-  return window.__surgecastNative;
+  return receiver;
 }
 
 function isErrorReply(value: unknown): value is { error: RpcErrorObject } {
@@ -60,7 +75,18 @@ export const native = {
 
   on<T extends keyof NativeEvents>(topic: T, fn: (payload: NativeEvents[T]) => void): () => void {
     installNativeReceiver();
-    return events.on(topic, fn);
+    const off = events.on(topic, fn);
+    if (topic !== "window.route") return off;
+    routeSubscribers++;
+    if (pendingRoute) {
+      const route = pendingRoute;
+      pendingRoute = undefined;
+      queueMicrotask(() => fn(route as NativeEvents[T]));
+    }
+    return () => {
+      routeSubscribers--;
+      off();
+    };
   },
 
   /** Dev and tests: simulate a host event. */
