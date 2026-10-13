@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterPlaceholderOptions, insertPlaceholder, placeholderOptions, placeholderQueryAt, snippetReference, templateArgumentNames, tokenizeTemplate } from "./placeholders";
+import { filterPlaceholderOptions, insertPlaceholder, placeholderOptions, placeholderQueryAt, snippetReference, templateArgumentNames, tokenizeTemplate, validateTemplate } from "./placeholders";
 import { snippetPayload, validateSnippetDraft } from "./snippet-validation";
 
 describe("placeholderOptions", () => {
@@ -10,6 +10,7 @@ describe("placeholderOptions", () => {
     expect(snippet).toContain("snippet");
     expect(snippet).not.toContain("selection");
     expect(quicklink).toContain("selection");
+    expect(quicklink).toContain("snippet");
     expect(quicklink).not.toContain("cursor");
     expect(snippet.slice(-6)).toEqual(["date", "time", "datetime", "day", "date-format", "date-locale"]);
   });
@@ -19,6 +20,23 @@ describe("placeholderOptions", () => {
     expect(filterPlaceholderOptions(options, "clip").map((o) => o.id)).toEqual(["clipboard"]);
     expect(filterPlaceholderOptions(options, "date").map((o) => o.id)).toEqual(["date", "datetime", "date-format", "date-locale"]);
     expect(filterPlaceholderOptions(options, "")).toHaveLength(options.length);
+  });
+});
+
+describe("template composition limits", () => {
+  it("enforces one cursor without modifiers and valid context", () => {
+    expect(validateTemplate("{cursor}{CURSOR}", "snippet")).toMatch(/one cursor/);
+    expect(validateTemplate("{cursor | trim}", "snippet")).toMatch(/modifiers/);
+    expect(validateTemplate("{cursor}", "quicklink")).toMatch(/only in snippets/);
+    expect(validateTemplate("{selection}", "snippet")).toMatch(/only in quicklinks/);
+  });
+
+  it("counts unnamed positions separately but shares named arguments", () => {
+    expect(validateTemplate("{argument}{argument}{argument}{argument}", "snippet")).toMatch(/three/);
+    expect(validateTemplate('{argument name="A"}{argument name="A"}{argument name="B"}{argument name="C"}', "snippet")).toBeUndefined();
+    expect(validateTemplate('{ARGUMENT NAME="A"}{argument name="B"}{argument name="C"}{argument name="D"}', "snippet")).toMatch(/three/);
+    expect(validateTemplate("{query}{customer}{city}{country}", "quicklink")).toMatch(/three/);
+    expect(validateTemplate("{literal}{braces}{stay}{unchanged}", "snippet")).toBeUndefined();
   });
 });
 

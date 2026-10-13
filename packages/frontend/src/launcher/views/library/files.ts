@@ -61,7 +61,7 @@ export async function saveTextFile(options: { title: string; fileName: string; t
     folders = await native.call("dialog.openFiles", { canChooseFiles: false, canChooseDirectories: true, allowMultipleSelection: false, title: options.title, prompt: "Export" });
   } catch (error) {
     if (!isNativeUnavailable(error)) throw error;
-    const url = URL.createObjectURL(new Blob([options.text], { type: "application/json" }));
+    const url = URL.createObjectURL(new Blob([options.text], { type: options.fileName.endsWith(".json") ? "application/json" : "text/plain;charset=utf-8" }));
     const link = Object.assign(document.createElement("a"), { href: url, download: options.fileName });
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);

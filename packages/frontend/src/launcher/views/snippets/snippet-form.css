@@ -76,3 +76,12 @@
 .sc-snippet-form__help a:hover {
   text-decoration: underline;
 }
+.sc-snippet-rendered-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  font: inherit;
+}
+.sc-snippet-preview-view {
+  padding: 0 var(--space-16);
+}

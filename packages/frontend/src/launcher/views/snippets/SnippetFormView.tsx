@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ImageLike, Snippet } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
-import { native } from "../../../bridge/native";
-import { Action, ActionPanel, Form, showToast, TagInput, TextField, useNavigation, useRegisterActions, ViewFrame } from "../../../components";
+import { Action, ActionPanel, showToast, TagInput, TextField, useNavigation, useRegisterActions, ViewFrame } from "../../../components";
 import { Icon } from "../../../icons/Icon";
 import { IconPicker } from "../library/IconPicker";
-import { DOCS } from "../library/links";
+import { sc } from "../../../lib/keyboard";
+import { PlaceholderGuide } from "./PlaceholderGuide";
+import { SnippetPreview } from "./SnippetPreview";
 import { TemplateEditor, type TemplateEditorHandle } from "./TemplateEditor";
 import { snippetPayload, validateSnippetDraft, type SnippetDraft, type SnippetErrors } from "./snippet-validation";
 import "./snippet-form.css";
@@ -33,11 +34,12 @@ function draftFrom(snippet: SnippetFormViewProps["snippet"] | SnippetFormViewPro
  * dynamic placeholders on the left; name, icon, keyword and tags on the right.
  */
 export function SnippetFormView({ snippet, initial, navigationTitle, navigationIcon, onSaved }: SnippetFormViewProps) {
+  const navigation = useNavigation();
   return (
     <ViewFrame
       navigationTitle={navigationTitle ?? (snippet ? "Edit Snippet" : "Create Snippet")}
       navigationIcon={navigationIcon}
-      headerAccessory={<Form.LinkAccessory text="Snippets Guide" target={DOCS.snippets} />}
+      headerAccessory={<button type="button" className="sc-form-link-accessory" onClick={() => navigation.push(<PlaceholderGuide context="snippet" />)}>Snippets Guide</button>}
       primaryShortcut="cmd-enter"
     >
       <SnippetFormBody snippet={snippet} initial={initial} onSaved={onSaved} />
@@ -59,11 +61,15 @@ function SnippetFormBody({ snippet, initial, onSaved }: Pick<SnippetFormViewProp
       .call("snippets.list", {})
       .then((list) => (others.current = list))
       .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!navigation.isActive) return;
     // A prefilled duplicate focuses the name, like Raycast; otherwise the snippet text.
     if (initial?.name && !snippet) nameRef.current?.select();
     else editorRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [navigation.isActive]);
 
   const update = <K extends keyof SnippetDraft>(key: K, value: SnippetDraft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -92,6 +98,7 @@ function SnippetFormBody({ snippet, initial, onSaved }: Pick<SnippetFormViewProp
   useRegisterActions(
     <ActionPanel>
       <Action title="Save Snippet" icon="checkmark-16" onAction={save} />
+      <Action title="Preview Snippet" icon="eye-16" shortcut={sc("cmd", "shift", "v")} onAction={() => navigation.push(<SnippetPreview text={draft.text} />)} />
     </ActionPanel>,
   );
 
@@ -106,7 +113,7 @@ function SnippetFormBody({ snippet, initial, onSaved }: Pick<SnippetFormViewProp
           multiline
           value={draft.text}
           onChange={(text) => update("text", text)}
-          placeholder="Find your inner Shakespeare…"
+          placeholder="Write the text you want to reuse…"
           invalid={Boolean(errors.text)}
           aria-label="Snippet"
           toolbar={
@@ -119,10 +126,10 @@ function SnippetFormBody({ snippet, initial, onSaved }: Pick<SnippetFormViewProp
         />
         <p className="sc-snippet-form__help">
           Include{" "}
-          <a href={DOCS.placeholders} onClick={(e) => openLink(e, DOCS.placeholders)}>
+          <a href="#placeholders" onClick={(event) => { event.preventDefault(); navigation.push(<PlaceholderGuide context="snippet" />); }}>
             {"{Dynamic Placeholders}"}
           </a>{" "}
-          for context like the copied text or the current date
+          to insert copied text, dates, or inputs when you use the snippet
         </p>
       </div>
       <div className="sc-snippet-form__column">
@@ -143,11 +150,6 @@ function SnippetFormBody({ snippet, initial, onSaved }: Pick<SnippetFormViewProp
       </div>
     </div>
   );
-}
-
-function openLink(event: { preventDefault: () => void }, url: string) {
-  event.preventDefault();
-  void native.call("open.url", { url }).catch(() => undefined);
 }
 
 function FieldLabel({ title, error, htmlFor, spaced }: { title: string; error?: string; htmlFor: string; spaced?: boolean }): ReactNode {

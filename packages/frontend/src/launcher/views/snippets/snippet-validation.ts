@@ -1,4 +1,5 @@
 import type { Snippet } from "@surgecast/protocol";
+import { validateTemplate } from "./placeholders";
 
 export const MAX_SNIPPET_LENGTH = 65_536;
 export const MAX_KEYWORD_LENGTH = 30;
@@ -19,6 +20,10 @@ export function validateSnippetDraft(draft: SnippetDraft, others: Pick<Snippet, 
   if (!draft.name.trim()) errors.name = "Name is required";
   if (!draft.text.trim()) errors.text = "Snippet text is required";
   else if (draft.text.length >= MAX_SNIPPET_LENGTH) errors.text = `Snippets can be up to ${(MAX_SNIPPET_LENGTH - 1).toLocaleString("en-US")} characters`;
+  else {
+    const error = validateTemplate(draft.text, "snippet");
+    if (error) errors.text = error;
+  }
   const keyword = draft.keyword.trim();
   if (keyword) {
     if (/\s/.test(keyword)) errors.keyword = "Keywords can’t contain spaces";

@@ -112,11 +112,9 @@ export function ExportView({ kind, title, icon }: ExportViewProps) {
     setBusy(true);
     setError(null);
     try {
-      const rows =
-        kind === "snippets"
-          ? (await backend.call("snippets.list", {})).map((s) => ({ name: s.name, text: s.text, keyword: s.keyword || undefined, tags: s.tags?.length ? s.tags : undefined }))
-          : (await backend.call("quicklinks.list", {})).map((q) => ({ name: q.name, link: q.link, icon: typeof q.icon === "string" ? q.icon : undefined, openWith: q.openWith, tags: q.tags?.length ? q.tags : undefined }));
-      const saved = await saveTextFile({ title: `Export ${noun.title}`, fileName: exportFileName(noun.fileTitle), text: JSON.stringify(rows, null, 2) });
+      const { json } = kind === "snippets" ? await backend.call("snippets.export") : await backend.call("quicklinks.export");
+      const rows = kind === "snippets" ? await backend.call("snippets.list", {}) : await backend.call("quicklinks.list", {});
+      const saved = await saveTextFile({ title: `Export ${noun.title}`, fileName: exportFileName(noun.fileTitle), text: json });
       if (!saved) return;
       navigation.popToRoot();
       showToast({

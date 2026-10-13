@@ -32,7 +32,10 @@ function normalizeRow(row: unknown, kind: TransferKind): Record<string, unknown>
     if (typeof r.name !== "string" || typeof r.text !== "string") throw new ImportFormatError();
   } else {
     if (r.link === undefined && typeof r.url === "string") r.link = r.url;
-    if (r.openWith === undefined && typeof r.applicationID === "string") r.openWith = r.applicationID;
+    if (r.openWith === undefined) {
+      const app = r.applicationId ?? r.applicationID;
+      if (typeof app === "string") r.openWith = app;
+    }
     if (typeof r.name !== "string" || typeof r.link !== "string") throw new ImportFormatError();
   }
   return r;

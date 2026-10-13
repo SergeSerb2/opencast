@@ -255,7 +255,7 @@ function SnippetReferenceMenu({ anchor, onPick, onBack, onClose }: { anchor: { x
     let live = true;
     backend
       .call("snippets.list", {})
-      .then((list) => live && setNames(list.map((s) => s.name).sort((a, b) => a.localeCompare(b)).slice(0, 1000)))
+      .then((list) => live && setNames([...new Set(list.map((s) => s.name))].sort((a, b) => a.localeCompare(b))))
       .catch(() => live && setNames([]));
     return () => {
       live = false;

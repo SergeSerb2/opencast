@@ -8,9 +8,9 @@ import { Action, ActionPanel, Form, FormRow, showToast, TagInput, TextField, use
 import { Icon } from "../../../icons/Icon";
 import { sc } from "../../../lib/keyboard";
 import { IconPicker } from "../library/IconPicker";
-import { DOCS } from "../library/links";
+import { PlaceholderGuide } from "../snippets/PlaceholderGuide";
 import { TemplateEditor, type TemplateEditorHandle } from "../snippets/TemplateEditor";
-import { DEFAULT_ICON, defaultLinkIcon, isPathLink, quicklinkDraft, quicklinkPayload, validateQuicklink, type QuicklinkDraft, type QuicklinkErrors } from "./quicklink-model";
+import { CUSTOM_ICON, DEFAULT_ICON, defaultLinkIcon, isPathLink, quicklinkDraft, quicklinkPayload, validateQuicklink, type QuicklinkDraft, type QuicklinkErrors } from "./quicklink-model";
 import "./quicklinks.css";
 
 const SYSTEM_DEFAULT = "";
@@ -100,14 +100,17 @@ export function QuicklinkFormView({ quicklink, initial, mode = quicklink ? "edit
     }
   };
 
-  const iconOptions = useMemo(() => [{ id: DEFAULT_ICON, title: "Default", icon: defaultLinkIcon(draft.link, faviconProvider, draft.openWith ? apps.find((a) => a.bundleId === draft.openWith || a.path === draft.openWith) : defaultApp) }], [draft.link, draft.openWith, faviconProvider, apps, defaultApp]);
+  const iconOptions = useMemo(() => [
+    { id: DEFAULT_ICON, title: "Default", icon: defaultLinkIcon(draft.link, faviconProvider, draft.openWith ? apps.find((a) => a.bundleId === draft.openWith || a.path === draft.openWith) : defaultApp) },
+    ...(draft.originalIcon ? [{ id: CUSTOM_ICON, title: "Current Icon", icon: draft.originalIcon }] : []),
+  ], [draft.link, draft.openWith, draft.originalIcon, faviconProvider, apps, defaultApp]);
   const footerTitle = mode === "edit" ? "Update Quicklink" : mode === "duplicate" ? "Duplicate Quicklink" : "Create Quicklink";
 
   return (
     <Form
       navigationTitle={footerTitle}
       navigationIcon={navigationIcon}
-      searchBarAccessory={<Form.LinkAccessory text="Quicklinks Guide" target={DOCS.quicklinks} />}
+      searchBarAccessory={<button type="button" className="sc-form-link-accessory" onClick={() => navigation.push(<PlaceholderGuide context="quicklink" />)}>Quicklinks Guide</button>}
       actions={
         <ActionPanel>
           <Action title={mode === "edit" ? "Update Quicklink" : "Save Quicklink"} icon="checkmark-16" onAction={save} />
@@ -138,15 +141,15 @@ export function QuicklinkFormView({ quicklink, initial, mode = quicklink ? "edit
         <p className="sc-quicklink-form__help">
           Use{" "}
           <a
-            href={DOCS.placeholders}
+            href="#placeholders"
             onClick={(e) => {
               e.preventDefault();
-              void native.call("open.url", { url: DOCS.placeholders }).catch(() => undefined);
+              navigation.push(<PlaceholderGuide context="quicklink" />);
             }}
           >
             {"{Dynamic Placeholders}"}
           </a>{" "}
-          for arguments, or the selected or copied text
+          to build links from your inputs, selected text, or clipboard
         </p>
       </FormRow>
       <FormRow title="Name & Icon" error={errors.name}>

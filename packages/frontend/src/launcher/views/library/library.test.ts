@@ -81,6 +81,7 @@ describe("normalizeImport", () => {
     expect(snippets[0]).toMatchObject({ name: "Sig", keyword: ";s" });
     const links = JSON.parse(normalizeImport('[{"name":"Docs","url":"https://x.dev","applicationID":"com.apple.Safari"}]', "quicklinks").json);
     expect(links[0]).toMatchObject({ link: "https://x.dev", openWith: "com.apple.Safari" });
+    expect(JSON.parse(normalizeImport('{"name":"App","link":"file:///tmp/file","applicationId":"com.apple.TextEdit"}', "quicklinks").json)[0].openWith).toBe("com.apple.TextEdit");
   });
 
   it("rejects invalid documents", () => {

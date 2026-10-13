@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Quicklink } from "@surgecast/protocol";
 import { duplicateNoteContent, titleMatchesFirst } from "../notes-search/notes-model";
-import { DEFAULT_ICON, defaultLinkIcon, openedLabel, quicklinkDraft, quicklinkIcon, quicklinkPayload, validateQuicklink } from "./quicklink-model";
+import { CUSTOM_ICON, DEFAULT_ICON, defaultLinkIcon, openedLabel, quicklinkDraft, quicklinkIcon, quicklinkPayload, validateQuicklink } from "./quicklink-model";
 
 const link: Quicklink = { id: "q", name: "Docs", link: "https://example.dev/{query}", createdAt: 0, updatedAt: 0 };
 
 describe("quicklink model", () => {
-  it("drafts from a quicklink and keeps only icon names", () => {
+  it("preserves icon names and custom images while editing", () => {
     expect(quicklinkDraft({ ...link, icon: "star-16" }).icon).toBe("star-16");
-    expect(quicklinkDraft({ ...link, icon: { fileIcon: "/x" } }).icon).toBe(DEFAULT_ICON);
+    const custom = quicklinkDraft({ ...link, icon: { fileIcon: "/x" } });
+    expect(custom.icon).toBe(CUSTOM_ICON);
+    expect(quicklinkPayload(custom).icon).toEqual({ fileIcon: "/x" });
     expect(quicklinkDraft().openWith).toBe("");
   });
 

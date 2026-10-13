@@ -25,7 +25,7 @@ const lastUsed = (s: Snippet) => s.lastUsedAt ?? s.updatedAt;
 export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ query?: string }>) {
   const [query, setQuery] = useState(props.query ?? "");
   const [tag, setTag] = useState(ALL_TAGS);
-  const { data: snippets, isLoading } = useBackend("snippets.list", {});
+  const { data: snippets, isLoading } = useBackend("snippets.list", {}, undefined, { onError: (error) => showFailureToast("Failed to load snippets", error) });
   const navigation = useNavigation();
   const target = usePasteTarget();
   const navTitle = title ?? "Search Snippets";
@@ -99,7 +99,7 @@ export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ q
 
   const exportOne = async (snippet: Snippet) => {
     try {
-      const json = JSON.stringify([{ name: snippet.name, text: snippet.text, keyword: snippet.keyword || undefined, tags: snippet.tags?.length ? snippet.tags : undefined }], null, 2);
+      const json = JSON.stringify([{ name: snippet.name, text: snippet.text, keyword: snippet.keyword || undefined, icon: snippet.icon, pinned: snippet.pinned, tags: snippet.tags?.length ? snippet.tags : undefined }], null, 2);
       const saved = await saveTextFile({ title: "Export Snippet", fileName: `${snippet.name.replace(/[/\\:]/g, "-")}.json`, text: json });
       if (saved) showToast({ title: "Exported snippet", message: saved === "downloaded" ? undefined : saved });
     } catch (error) {
@@ -114,7 +114,7 @@ export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ q
         <Action title="Copy to Clipboard" icon="copy-clipboard-16" onAction={() => use(snippet, "copy")} />
       </ActionPanel.Section>
       <ActionPanel.Section>
-        <Action title={snippet.pinned ? "Unpin Snippet" : "Pin Snippet"} icon={snippet.pinned ? "tack-disabled-16" : "tack-16"} shortcut={sc("cmd", ".")} onAction={() => togglePin(snippet)} />
+        <Action title={snippet.pinned ? "Unpin Snippet" : "Pin Snippet"} icon={snippet.pinned ? "tack-disabled-16" : "tack-16"} shortcut={sc("cmd", "shift", "p")} onAction={() => togglePin(snippet)} />
         <Action title="Edit Snippet" icon="pencil-16" shortcut={sc("cmd", "e")} onAction={() => navigation.push(<SnippetFormView snippet={snippet} navigationIcon={icon} />)} />
         <Action
           title="Duplicate Snippet"
@@ -187,7 +187,7 @@ export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ q
 }
 
 function SnippetDetail({ snippet }: { snippet: Snippet }) {
-  const { data: rendered } = useBackend("snippets.render", { text: snippet.text }, [snippet.id, snippet.text]);
+  const { data: rendered } = useBackend("snippets.render", { text: snippet.text }, [snippet.id, snippet.text], { keepPreviousData: false });
   return (
     <ItemDetail
       preview={<pre className="sc-snippet-preview">{rendered?.text ?? snippet.text}</pre>}

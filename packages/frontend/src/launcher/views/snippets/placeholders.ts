@@ -36,7 +36,7 @@ const DATE_OPTIONS: PlaceholderOption[] = [
 
 /** Options offered by the `{` menu. Snippets get the cursor and snippet references; quicklinks get the selection. */
 export function placeholderOptions(context: PlaceholderContext): PlaceholderOption[] {
-  const general = context === "snippet" ? [CALCULATOR, UUID, CLIPBOARD, ARGUMENT, CURSOR, SNIPPET] : [CALCULATOR, UUID, CLIPBOARD, ARGUMENT, SELECTION];
+  const general = context === "snippet" ? [CALCULATOR, UUID, CLIPBOARD, ARGUMENT, CURSOR, SNIPPET] : [CALCULATOR, UUID, CLIPBOARD, ARGUMENT, SELECTION, SNIPPET];
   return [...general, ...DATE_OPTIONS];
 }
 
@@ -115,9 +115,32 @@ export function templateArgumentNames(text: string): string[] {
   for (const token of tokenizeTemplate(text)) {
     if (token.kind !== "placeholder") continue;
     let name: string | undefined;
-    if (token.keyword === "argument") name = /name\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(token.text)?.[1] ?? "argument";
+    if (token.keyword === "argument") name = /name\s*=\s*"((?:[^"\\]|\\.)*)"/i.exec(token.text)?.[1] ?? "argument";
     else if (token.keyword === "query") name = "query";
     if (name && !names.includes(name)) names.push(name);
   }
   return names;
+}
+
+/** Validate shared composition limits while leaving literal, unrecognized braces intact. */
+export function validateTemplate(text: string, context: PlaceholderContext): string | undefined {
+  const tokens = tokenizeTemplate(text).filter((token) => token.kind === "placeholder");
+  const cursors = tokens.filter((token) => token.keyword === "cursor");
+  if (cursors.length && context !== "snippet") return "Cursor placeholders are available only in snippets";
+  if (cursors.length > 1) return "Use only one cursor placeholder";
+  if (cursors.some((token) => !/^\{\s*cursor\s*\}$/i.test(token.text))) return "Cursor placeholders cannot have options or modifiers";
+  if (context === "snippet" && tokens.some((token) => token.keyword === "selection")) return "Selected text is available only in quicklinks";
+  const named = new Set<string>();
+  let unnamed = 0;
+  for (const token of tokens) {
+    if (token.keyword === "argument") {
+      const name = /name\s*=\s*"((?:[^"\\]|\\.)*)"/i.exec(token.text)?.[1];
+      if (name) named.add(name);
+      else unnamed++;
+    } else if (context === "quicklink" && (!token.known || token.keyword === "query")) {
+      named.add(token.text.slice(1, -1).split(":")[0].trim());
+    }
+  }
+  if (named.size + unnamed > 3) return "Use at most three different arguments";
+  return undefined;
 }
