@@ -16,6 +16,15 @@ export interface MarkdownProps {
   onOpenLink?: (url: string) => void;
 }
 
+const SAFE_URL = /^(https?:|mailto:|surgecast:|raycast:|surgecast-file:|file:|data:image\/)/i;
+
+/** Allow web links, app deeplinks, local files and inline images; drop script-like schemes. */
+export function markdownUrlTransform(url: string): string {
+  const trimmed = url.trim();
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed; // relative or absolute path
+  return SAFE_URL.test(trimmed) ? trimmed : "";
+}
+
 /** Resolve markdown image sources: local paths → surgecast-file://, keep sizing hints from Raycast's query params. */
 export function resolveMarkdownImage(src: string): { url: string; width?: number; height?: number; tintColor?: string } {
   let url = src;
@@ -84,7 +93,7 @@ export const Markdown = memo(function Markdown({ children, variant = "detail", c
       </a>
     ),
     img: ({ src, alt }) => {
-      if (typeof src !== "string") return null;
+      if (typeof src !== "string" || !src) return null;
       const { url, width, height } = resolveMarkdownImage(src);
       return <img src={url} alt={alt ?? ""} width={width} height={height} loading="lazy" draggable={false} />;
     },
@@ -98,7 +107,7 @@ export const Markdown = memo(function Markdown({ children, variant = "detail", c
   };
   return (
     <div className={`sc-markdown${className ? ` ${className}` : ""}`} data-variant={variant} data-selectable="true">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[[rehypeHighlight, { detect: false, ignoreMissing: true }]]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[[rehypeHighlight, { detect: false, ignoreMissing: true }]]} components={components} urlTransform={markdownUrlTransform}>
         {children}
       </ReactMarkdown>
     </div>

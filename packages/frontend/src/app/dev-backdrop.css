@@ -6,7 +6,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: max(0px, min(18vh, calc((100vh - var(--dev-window-height)) / 2)));
+  /* The top edge stays put when the launcher changes height (compact mode), like the native panel. */
+  padding-top: max(0px, min(18vh, calc((100vh - var(--dev-window-full-height)) / 2)));
   background:
     radial-gradient(120% 90% at 15% 10%, #7d5cc4 0%, transparent 55%),
     radial-gradient(90% 80% at 85% 90%, #4b3a8f 0%, transparent 60%),

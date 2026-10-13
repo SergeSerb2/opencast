@@ -298,6 +298,11 @@ export interface NativeEvents {
   "hotkey.pressed": { id: string };
   "clipboard.changed": ClipboardSnapshot;
   "window.didShow": { kind: WindowKind };
+  /**
+   * A window was asked to show a route (hotkey or deeplink launch, `window.show({ route })`).
+   * Launcher routes: "command:<CommandId>", "root", "quick-ai".
+   */
+  "window.route": { kind: WindowKind; route: string; payload?: unknown };
   "window.didHide": { kind: WindowKind };
   "window.didBecomeKey": { kind: WindowKind };
   "window.didResignKey": { kind: WindowKind };

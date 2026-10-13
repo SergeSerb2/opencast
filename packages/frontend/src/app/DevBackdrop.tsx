@@ -61,6 +61,7 @@ export function DevBackdrop({ children }: { children: ReactNode }) {
   const style = {
     "--dev-window-width": `${size.width}px`,
     "--dev-window-height": `${contentHeight ?? size.height}px`,
+    "--dev-window-full-height": `${size.height}px`,
   } as CSSProperties;
 
   return (

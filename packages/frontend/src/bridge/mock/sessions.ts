@@ -78,7 +78,9 @@ export class MockSession {
   }
 
   emit(): void {
-    this.handlers.clear();
+    // Rebuilding in the same order gives every callback the same id again, like
+    // the runtime's per-element handler ids, so in-flight events stay valid.
+    this.nextHandler = 0;
     this.nextNode = 0;
     const top = this.stack[this.stack.length - 1];
     const root = top();

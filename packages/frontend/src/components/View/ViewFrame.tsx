@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type Ref } from "react";
 import type { CommandArgument, ImageLike } from "@surgecast/protocol";
 import { useLatest } from "../../bridge/hooks";
 import { eventKey, matchesShortcut, sc } from "../../lib/keyboard";
@@ -46,6 +46,8 @@ export interface ViewFrameProps {
   onEscape?: () => void;
   footerCenter?: ReactNode;
   hideFooter?: boolean;
+  /** Access to the search input and inline argument fields (focus, validation). */
+  searchBarRef?: Ref<SearchBarHandle>;
   children: ReactNode;
   className?: string;
 }
@@ -80,6 +82,7 @@ export function ViewFrame({
   onEscape,
   footerCenter,
   hideFooter = false,
+  searchBarRef,
   children,
   className,
 }: ViewFrameProps) {
@@ -97,6 +100,19 @@ export function ViewFrame({
   const actionsRef = useLatest(effectiveActions);
 
   const focusSearch = useCallback(() => searchRef.current?.focus(), []);
+  useImperativeHandle(
+    searchBarRef,
+    () => ({
+      focus: () => searchRef.current?.focus(),
+      get input() {
+        return searchRef.current?.input ?? null;
+      },
+      get arguments() {
+        return searchRef.current?.arguments ?? null;
+      },
+    }),
+    [],
+  );
 
   const runAction = useCallback(
     (action: ActionModel) => {

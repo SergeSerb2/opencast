@@ -111,7 +111,7 @@ export function Popover({ open, onClose, anchor, side = "bottom", align = "start
         data-state={state}
         data-side={resolvedSide}
         data-align={align}
-        style={{ ...position?.style, visibility: position ? undefined : "hidden" }}
+        style={{ ...position?.style, opacity: position ? undefined : 0 }}
         {...aria}
       >
         {typeof children === "function" ? children({ side: resolvedSide }) : children}

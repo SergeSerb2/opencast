@@ -12,7 +12,8 @@ src/
   theme/        tokens.css, base.css, glass.css, palettes, ThemeProvider
   icons/        <Icon>, <Image> (every Raycast ImageLike), tiles, Raycast Icon → lucide map
   components/   design system (List, Grid, Detail, Form, ActionPanel, Footer, controls…)
-  launcher/     main.html: navigation stack, root search, extension sessions
+  launcher/     main.html: navigation stack, views registry, root search, window behavior
+  extension-renderer/  UINode trees from extension sessions → components
   pages/        entry points of the secondary windows
   gallery/      component gallery + full-window demos (dev only)
 ```
@@ -174,6 +175,46 @@ Lower-level pieces: `ListBox` (virtualized keyboard list), `VirtualList`, `Scrol
 `showToast({ style: "animated" | "success" | "failure", title, message, primaryAction })`
 returns `{ update, hide }`; `showFailureToast(title, error)`; `showHUD(text)` hides the
 launcher and shows the native HUD; `await confirmAlert({ title, message, primaryAction: { title, style: "destructive" } })`.
+
+## Launcher (`src/launcher`)
+
+- **Navigation** (`navigation.ts`): a zustand stack whose first entry is root search.
+  Entries: `builtin` (a `BuiltinView` from `commands.launch`), `element` (pushed React
+  element, e.g. `useNavigation().push(<Detail …/>)`), `extension` (an extension session),
+  `quick-ai`. Lower entries stay mounted (hidden) so popping restores state.
+- **Views registry** (`views/registry.ts`): `registerView(id, Component)` maps a
+  `BuiltinView.id` to a component receiving `LauncherViewProps` `{ props, title, icon,
+  commandId, view }`. Register in a module and import it from `views/index.ts`. Built in:
+  `script-output` (`ScriptOutputView`) and `extension.preferences` (form generated from
+  preference manifests via `extensions.getPreferences/setPreferences`, relaunching the
+  command when `launchCommandId` is set). The AI team registers `"quick-ai"`
+  (props `{ prompt?, aiCommandId?, presetId? }`); unregistered ids show "View Unavailable".
+- **Launching** (`launch.ts`): `launchCommand(id, { arguments, fallbackText, source, title, icon, replace })`
+  calls `commands.launch` and routes the `LaunchResult` (push view / extension session /
+  Quick AI or AI Chat / HUD or hide / failure toast); `handleLaunchResult` for results that
+  arrive otherwise (`launcher.navigate`), `hideLauncher()`.
+- **Root search** (`root/`): `search.root` per keystroke (stale requests cancelled),
+  calculator card, sections with match highlighting, alias/hotkey/type accessories, running
+  dots, `Use “query” with…` fallbacks, inline arguments (Tab moves into them), Tab → Quick AI
+  (`ai.tabToAskAi`), ⌘1–9 number hints, compact-mode favorites, the root menu (⇧⌘K), and the
+  per-kind action panel (Open, Show in Finder, Copy Path/Deeplink, Favorites + Move Up/Down,
+  Configure, Set Alias…, Set Hotkey…, Quit/Force Quit, Reset Ranking, Disable).
+- **Window behavior** (`useLauncherBehavior.ts`): Esc per `keyboard.escapeKeyBehavior`, ⌘,
+  settings, ⌘W hide, pop to root after `launcher.popToRootTimeout` on `window.didShow`,
+  native `window.route` (`command:<id>`, `root`, `quick-ai`), `launcher.navigate`,
+  `launcher.toast`, `ext.toast`, `ext.alert`, `ext.session.closed`, and
+  `window.setContentHeight` (475, or 64 in compact mode at an empty root).
+
+## Extension renderer (`src/extension-renderer`)
+
+`ExtensionSessionView` listens to `ext.session.updated`, keeps one layer per extension
+navigation depth, and renders `UINode` trees (docs/EXTENSION-UI.md) with the same List,
+Grid, Detail and Form components. Handlers become `ext.session.dispatch` calls with the
+documented arguments; actions inside forms send `{ formValues }` (Dates as `{ $date }`);
+search text stays local and is dispatched (debounced with `throttle`); `filtering`,
+`isLoading`, `pagination`, `selectedItemId`/`onSelectionChange`, dropdown accessories,
+`Form.LinkAccessory` and `navigationTitle` are supported. Pure mapping lives in
+`mapping.tsx` / `actions.ts` (unit-tested). Esc calls `ext.session.pop`.
 
 ## Conventions
 

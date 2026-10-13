@@ -1,0 +1,52 @@
+/* The page keeps the expanded height; the native window clips it in compact mode (top edge fixed). */
+.sc-launcher {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: max(100%, var(--main-window-height));
+}
+.sc-compact-favorites {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding-right: var(--space-4);
+}
+.sc-compact-favorites__item {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-22);
+  height: var(--icon-22);
+  border-radius: var(--radius-6);
+}
+.sc-compact-favorites__item:hover,
+.sc-compact-favorites__item:focus-visible {
+  outline: 2px solid var(--fg-10);
+  outline-offset: 2px;
+}
+.sc-launcher-entry {
+  position: absolute;
+  inset: 0;
+}
+.sc-launcher-entry:not([data-active]) {
+  visibility: hidden;
+  pointer-events: none;
+}
+.sc-section-cog {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-4);
+  color: var(--color-text-secondary);
+}
+.sc-section-cog:hover {
+  color: var(--color-text-primary);
+  background: var(--fg-5);
+}
+.sc-hotkey-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: var(--field-height);
+}

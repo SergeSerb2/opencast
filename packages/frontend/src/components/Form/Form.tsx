@@ -41,12 +41,26 @@ function FormBody({ actions, children }: { actions?: ActionsProp; children?: Rea
   useRegisterActions(actions);
   const navigation = useNavigation();
   const formRef = useRef<HTMLFormElement>(null);
-  // Focus the first field on mount and whenever the form becomes the top view again.
+  const focused = useRef(false);
+  // Focus the first field once it exists (fields may arrive after loading), and again
+  // whenever the form becomes the top view.
   useEffect(() => {
-    if (!navigation.isActive) return;
+    if (!navigation.isActive) {
+      focused.current = false;
+      return;
+    }
     const form = formRef.current;
-    if (form && !form.contains(document.activeElement)) form.querySelector<HTMLElement>(FOCUSABLE)?.focus({ preventScroll: true });
-  }, [navigation.isActive]);
+    if (!form || focused.current) return;
+    if (form.contains(document.activeElement)) {
+      focused.current = true;
+      return;
+    }
+    const field = form.querySelector<HTMLElement>(FOCUSABLE);
+    if (field) {
+      field.focus({ preventScroll: true });
+      focused.current = true;
+    }
+  });
   return (
     <div className="sc-form-view">
       <ScrollArea fade={{ top: 96, bottom: 72 }} thumbInset={{ top: 64, bottom: 52 }}>

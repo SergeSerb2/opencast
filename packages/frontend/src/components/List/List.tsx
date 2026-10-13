@@ -116,10 +116,11 @@ function ListContent({ children, searchText = "", onSearchTextChange, filtering,
   const { sections: allSections, emptyView } = useMemo(() => collectListChildren(children), [children]);
   const filterEnabled = filtering === undefined ? !onSearchTextChange : Boolean(filtering);
   const keepOrder = typeof filtering === "object" ? filtering.keepSectionOrder : false;
-  const sections = useMemo(
-    () => (filterEnabled && searchText.trim() ? filterSections(allSections, searchText, keepOrder) : allSections),
-    [allSections, filterEnabled, searchText, keepOrder],
-  );
+  const sections = useMemo(() => {
+    const filtered = filterEnabled && searchText.trim() ? filterSections(allSections, searchText, keepOrder) : allSections;
+    // Like Raycast, rows only show icon and title while the detail pane is open.
+    return isShowingDetail ? filtered.map((s) => ({ ...s, items: s.items.map((item) => ({ ...item, subtitle: undefined, accessories: undefined })) })) : filtered;
+  }, [allSections, filterEnabled, searchText, keepOrder, isShowingDetail]);
 
   const [selectedId, setSelectedId] = useState<string | null>(selectedItemId ?? null);
   const lastQuery = useRef(searchText);

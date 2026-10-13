@@ -1,5 +1,6 @@
 import {
   defaultSettings,
+  isSettingsKey,
   RpcErrorCode,
   type AIChat,
   type BackendEvents,
@@ -34,8 +35,22 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * gallery and screenshots. State lives in memory for the page's lifetime;
  * mutations emit the same events as the real backend.
  */
+/** Dev: `?set.general.windowMode=compact` overrides mock settings (values parsed as JSON when possible). */
+function settingsFromUrl(search: string): Partial<Record<string, unknown>> {
+  const out: Record<string, unknown> = {};
+  for (const [key, raw] of new URLSearchParams(search)) {
+    if (!key.startsWith("set.") || !isSettingsKey(key.slice(4))) continue;
+    try {
+      out[key.slice(4)] = JSON.parse(raw);
+    } catch {
+      out[key.slice(4)] = raw;
+    }
+  }
+  return out;
+}
+
 export function createMockBackend(events: Emitter<BackendEvents>): BackendClient {
-  const settings: SettingsValues = defaultSettings();
+  const settings: SettingsValues = { ...defaultSettings(), ...settingsFromUrl(typeof location === "undefined" ? "" : location.search) } as SettingsValues;
   const commands: CommandInfo[] = ALL_COMMANDS.map((c) => ({ ...c }));
   const clipboard: ClipboardItem[] = CLIPBOARD.map((c) => ({ ...c }));
   const snippets: Snippet[] = SNIPPETS.map((s) => ({ ...s }));
