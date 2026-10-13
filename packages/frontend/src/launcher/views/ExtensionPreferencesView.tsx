@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ExtensionPreference } from "@surgecast/protocol";
+import { applicationPreferenceValue } from "../../lib/application-preference";
 import { backend } from "../../bridge/backend";
 import { useBackend } from "../../bridge/hooks";
 import { native } from "../../bridge/native";
@@ -44,7 +45,7 @@ export function ExtensionPreferencesView({ props, title, icon }: LauncherViewPro
     if (!needsApps) return;
     native
       .call("apps.list", {})
-      .then((list) => setInstalledApps(list.map((a) => ({ title: a.name, value: a.bundleId ?? a.path }))))
+      .then((list) => setInstalledApps(list.map((a) => ({ title: a.name, value: a.path }))))
       .catch(() => setInstalledApps([]));
   }, [needsApps]);
 
@@ -103,7 +104,7 @@ export function ExtensionPreferencesView({ props, title, icon }: LauncherViewPro
               );
             case "appPicker":
               return (
-                <Form.Dropdown key={def.name} id={def.name} title={label} info={def.description} defaultValue={initial === undefined ? undefined : String(initial)} error={error}>
+                <Form.Dropdown key={def.name} id={def.name} title={label} info={def.description} defaultValue={applicationPreferenceValue(initial)} error={error}>
                   {(installedApps ?? []).map((option) => (
                     <Form.Dropdown.Item key={option.value} value={option.value} title={option.title} icon={{ fileIcon: option.value }} />
                   ))}
