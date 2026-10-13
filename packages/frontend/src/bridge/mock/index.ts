@@ -21,6 +21,7 @@ import { ALL_COMMANDS, QUICKLINKS } from "./fixtures/commands";
 import { CHATS, CLIPBOARD, EXTENSIONS, MESSAGES, NOTES, PROVIDERS, SNIPPETS } from "./fixtures/content";
 import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
+import { createTeamBMock } from "./team-b";
 
 type Handlers = { [M in BackendMethod]?: (params: BackendParams<M>) => BackendResult<M> | Promise<BackendResult<M>> };
 
@@ -51,7 +52,8 @@ function settingsFromUrl(search: string): Partial<Record<string, unknown>> {
 
 export function createMockBackend(events: Emitter<BackendEvents>): BackendClient {
   const settings: SettingsValues = { ...defaultSettings(), ...settingsFromUrl(typeof location === "undefined" ? "" : location.search) } as SettingsValues;
-  const commands: CommandInfo[] = ALL_COMMANDS.map((c) => ({ ...c }));
+  const teamB = createTeamBMock({ events });
+  const commands: CommandInfo[] = [...ALL_COMMANDS, ...teamB.commands].map((c) => ({ ...c }));
   const clipboard: ClipboardItem[] = CLIPBOARD.map((c) => ({ ...c }));
   const snippets: Snippet[] = SNIPPETS.map((s) => ({ ...s }));
   const notes: Note[] = NOTES.map((n) => ({ ...n }));
@@ -66,6 +68,8 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
 
   const launch = (id: string, args?: Record<string, string>, fallbackText?: string): LaunchResult => {
     const command = commandById(id);
+    const teamBResult = teamB.launch(command, args, fallbackText);
+    if (teamBResult) return teamBResult;
     if (command.kind === "extension") {
       const [extension, name] = id.slice(4).split(".");
       if (command.needsPreferences) return { kind: "view", view: { id: "extension.preferences", title: `${command.extensionTitle ?? extension} Preferences`, props: { extensionName: extension, commandName: name, launchCommandId: id } } };
@@ -238,6 +242,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "themes.list": () => [],
     "sync.status": () => ({ phase: "disabled", deviceId: "mock-device", deviceName: "This Mac", pendingChanges: 0, counts: {} }),
     "hud.show": () => undefined,
+    ...teamB.handlers,
   };
 
   return {
