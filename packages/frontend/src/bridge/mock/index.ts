@@ -18,6 +18,7 @@ import type { Emitter } from "../emitter";
 import { cancelledError, RpcError } from "../errors";
 import { ALL_COMMANDS, QUICKLINKS } from "./fixtures/commands";
 import { createAiMockHandlers } from "./ai";
+import { AI_COMMANDS, AI_PRESETS } from "./fixtures/ai";
 import { CLIPBOARD, EXTENSIONS, NOTES, PROVIDERS, SNIPPETS } from "./fixtures/content";
 import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
@@ -51,7 +52,11 @@ function settingsFromUrl(search: string): Partial<Record<string, unknown>> {
 
 export function createMockBackend(events: Emitter<BackendEvents>): BackendClient {
   const settings: SettingsValues = { ...defaultSettings(), ...settingsFromUrl(typeof location === "undefined" ? "" : location.search) } as SettingsValues;
-  const commands: CommandInfo[] = ALL_COMMANDS.map((c) => ({ ...c }));
+  const commands: CommandInfo[] = [
+    ...ALL_COMMANDS.map((c) => ({ ...c })),
+    ...AI_COMMANDS.map((c): CommandInfo => ({ id: `ai-command:${c.id}`, kind: "ai-command", title: c.name, subtitle: "Surgecast AI", typeLabel: "AI Command", icon: c.icon ?? "stars-16", mode: "view", enabled: true })),
+    ...AI_PRESETS.map((p): CommandInfo => ({ id: `ai-preset:${p.id}`, kind: "ai-preset", title: p.name, subtitle: "Surgecast AI", typeLabel: "AI Preset", icon: p.icon ?? "speech-bubble-16", mode: "view", enabled: true })),
+  ];
   const clipboard: ClipboardItem[] = CLIPBOARD.map((c) => ({ ...c }));
   const snippets: Snippet[] = SNIPPETS.map((s) => ({ ...s }));
   const notes: Note[] = NOTES.map((n) => ({ ...n }));
@@ -76,6 +81,11 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
       setTimeout(() => created.start(), 0);
       return { kind: "extension", sessionId, mode: "view" };
     }
+    if (command.kind === "ai-command") {
+      const aiCommand = AI_COMMANDS.find((c) => `ai-command:${c.id}` === command.id)!;
+      return { kind: "ai", target: aiCommand.output === "window" ? "chat" : "quick-ai", aiCommandId: aiCommand.id };
+    }
+    if (command.kind === "ai-preset") return { kind: "ai", target: "chat", presetId: command.id.slice("ai-preset:".length) };
     if (command.kind === "app") return { kind: "done", closeWindow: true };
     if (command.kind === "quicklink") return { kind: "done", closeWindow: true };
     if (command.kind === "script") return { kind: "view", view: { id: "script-output", title: command.title, props: { title: command.title, output: "up 3 days, 4:12, 2 users, load averages: 1.92 1.88 1.75\n", exitCode: 0 } } };

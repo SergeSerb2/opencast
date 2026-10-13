@@ -189,6 +189,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       const sends = sendKey === "enter" ? !event.shiftKey && !event.metaKey : event.metaKey && !event.shiftKey;
       if (sends && canSend) {
         event.preventDefault();
+        event.stopPropagation();
         submit();
         return;
       }

@@ -49,4 +49,29 @@ describe("chat session navigation during sends", () => {
     await act(async () => { start.resolve({ chatId: "created", streamId: "s" }); await send; });
     expect(result.current.chatId).toBe("created");
   });
+  it("honors Stop while the send RPC is still pending", async () => {
+    const start = deferred<{ chatId: string; streamId: string }>();
+    const { result } = renderHook(() => useChatSession(null));
+    let send!: ReturnType<typeof result.current.run>;
+    act(() => {
+      send = result.current.run({ content: "hello", attachments: [] }, () => start.promise);
+      result.current.stop();
+    });
+    await act(async () => { start.resolve({ chatId: "created", streamId: "pending-stream" }); await send; });
+    expect(backend.call).toHaveBeenCalledWith("ai.stop", { streamId: "pending-stream" });
+  });
+
+  it("starts a fresh draft even when New Chat is pressed while creating the first chat", async () => {
+    const created = vi.fn();
+    const start = deferred<{ chatId: string; streamId: string }>();
+    const { result, rerender } = renderHook(({ version }) => useChatSession(null, created, version), { initialProps: { version: 0 } });
+    let send!: ReturnType<typeof result.current.run>;
+    act(() => { send = result.current.run({ content: "hello", attachments: [] }, () => start.promise); });
+    rerender({ version: 1 });
+    await act(async () => { start.resolve({ chatId: "old", streamId: "s" }); await send; });
+    expect(result.current.chatId).toBeNull();
+    expect(result.current.transcript).toEqual([]);
+    expect(created).not.toHaveBeenCalled();
+  });
+
 });

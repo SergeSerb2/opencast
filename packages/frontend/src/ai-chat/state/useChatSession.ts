@@ -46,7 +46,7 @@ const EMPTY: AIMessage[] = [];
  * merged with live `ai.stream` state. `chatId` null is an unsaved draft; a
  * send that creates the chat reports it through `onChatCreated`.
  */
-export function useChatSession(chatId: string | null, onChatCreated?: (chatId: string) => void): ChatSession {
+export function useChatSession(chatId: string | null, onChatCreated?: (chatId: string) => void, resetKey = 0): ChatSession {
   installStreamListener();
   const [currentId, setCurrentId] = useState<string | null>(chatId);
   const [chat, setChat] = useState<AIChat | null>(null);
@@ -55,9 +55,11 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
   const [missing, setMissing] = useState(false);
   const [starting, setStarting] = useState(false);
   const startingRef = useRef(false);
+  const pendingStop = useRef(false);
   const revision = useRef(0);
   const [pending, setPending] = useState<{ content: string; attachments: AIAttachment[] } | null>(null);
   const [leafOverride, setLeafOverride] = useState<string | null>(null);
+  const [requestedReset, setRequestedReset] = useState(resetKey);
   const [requestedId, setRequestedId] = useState<string | null>(chatId);
   // Read by async callbacks. `run` also sets it directly so the refetch after creating a chat targets it.
   const idRef = useRef<string | null>(currentId);
@@ -68,12 +70,13 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
   const onCreated = useLatest(onChatCreated);
 
   // The caller switched chats. A chat this session created itself is already current.
-  if (chatId !== requestedId) {
+  if (chatId !== requestedId || resetKey !== requestedReset) {
     revision.current++;
     setStarting(false);
     startingRef.current = false;
     setRequestedId(chatId);
-    if (chatId !== currentId) {
+    setRequestedReset(resetKey);
+    if (chatId !== currentId || resetKey !== requestedReset) {
       setCurrentId(chatId);
       setChat(null);
       setMessages(EMPTY);
@@ -157,6 +160,7 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
       // Prevent duplicate submissions before a create/send RPC returns.
       if (startingRef.current) return null;
       startingRef.current = true;
+      pendingStop.current = false;
       setStarting(true);
       const ownRevision = revision.current;
       setPending(optimistic);
@@ -164,6 +168,11 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
         const started = await start();
         registerStream(started.streamId, { chatId: started.chatId, messageId: started.assistantMessageId });
         // A response belongs to the original chat even if the user navigated away.
+        if (revision.current !== ownRevision) return started;
+        setLeafOverride(null);
+        if (pendingStop.current) {
+          await backend.call("ai.stop", { streamId: started.streamId }).catch((error: unknown) => showFailureToast("Could not stop response", error));
+        }
         if (revision.current !== ownRevision) return started;
         if (started.chatId !== idRef.current) {
           idRef.current = started.chatId;
@@ -201,10 +210,13 @@ export function useChatSession(chatId: string | null, onChatCreated?: (chatId: s
   );
 
   const activeRef = useLatest(activeStream);
+  const foreignRef = useLatest(foreignStreaming);
   const stop = useCallback(() => {
     const stream = activeRef.current;
     if (stream) backend.call("ai.stop", { streamId: stream.streamId }).catch((error: unknown) => showFailureToast("Could not stop response", error));
-  }, [activeRef]);
+    else if (startingRef.current) pendingStop.current = true;
+    else if (foreignRef.current) showFailureToast("Stop unavailable", "Stop this response in the window where it was started.");
+  }, [activeRef, foreignRef]);
 
   const chatStreamsRef = useLatest(chatStreams);
   const confirmTool = useCallback(

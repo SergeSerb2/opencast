@@ -43,7 +43,7 @@ const MIN_CHAT_WIDTH = 400;
 const SIDEBAR_KEY = "surgecast.ai.sidebarOpen";
 const NEW_KEY = "new";
 
-type ActionsTarget = { anchor: PopoverAnchor; side: "top" | "bottom"; align: "start" | "end"; chat: AIChat | null };
+type ActionsTarget = { anchor: PopoverAnchor; side: "top" | "bottom"; align: "start" | "end"; chat: AIChat | null; model?: ActionPanelModel };
 
 function useWindowWidth(): number {
   const [width, setWidth] = useState(() => window.innerWidth);
@@ -84,7 +84,7 @@ function lastAssistant(session: ReturnType<typeof useChatSession>): AIMessage | 
 /** The AI Chat window (ai-chat.html): history sidebar, conversation, composer, header controls. */
 export function AIChatApp() {
   const env = getEnv();
-  const { models, modelsReady, toolsets, commands, presets } = useAIResources();
+  const { models, modelsReady, modelsError, retryModels, toolsets, commands, presets } = useAIResources();
   const chatModelSetting = useSetting("ai.chatModel");
   const sendKey = useSetting("ai.sendMessage");
   const history = useSetting("ai.conversationHistory");
@@ -93,10 +93,12 @@ export function AIChatApp() {
   const zoom = useSetting("general.uiZoom");
   const headerHeight = Math.round((env.macOSMajor >= 27 ? 52 : 44) * zoom);
 
+  const [newChatVersion, setNewChatVersion] = useState(0);
+  const draftRevision = useRef(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [setup, setSetup] = useState<ChatSetup>({});
   const [drafts, setDrafts] = useState<Record<string, ComposerDraft>>({});
-  const [sidebarOpen, setSidebarOpen] = useState(() => globalThis.localStorage?.getItem(SIDEBAR_KEY) !== "false");
+  const [sidebarOpen, setSidebarOpen] = useState(() => (() => { try { return globalThis.localStorage?.getItem(SIDEBAR_KEY) !== "false"; } catch { return true; } })());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -118,7 +120,7 @@ export function AIChatApp() {
   const chats = chatList.data ?? [];
   const groups = useMemo(() => groupChats(chats, folders, Date.now()), [chats, folders]);
 
-  const session = useChatSession(selectedId, setSelectedId);
+  const session = useChatSession(selectedId, setSelectedId, newChatVersion);
   const chat = session.chat;
   const streams = useStreams((s) => s.streams);
   const generatingIds = useMemo(() => new Set(Object.values(streams).flatMap((s) => (s.status === "streaming" && s.chatId ? [s.chatId] : []))), [streams]);
@@ -148,7 +150,7 @@ export function AIChatApp() {
   const effective: ChatSetup = chat
     ? { model: chat.model, presetId: chat.presetId, webSearch: chat.webSearch, creativity: chat.creativity, tools: chat.tools, systemInstructions: chat.systemInstructions, reasoningEffort: chat.reasoningEffort, folderId: chat.folderId }
     : setup;
-  const model = resolveModelRef(models, effective.model, chatModelSetting);
+  const model = resolveModelRef(models, effective.model, presets.find((preset) => preset.id === effective.presetId)?.model, chatModelSetting);
   const noProvider = modelsReady && models.length === 0;
   const draftKey = selectedId ?? NEW_KEY;
   const draft = drafts[draftKey] ?? EMPTY_DRAFT;
@@ -156,14 +158,16 @@ export function AIChatApp() {
   const presetName = presets.find((p) => p.id === effective.presetId)?.name;
 
   // Layout: inline sidebars while the conversation keeps 400px, overlays otherwise.
-  const sidebarInline = width >= SIDEBAR_WIDTH + MIN_CHAT_WIDTH;
-  const sidebarOffset = sidebarOpen && sidebarInline ? SIDEBAR_WIDTH : 0;
-  const settingsInline = width >= sidebarOffset + SETTINGS_WIDTH + MIN_CHAT_WIDTH;
+  const sidebarInline = width >= (SIDEBAR_WIDTH + MIN_CHAT_WIDTH) * zoom;
+  const sidebarOffset = sidebarOpen && sidebarInline ? SIDEBAR_WIDTH * zoom : 0;
+  const settingsInline = width >= sidebarOffset + (SETTINGS_WIDTH + MIN_CHAT_WIDTH) * zoom;
 
   const focusComposer = useCallback(() => requestAnimationFrame(() => composer.current?.focus()), []);
 
   const newChat = useCallback(
     (init: ChatSetup = {}) => {
+      draftRevision.current++;
+      setNewChatVersion((version) => version + 1);
       setSelectedId(null);
       setSetup(init);
       setDrafts((all) => ({ ...all, [NEW_KEY]: EMPTY_DRAFT }));
@@ -205,6 +209,7 @@ export function AIChatApp() {
 
   // ---- sending ----------------------------------------------------------------------------
   const send = async (submitted: ComposerDraft) => {
+    const revision = draftRevision.current;
     let content: string;
     try {
       content = await draftContent(submitted);
@@ -217,7 +222,7 @@ export function AIChatApp() {
     const started = await session.run({ content, attachments: submitted.attachments }, () =>
       startSend({ content, draft: submitted, chat, source: "chat", model, setup: chat ? undefined : { ...setup, model }, toolsets }),
     );
-    if (!started) setDrafts((all) => ({ ...all, [key]: submitted }));
+    if (!started && revision === draftRevision.current) setDrafts((all) => ({ ...all, [key]: submitted }));
   };
 
   useEffect(() => {
@@ -291,11 +296,19 @@ export function AIChatApp() {
     }
   };
 
-  const saveFolders = (next: AIChatFolder[]) => void setSetting("ai.chatFolders", next).catch((error: unknown) => showFailureToast("Could not save folders", error));
+  const saveFolders = async (next: AIChatFolder[]): Promise<boolean> => {
+    try {
+      await setSetting("ai.chatFolders", next);
+      return true;
+    } catch (error) {
+      showFailureToast("Could not save folders", error);
+      return false;
+    }
+  };
 
-  const newFolder = (moveChat?: AIChat) => {
+  const newFolder = async (moveChat?: AIChat) => {
     const folder: AIChatFolder = { id: crypto.randomUUID(), name: "New Folder", createdAt: Date.now() };
-    saveFolders([...folders, folder]);
+    if (!await saveFolders([...folders, folder])) return;
     if (moveChat) void updateChat(moveChat.id, { folderId: folder.id });
     setSidebarOpen(true);
     setRenamingId(`folder:${folder.id}`);
@@ -305,8 +318,12 @@ export function AIChatApp() {
     const inside = chats.filter((c) => c.folderId === folder.id);
     const confirmed = await confirmAlert({ title: "Delete Folder?", message: inside.length ? `The ${inside.length === 1 ? "chat" : `${inside.length} chats`} in “${folder.name}” will move back to Recent.` : `“${folder.name}” will be deleted.`, primaryAction: { title: "Delete", style: "destructive" } });
     if (!confirmed) return;
-    saveFolders(folders.filter((f) => f.id !== folder.id));
-    await Promise.all(inside.map((c) => backend.call("ai.chats.update", { id: c.id, patch: { folderId: "" } }).catch(() => undefined)));
+    try {
+      await Promise.all(inside.map((c) => backend.call("ai.chats.update", { id: c.id, patch: { folderId: "" } })));
+      await saveFolders(folders.filter((f) => f.id !== folder.id));
+    } catch (error) {
+      showFailureToast("Could not move chats out of folder", error);
+    }
   };
 
   const handlersFor = (target: AIChat | null): ChatActionHandlers => ({
@@ -362,7 +379,7 @@ export function AIChatApp() {
   });
 
   const actions = buildChatActions(actionContext(chat), handlersFor(chat));
-  const panelModel = actionsTarget ? (actionsTarget.chat?.id === chat?.id ? actions : buildChatActions(actionContext(actionsTarget.chat), handlersFor(actionsTarget.chat))) : null;
+  const panelModel = actionsTarget ? actionsTarget.model ?? (actionsTarget.chat?.id === chat?.id ? actions : buildChatActions(actionContext(actionsTarget.chat), handlersFor(actionsTarget.chat))) : null;
 
   // ---- keyboard ----------------------------------------------------------------------------
   const actionsRef = useLatest(actions);
@@ -398,7 +415,8 @@ export function AIChatApp() {
         if (action.shortcut && !action.disabled && matchesShortcut(event, action.shortcut)) {
           if (action.id === "copy-response" && window.getSelection()?.toString()) return;
           event.preventDefault();
-          if (action.submenu) setActionsTarget({ anchor: (root) => ({ x: root.width - 8, y: headerHeight }), side: "bottom", align: "end", chat });
+          if (action.id === "model") setModelAnchor(document.querySelector<HTMLElement>(".sc-ai-header__meta-button"));
+          else if (action.submenu) setActionsTarget({ anchor: (root) => ({ x: root.width - 8, y: headerHeight }), side: "bottom", align: "end", chat, model: { title: action.title, sections: action.submenu.sections } });
           else void action.onAction?.();
           return;
         }
@@ -460,8 +478,8 @@ export function AIChatApp() {
 
   const style = {
     "--ai-sidebar-offset": `${sidebarOffset}px`,
-    "--ai-settings-offset": settingsOpen && settingsInline ? `${SETTINGS_WIDTH}px` : "0px",
-    "--ai-sidebar-width": `${SIDEBAR_WIDTH}px`,
+    "--ai-settings-offset": settingsOpen && settingsInline ? `${SETTINGS_WIDTH * zoom}px` : "0px",
+    "--ai-sidebar-width": `${SIDEBAR_WIDTH * zoom}px`,
     "--ai-bottom-clearance": `${footerHeight + 8 + 16}px`,
   } as CSSProperties;
 
@@ -508,8 +526,8 @@ export function AIChatApp() {
 
       <main className="sc-ai-main">
         <div className="sc-ai-main__content">
-          {noProvider ? (
-            <NoProvider onOpenSettings={openPreferences} />
+          {noProvider && !session.transcript.length ? (
+            <NoProvider onOpenSettings={openPreferences} error={modelsError} onRetry={retryModels} />
           ) : (
             <Transcript
               topFade={headerHeight + 16}
@@ -517,7 +535,7 @@ export function AIChatApp() {
               variant="chat"
               models={models}
               toolsets={toolsets}
-              readOnly={readOnly}
+              readOnly={readOnly || noProvider}
               empty={<SurgecastLogo size={70} className="sc-ai-watermark" />}
               onCopy={(message) => void copyMessage(message)}
               onEdit={edit}
@@ -553,6 +571,7 @@ export function AIChatApp() {
             </div>
           ) : (
             <Composer
+              key={`${draftKey}:${newChatVersion}`}
               ref={composer}
               variant="chat"
               draft={draft}

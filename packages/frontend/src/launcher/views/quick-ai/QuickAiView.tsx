@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
-import type { AIMessage, ModelRef } from "@surgecast/protocol";
+import type { AIMessage, AIPreset, Creativity, ModelRef } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
 import { native } from "../../../bridge/native";
 import { setSetting, useSetting } from "../../../bridge/settings";
@@ -10,15 +10,16 @@ import { showFailureToast } from "../../../components/feedback/toast-store";
 import { FloatingToastHost } from "../../../components/Toast/InlineToast";
 import { useNavigation, useViewController } from "../../../components/View/contexts";
 import { ViewFrame } from "../../../components/View/ViewFrame";
-import { sc } from "../../../lib/keyboard";
+import { matchesShortcut, sc } from "../../../lib/keyboard";
 import { AddMenu } from "../../../ai-chat/composer/AddMenu";
 import { Composer, EMPTY_DRAFT, type ComposerDraft, type ComposerHandle } from "../../../ai-chat/composer/Composer";
 import { ModelPicker } from "../../../ai-chat/components/ModelPicker";
 import { copyText } from "../../../ai-chat/lib/clipboard";
 import { groupByProvider, modelName, resolveModelRef } from "../../../ai-chat/model/models";
-import { draftContent, startSend } from "../../../ai-chat/state/send";
+import { draftContent, startSend, type ChatSetup } from "../../../ai-chat/state/send";
 import { useAIResources } from "../../../ai-chat/state/useAIResources";
 import { useChatSession, type ChatSession } from "../../../ai-chat/state/useChatSession";
+import { NoProvider } from "../../../ai-chat/window/NoProvider";
 import { Transcript } from "../../../ai-chat/transcript/Transcript";
 import { hideLauncher } from "../../launch";
 import { useNavigationStore } from "../../navigation";
@@ -35,7 +36,7 @@ export interface QuickAiProps {
 function latestAnswer(session: ChatSession): AIMessage | undefined {
   for (let i = session.transcript.length - 1; i >= 0; i--) {
     const item = session.transcript[i];
-    if (item.kind === "message") return item.message.role === "assistant" && item.message.content ? item.message : undefined;
+    if (item.kind === "message") return item.message.role === "assistant" ? item.message : undefined;
   }
   return undefined;
 }
@@ -56,12 +57,16 @@ interface BodyProps {
   setDraft: (draft: ComposerDraft) => void;
   send: (draft: ComposerDraft) => void;
   runPrimary: () => boolean;
+  continueInChat: () => void;
+  regenerate: (message: AIMessage, model?: ModelRef) => void;
+  pickPreset: (preset: AIPreset) => void;
+  openModels: (anchor: HTMLElement) => void;
   composer: RefObject<ComposerHandle | null>;
   resources: ReturnType<typeof useAIResources>;
 }
 
 /** Transcript and footer; lives inside the ViewFrame to reach its action panel and key handling. */
-function QuickAiBody({ session, draft, setDraft, send, runPrimary, composer, resources }: BodyProps) {
+function QuickAiBody({ session, draft, setDraft, send, runPrimary, continueInChat, regenerate, pickPreset, openModels, composer, resources }: BodyProps) {
   const view = useViewController();
   const sendKey = useSetting("ai.sendMessage");
   const zoom = useSetting("general.uiZoom");
@@ -77,16 +82,33 @@ function QuickAiBody({ session, draft, setDraft, send, runPrimary, composer, res
     return () => observer.disconnect();
   }, []);
 
+  const openPreferences = () => void native.call("window.show", { kind: "settings", route: "ai" }).catch((error: unknown) => showFailureToast("Could not open Settings", error));
+  const noProvider = resources.modelsReady && !resources.models.length;
+
   // Typing anywhere goes to the composer; it regains focus when panels close.
   useEffect(
     () =>
       view.registerKeyHandler((event) => {
+        if (matchesShortcut(event, sc("shift", "cmd", "m"))) {
+          const anchor = footer.current?.querySelector<HTMLElement>(".sc-ai-composer");
+          if (anchor) openModels(anchor);
+          return true;
+        }
+        if (matchesShortcut(event, sc("cmd", "j")) && session.chatId) { continueInChat(); return true; }
+        if (matchesShortcut(event, sc("shift", "cmd", "k"))) {
+          setAddAnchor((current) => current ? null : footer.current?.querySelector<HTMLElement>(".sc-quick-ai__slot") ?? null);
+          return true;
+        }
+        if (matchesShortcut(event, sc("cmd", "return")) && !draft.text.trim() && !draft.attachments.length && !draft.command && session.chatId) {
+          continueInChat();
+          return true;
+        }
         const target = event.target as HTMLElement | null;
         const editable = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
         if (!editable && event.key.length === 1 && !event.metaKey && !event.ctrlKey) composer.current?.focus();
         return false;
       }),
-    [view, composer],
+    [view, composer, draft, session.chatId, continueInChat, openModels],
   );
   useEffect(() => {
     if (view.isActive && !view.isActionPanelOpen && !addAnchor) composer.current?.focus();
@@ -94,14 +116,16 @@ function QuickAiBody({ session, draft, setDraft, send, runPrimary, composer, res
 
   const onUnhandledKey = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     // ↵ on an empty draft runs the primary action (stop while generating, else per “Primary Action”).
-    if (event.key === "Enter" && !event.metaKey && !event.shiftKey && !event.altKey && !draft.text.trim()) return runPrimary();
+    if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || draft.text.trim() || draft.attachments.length || draft.command) return false;
+    if (event.metaKey && session.chatId) { continueInChat(); return true; }
+    if (!event.metaKey) return runPrimary();
     return false;
   };
 
   const style = { "--ai-top-clearance": "calc(var(--main-window-header-height) + var(--space-16))", "--ai-bottom-clearance": `${footerHeight + 8 + 16}px` } as CSSProperties;
   return (
     <div className="sc-quick-ai" style={style}>
-      <Transcript topFade={Math.round(80 * zoom)} session={session} variant="quick-ai" models={resources.models} toolsets={resources.toolsets} empty={<Welcome />} onCopy={(message) => void copyText(message.content)} />
+      {noProvider && !session.transcript.length ? <NoProvider onOpenSettings={openPreferences} error={resources.modelsError} onRetry={resources.retryModels} /> : <Transcript topFade={Math.round(80 * zoom)} session={session} variant="quick-ai" models={resources.models} toolsets={resources.toolsets} empty={<Welcome />} onCopy={(message) => void copyText(message.content)} onRegenerate={noProvider ? undefined : regenerate} onOpenSettings={openPreferences} />}
       <div ref={footer} className="sc-quick-ai__footer">
         <IconButton icon="plus-16" iconSize={20} size={36} variant="glass" className="sc-quick-ai__slot" label="Add Context (⇧⌘K)" data-state={addAnchor ? "open" : undefined} onClick={(e) => setAddAnchor(addAnchor ? null : e.currentTarget)} />
         <div className="sc-quick-ai__composer">
@@ -116,7 +140,8 @@ function QuickAiBody({ session, draft, setDraft, send, runPrimary, composer, res
             disabled={resources.modelsReady && resources.models.length === 0}
             toolsets={resources.toolsets}
             commands={resources.commands}
-            presets={[]}
+            presets={resources.presets}
+            onPickPreset={pickPreset}
             sendKey={sendKey}
             onUnhandledKey={onUnhandledKey}
             autoFocus
@@ -141,16 +166,19 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
   const { models } = resources;
   const quickAiModel = useSetting("ai.quickAiModel");
   const primaryPreference = useSetting("ai.primaryAction");
+  const [newQuestionVersion, setNewQuestionVersion] = useState(0);
+  const draftRevision = useRef(0);
   const [chatId, setChatId] = useState<string | null>(null);
   const [draft, setDraft] = useState<ComposerDraft>(EMPTY_DRAFT);
+  const [setup, setSetup] = useState<ChatSetup>(() => ({ presetId: props.presetId }));
   const [pickedModel, setPickedModel] = useState<ModelRef | undefined>();
   const [modelAnchor, setModelAnchor] = useState<HTMLElement | null>(null);
   const [commandName, setCommandName] = useState<string | undefined>();
   const [previousApp, setPreviousApp] = useState<string | undefined>();
   const composer = useRef<ComposerHandle>(null);
-  const session = useChatSession(chatId, setChatId);
+  const session = useChatSession(chatId, setChatId, newQuestionVersion);
   const chat = session.chat;
-  const model = resolveModelRef(models, chat?.model, pickedModel, quickAiModel);
+  const model = resolveModelRef(models, pickedModel, chat?.model, setup.model, resources.presets.find((preset) => preset.id === setup.presetId)?.model, quickAiModel);
   const answer = latestAnswer(session);
 
   useEffect(() => {
@@ -162,6 +190,7 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
 
   const send = useCallback(
     async (submitted: ComposerDraft) => {
+      const revision = draftRevision.current;
       let content: string;
       try {
         content = await draftContent(submitted);
@@ -170,16 +199,20 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
         return;
       }
       setDraft(EMPTY_DRAFT);
-      const started = await session.run({ content, attachments: submitted.attachments }, () => startSend({ content, draft: submitted, chat: session.chat, source: "quick-ai", model, toolsets: resources.toolsets }));
-      if (!started) setDraft(submitted);
+      const started = await session.run({ content, attachments: submitted.attachments }, () => startSend({ content, draft: submitted, chat: session.chat, source: "quick-ai", model, setup, toolsets: resources.toolsets }));
+      if (!started && revision === draftRevision.current) setDraft(submitted);
     },
-    [session, model, resources.toolsets],
+    [session, model, setup, resources.toolsets],
   );
 
   // Launch input: an AI Command, or the root search text as the first question.
   const started = useRef(false);
   useEffect(() => {
-    if (started.current) return;
+    if (started.current || !resources.modelsReady) return;
+    if (!models.length) {
+      if (props.prompt) setDraft((current) => current.text === props.prompt ? current : { text: props.prompt!, attachments: [] });
+      return;
+    }
     if (props.aiCommandId) {
       started.current = true;
       const id = props.aiCommandId;
@@ -207,7 +240,7 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
     }
     started.current = true;
     if (props.prompt?.trim()) void send({ text: props.prompt.trim(), attachments: [] });
-  }, [props.aiCommandId, props.arguments, props.prompt, entryTitle, send, session]);
+  }, [props.aiCommandId, props.arguments, props.prompt, entryTitle, send, session, resources.modelsReady, models]);
 
   const continueInChat = useCallback(async () => {
     const id = session.chatId;
@@ -239,15 +272,15 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
   }, [answer]);
 
   const regenerate = useCallback(
-    (withModel?: ModelRef) => {
+    (message: AIMessage, withModel?: ModelRef) => {
       const id = session.chatId;
-      if (!answer || !id) return;
+      if (!id) return;
       void session.run(null, async () => {
-        const result = await backend.call("ai.chats.send", { chatId: id, content: "", regenerateMessageId: answer.id, model: withModel });
+        const result = await backend.call("ai.chats.send", { chatId: id, content: "", regenerateMessageId: message.id, model: withModel });
         return { streamId: result.streamId, chatId: id, assistantMessageId: result.assistantMessageId };
       });
     },
-    [answer, session],
+    [session],
   );
 
   const changeModel = useCallback(
@@ -259,19 +292,29 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
     [session.chatId],
   );
 
+  const changeSetup = useCallback((patch: ChatSetup) => {
+    setSetup((current) => ({ ...current, ...patch }));
+    if (patch.model) setPickedModel(patch.model);
+    if (session.chatId) void backend.call("ai.chats.update", { id: session.chatId, patch }).catch((error: unknown) => showFailureToast("Could not update chat", error));
+  }, [session.chatId]);
+  const pickPreset = (preset: AIPreset) => changeSetup({ presetId: preset.id, model: preset.model ?? model, creativity: preset.creativity, tools: preset.tools, webSearch: preset.webSearch });
+
   const newQuestion = useCallback(() => {
+    draftRevision.current++;
+    setNewQuestionVersion((version) => version + 1);
     setChatId(null);
     setDraft(EMPTY_DRAFT);
     setCommandName(undefined);
+    setSetup({});
     composer.current?.focus();
   }, []);
 
   const actions = useMemo<ActionPanelModel>(() => {
     const done = Boolean(answer) && !session.isGenerating;
     const byKind: Record<"continue-in-chat" | "copy" | "paste", ActionModel> = {
-      "continue-in-chat": { id: "continue", title: "Continue in Chat", icon: "open-in-window-16", shortcut: sc("cmd", "j"), disabled: !session.chatId, onAction: continueInChat },
-      copy: { id: "copy", title: "Copy Answer", icon: "copy-clipboard-16", shortcut: sc("shift", "cmd", "c"), disabled: !done, onAction: copyAnswer },
-      paste: { id: "paste", title: `Paste to ${previousApp ?? "Active App"}`, icon: "text-cursor-16", shortcut: sc("shift", "cmd", "v"), disabled: !done, onAction: pasteAnswer },
+      "continue-in-chat": { id: "continue", title: "Continue in Chat", icon: "open-in-window-16", shortcut: sc("cmd", "return"), disabled: !session.chatId, onAction: continueInChat },
+      copy: { id: "copy", title: "Copy Answer", icon: "copy-clipboard-16", shortcut: sc("shift", "cmd", "c"), disabled: !done || !answer?.content, onAction: copyAnswer },
+      paste: { id: "paste", title: `Paste to ${previousApp ?? "Active App"}`, icon: "text-cursor-16", shortcut: sc("shift", "cmd", "v"), disabled: !done || !answer?.content, onAction: pasteAnswer },
     };
     const order = [primaryPreference, ...(["continue-in-chat", "copy", "paste"] as const).filter((k) => k !== primaryPreference)];
     const answerActions = order.map((k) => byKind[k]);
@@ -282,7 +325,7 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
         { actions: [...stop, ...answerActions] },
         {
           actions: [
-            { id: "regenerate", title: "Regenerate", icon: "arrow-clockwise-16", shortcut: sc("cmd", "r"), disabled: !done, onAction: () => regenerate() },
+            { id: "regenerate", title: "Regenerate", icon: "arrow-clockwise-16", shortcut: sc("cmd", "r"), disabled: !done, onAction: () => answer && regenerate(answer) },
             {
               id: "model",
               title: "Change Model",
@@ -299,18 +342,22 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
                     keywords: [m.modelId],
                     onAction: () => {
                       changeModel(m.ref);
-                      if (done) regenerate(m.ref);
+                      if (done && answer) regenerate(answer, m.ref);
                     },
                   })),
                 })),
               },
             },
+            { id: "creativity", title: "Creativity", icon: "light-bulb-16", shortcut: sc("shift", "cmd", "y"), submenu: { sections: [{ actions: (["none", "low", "medium", "high", "maximum"] as Creativity[]).map((value) => ({ id: `creativity:${value}`, title: value[0].toUpperCase() + value.slice(1), icon: (chat?.creativity ?? setup.creativity ?? "medium") === value ? "checkmark-16" : undefined, onAction: () => changeSetup({ creativity: value }) })) }] } },
+            { id: "web", title: (chat?.webSearch ?? setup.webSearch) ? "Turn Off Web Search" : "Turn On Web Search", icon: "globe-01-16", onAction: () => changeSetup({ webSearch: !(chat?.webSearch ?? setup.webSearch) }) },
+            { id: "presets", title: "Choose Preset", icon: "speech-bubble-16", submenu: { sections: [{ actions: resources.presets.map((preset) => ({ id: `preset:${preset.id}`, title: preset.name, icon: preset.icon, onAction: () => changeSetup({ presetId: preset.id, model: preset.model ?? model, creativity: preset.creativity, tools: preset.tools, webSearch: preset.webSearch }) })) }] } },
+            { id: "settings", title: "AI Settings…", icon: "cog-16", shortcut: sc("cmd", ","), onAction: () => native.call("window.show", { kind: "settings", route: "ai" }) },
             { id: "new", title: "New Question", icon: "pencil-square-16", shortcut: sc("cmd", "n"), onAction: newQuestion },
           ],
         },
       ],
     };
-  }, [answer, session, chat, primaryPreference, previousApp, models, model, continueInChat, copyAnswer, pasteAnswer, regenerate, changeModel, newQuestion]);
+  }, [answer, session, chat, primaryPreference, previousApp, models, model, continueInChat, copyAnswer, pasteAnswer, regenerate, changeModel, changeSetup, setup, resources.presets, newQuestion]);
 
   /** ↵ on an empty composer: stop a running answer, otherwise the primary action. */
   const runPrimary = () => {
@@ -320,7 +367,7 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
     return true;
   };
 
-  const title = chat && chat.title !== "New Chat" ? chat.title : (commandName ?? (props.aiCommandId ? entryTitle : undefined) ?? "New Chat");
+  const title = commandName ?? (chat && chat.title !== "New Chat" ? chat.title : "New Chat");
   const isNew = title === "New Chat";
 
   return (
@@ -340,13 +387,13 @@ export function QuickAiView({ props, title: entryTitle }: LauncherViewProps<Quic
           </button>
         </div>
       }
-      headerAccessory={<IconButton icon="open-in-window-16" iconSize={20} size={28} label="Open in AI Chat (⌘J)" disabled={!session.chatId} onMouseDown={(e) => e.preventDefault()} onClick={() => void continueInChat()} />}
+      headerAccessory={<IconButton icon="open-in-window-16" iconSize={20} size={28} label="Open in AI Chat (⌘↵ / ⌘J)" disabled={!session.chatId} onMouseDown={(e) => e.preventDefault()} onClick={() => void continueInChat()} />}
       onEscape={() => navigation.pop()}
     >
-      <QuickAiBody session={session} draft={draft} setDraft={setDraft} send={(d) => void send(d)} runPrimary={runPrimary} composer={composer} resources={resources} />
+      <QuickAiBody session={session} draft={draft} setDraft={setDraft} send={(d) => void send(d)} runPrimary={runPrimary} continueInChat={() => void continueInChat()} regenerate={regenerate} pickPreset={pickPreset} openModels={setModelAnchor} composer={composer} resources={resources} />
       <ModelPicker open={Boolean(modelAnchor)} anchor={modelAnchor} onClose={() => setModelAnchor(null)} models={models} value={model} onPick={(ref) => {
           changeModel(ref);
-          if (answer && !session.isGenerating) regenerate(ref);
+          if (answer && !session.isGenerating) regenerate(answer, ref);
         }}
       />
     </ViewFrame>

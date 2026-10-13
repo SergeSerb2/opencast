@@ -7,6 +7,8 @@ export interface AIResources {
   models: AIModelOption[];
   /** False until the model list has loaded (or failed). */
   modelsReady: boolean;
+  modelsError: unknown;
+  retryModels: () => void;
   toolsets: Toolset[];
   commands: AICommand[];
   presets: AIPreset[];
@@ -24,6 +26,8 @@ export function useAIResources(): AIResources {
   return {
     models: models.data ?? NONE,
     modelsReady: models.data !== undefined || models.error !== undefined,
+    modelsError: models.error,
+    retryModels: models.refetch,
     toolsets,
     commands: commands.data ?? NONE,
     presets: presets.data ?? NONE,
