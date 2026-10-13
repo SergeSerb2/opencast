@@ -43,8 +43,10 @@ pnpm 10.18.0 bootstrap also uses a committed checksum and matches packageManager
 Release typechecks also verify committed SHA-256 digests for the tsc-rs launcher
 and its native package before extraction. They run through pnpm from a temporary
 directory without installing dependencies or running package install scripts.
-Tag and draft checks run again before publication. Only explicit GitHub 404
-responses allow creation; other lookup errors stop the release. Draft retries
+Tag and draft checks run again before publication. Release lookups use GitHub's
+paginated release list, which includes drafts for repository writers. Any list
+error or duplicate tag match stops the release. Only explicit tag-ref 404
+responses allow tag creation. Draft retries
 compare existing files and upload only missing files without overwriting assets.
 There is no personal access token or signing secret in the repository. Other
 repositories' runners on this Mac are independent of the OpenCast runner.
