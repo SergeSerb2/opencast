@@ -11,6 +11,7 @@ import {
   type CommandInfo,
   type LaunchResult,
   type Note,
+  type NoteSummary,
   type SettingsValues,
   type Snippet,
 } from "@surgecast/protocol";
@@ -23,6 +24,26 @@ import { mockCalculate, mockRootSearch } from "./search";
 import { hasMockSession, MockSession } from "./sessions";
 
 type Handlers = { [M in BackendMethod]?: (params: BackendParams<M>) => BackendResult<M> | Promise<BackendResult<M>> };
+
+/** First line without heading markers, as the backend stores titles. */
+function mockNoteTitle(content: string): string {
+  return content.split(/\r?\n/)[0].replace(/^\s*#{1,6}\s+/, "").trim().slice(0, 250) || "Untitled Note";
+}
+
+function noteSummary(note: Note): NoteSummary {
+  const text = note.content.trim();
+  return {
+    id: note.id,
+    title: note.title,
+    preview: note.content.replace(/\s+/g, " ").slice(0, 200),
+    pinned: note.pinned,
+    characters: [...note.content].length,
+    words: text ? text.split(/\s+/u).length : 0,
+    createdAt: note.createdAt,
+    updatedAt: note.updatedAt,
+    lastOpenedAt: note.lastOpenedAt,
+  };
+}
 
 function notFound(what: string): never {
   throw new RpcError({ code: RpcErrorCode.NotFound, message: `${what} not found` });
@@ -56,6 +77,11 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
   const snippets: Snippet[] = SNIPPETS.map((s) => ({ ...s }));
   const notes: Note[] = NOTES.map((n) => ({ ...n }));
   const chats: AIChat[] = CHATS.map((c) => ({ ...c }));
+  let noteCounter = 0;
+  const changedNote = (id: string, deleted?: boolean) => {
+    events.emit("notes.changed", { id, ...(deleted ? { deleted } : {}) });
+    events.emit("entities.changed", { collection: "notes", ids: [id], source: "local" });
+  };
   const sessions = new Map<string, MockSession>();
   const extensionPrefs = new Map<string, Record<string, unknown>>();
   let sessionCounter = 0;
@@ -190,12 +216,46 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
 
     "quicklinks.list": () => QUICKLINKS,
 
-    "notes.list": ({ query }) =>
-      notes
-        .filter((n) => !query || n.content.toLowerCase().includes(query.toLowerCase()))
-        .map((n) => ({ id: n.id, title: n.title, preview: n.content.split("\n").slice(1).join(" ").trim().slice(0, 120), pinned: n.pinned, characters: n.content.length, words: n.content.split(/\s+/).filter(Boolean).length, createdAt: n.createdAt, updatedAt: n.updatedAt })),
-    "notes.get": ({ id }) => notes.find((n) => n.id === id) ?? null,
-    "notes.recent": () => notes[0] ?? null,
+    "notes.list": ({ query }) => {
+      const words = query?.toLowerCase().split(/\s+/).filter(Boolean) ?? [];
+      return notes
+        .filter((n) => words.every((w) => n.content.toLowerCase().includes(w)))
+        .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.updatedAt - a.updatedAt)
+        .map(noteSummary);
+    },
+    "notes.get": ({ id }) => {
+      const note = notes.find((n) => n.id === id);
+      if (note) note.lastOpenedAt = Date.now();
+      return note ?? null;
+    },
+    "notes.recent": () => [...notes].sort((a, b) => (b.lastOpenedAt ?? b.updatedAt) - (a.lastOpenedAt ?? a.updatedAt))[0] ?? null,
+    "notes.create": ({ content = "" }) => {
+      const now = Date.now();
+      const note: Note = { id: `n${now}${++noteCounter}`, title: mockNoteTitle(content), content, createdAt: now, updatedAt: now, lastOpenedAt: now };
+      notes.unshift(note);
+      changedNote(note.id);
+      return note;
+    },
+    "notes.update": ({ id, content, pinned, caret }) => {
+      const note = notes.find((n) => n.id === id) ?? notFound(`Note ${id}`);
+      if (content !== undefined) Object.assign(note, { content, title: mockNoteTitle(content) });
+      if (pinned !== undefined) note.pinned = pinned;
+      if (caret !== undefined) note.caret = caret;
+      note.updatedAt = Math.max(Date.now(), note.updatedAt + 1);
+      changedNote(id);
+      return note;
+    },
+    "notes.delete": ({ id }) => {
+      const index = notes.findIndex((n) => n.id === id);
+      if (index === -1) notFound(`Note ${id}`);
+      notes.splice(index, 1);
+      changedNote(id, true);
+    },
+    "notes.export": ({ id, format }) => {
+      const note = notes.find((n) => n.id === id) ?? notFound(`Note ${id}`);
+      const content = format === "text" ? note.content.replace(/^#{1,6}\s+/gm, "").replace(/[*_`]/g, "") : note.content;
+      return { content, fileName: `${note.title.replace(/[/\\:]/g, "-")}.${format === "markdown" ? "md" : "txt"}` };
+    },
 
     "ai.providers.list": () => PROVIDERS,
     "ai.models.list": () =>

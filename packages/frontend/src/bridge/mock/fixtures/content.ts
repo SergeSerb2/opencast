@@ -27,9 +27,43 @@ export const SNIPPETS: Snippet[] = [
   { id: "s3", name: "Meeting Notes Template", text: "## {date}\n\n**Attendees:** {cursor}\n\n### Notes\n\n### Action items\n", tags: ["work"], copyCount: 5, createdAt: now - 10 * day, updatedAt: now - 1 * day },
 ];
 
+const LAUNCH_NOTE = [
+  "# Launch checklist",
+  "",
+  "Ship **Surgecast 0.1** with the new glass interface. Details live in [the roadmap](https://github.com/surgecast/surgecast).",
+  "",
+  "## Before release",
+  "",
+  "- [x] Glass footer pills",
+  "- [x] Action panel",
+  "- [ ] Compact mode",
+  "- [ ] Deploy the sync worker",
+  "",
+  "## Steps",
+  "",
+  "1. Run `pnpm build`",
+  "2. Sign the app bundle",
+  "  - Notarize",
+  "  - Staple the ticket",
+  "",
+  "> Keep the changelog short and friendly.",
+  "",
+  "```ts",
+  'const release = await publish({ channel: "beta" });',
+  "console.log(release.version);",
+  "```",
+  "",
+  "---",
+  "",
+  "Updated after the design review.",
+].join("\n");
+
 export const NOTES: Note[] = [
-  { id: "n1", title: "Launch checklist", content: "# Launch checklist\n\n- [x] Glass footer pills\n- [x] Action panel\n- [ ] Compact mode\n- [ ] Sync worker deploy\n", pinned: true, createdAt: now - 5 * day, updatedAt: now - 2 * hour },
-  { id: "n2", title: "Ideas", content: "# Ideas\n\nA **calculator** that understands `3 weeks from today` and time zones.", createdAt: now - 12 * day, updatedAt: now - 1 * day },
+  { id: "n1", title: "Launch checklist", content: LAUNCH_NOTE, pinned: true, caret: 0, createdAt: now - 5 * day, updatedAt: now - 2 * hour, lastOpenedAt: now - 1 * min },
+  { id: "n2", title: "Ideas", content: "# Ideas\n\nA **calculator** that understands `3 weeks from today` and time zones.\n\n- Clipboard pinboards\n- Window layouts per display", createdAt: now - 12 * day, updatedAt: now - 1 * day, lastOpenedAt: now - 32 * min },
+  { id: "n3", title: "Week / Work", content: "Week / Work\n\n- [ ] Review the notes window PR\n- [ ] Plan the 0.2 milestone\n- [x] Fix the snippet keyword bug", createdAt: now - 20 * day, updatedAt: now - 3 * day, lastOpenedAt: now - 2 * day },
+  { id: "n4", title: "Week / Personal", content: "Week / Personal\n\nBook the bike service and call the bank about the card.", createdAt: now - 21 * day, updatedAt: now - 4 * day, lastOpenedAt: now - 5 * day },
+  { id: "n5", title: "Books", content: "Books\n\n- *The Design of Everyday Things*\n- *A Pattern Language*\n- *Thinking in Systems*", pinned: true, createdAt: now - 60 * day, updatedAt: now - 30 * day, lastOpenedAt: now - 31 * day },
 ];
 
 export const PROVIDERS: (AIProvider & { hasApiKey: boolean })[] = [

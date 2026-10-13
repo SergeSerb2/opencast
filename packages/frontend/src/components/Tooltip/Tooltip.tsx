@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactElement, type ReactNode } from "react";
+import { cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import "./tooltip.css";
 
@@ -19,9 +19,21 @@ export function Tooltip({ content, children, delay = 200, side = "top", tone = "
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const target = useRef<HTMLElement | null>(null);
 
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
   }, []);
+
+  // Keep the tooltip inside the window (buttons near an edge would push it out).
+  useLayoutEffect(() => {
+    const tooltip = tooltipRef.current;
+    if (!rect || !tooltip) return;
+    const root = (document.getElementById("sc-overlay-root") ?? document.body).getBoundingClientRect();
+    const half = tooltip.offsetWidth / 2;
+    const center = rect.left - root.left + rect.width / 2;
+    tooltip.style.left = `${Math.min(Math.max(center, half + 8), root.width - half - 8)}px`;
+  }, [rect]);
 
   if (!content || !isValidElement(children)) return children;
 
@@ -56,6 +68,7 @@ export function Tooltip({ content, children, delay = 200, side = "top", tone = "
       {rect &&
         createPortal(
           <div
+            ref={tooltipRef}
             className="sc-tooltip"
             data-side={side}
             data-tone={tone}

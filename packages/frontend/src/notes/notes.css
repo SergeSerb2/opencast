@@ -1,0 +1,425 @@
+/*
+ * Notes window chrome (§7.1, §7.2, §7.5–§7.7, §13.4). The page is transparent:
+ * the native window's glass is the background.
+ */
+
+/* Notes uses the brand color as its accent and keeps the 26px window radius on macOS 27. */
+:root.theme-root.active-theme[data-window="notes"],
+.theme-root[data-window="notes"] {
+  --theme-accent: var(--color-brand);
+  --radius-window: 26px;
+  --window-header-height: var(--default-window-header-height);
+}
+
+.sc-notes {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---- header -------------------------------------------------------------------- */
+
+/* Painted after the editor in DOM order; no z-index, which would cut glass out of the backdrop. */
+.sc-notes-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+.sc-notes-header__inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-16);
+  height: var(--window-header-height);
+  padding: 0 var(--space-8);
+}
+/* Mirrors the 92px action group so the title stays centered. */
+.sc-notes-header__spacer {
+  width: round(calc(92 * var(--spx)), 1px);
+}
+.sc-notes-header__title {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  font-size: var(--font-size-13);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  opacity: 0.3;
+  transition: opacity 0.14s ease;
+}
+.sc-notes-header__actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.14s ease;
+}
+.sc-notes[data-hovered] .sc-notes-header__title {
+  opacity: 1;
+}
+.sc-notes[data-hovered] .sc-notes-header__actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.sc-notes-header__button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: round(calc(28 * var(--spx)), 1px);
+  height: round(calc(28 * var(--spx)), 1px);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  transition: background-color 0.15s ease-out;
+}
+.sc-notes-header__button::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-2));
+}
+.sc-notes-header__button:hover,
+.sc-notes-header__button[data-state="open"] {
+  background: var(--fg-10);
+  transition: none;
+}
+.sc-notes-header__button:active {
+  opacity: 0.8;
+}
+
+.sc-notes-tooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* ---- editor area ------------------------------------------------------------------ */
+
+.sc-notes__editor-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  cursor: text;
+}
+.sc-notes__editor-area > .sc-progressive-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.sc-notes__editor-area > .sc-progressive-blur > div {
+  position: absolute;
+  inset: 0;
+}
+.sc-notes__scroll {
+  flex: 1;
+}
+.sc-notes__scroll .sc-scroll-area__viewport {
+  overflow-anchor: none;
+}
+.sc-notes__content {
+  padding: var(--window-header-height) 0 var(--notes-scroll-bottom);
+}
+.sc-notes[data-find-open] .sc-notes__content {
+  padding-top: calc(var(--window-header-height) + var(--space-48));
+}
+
+/* ---- footer ------------------------------------------------------------------------ */
+
+.sc-notes-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--space-8);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding: 0 var(--space-8);
+  pointer-events: none;
+}
+.sc-notes-footer > * {
+  pointer-events: auto;
+}
+.sc-notes-counter {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--font-size-13);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-text-quaternary);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color 0.12s ease;
+}
+.sc-notes-counter:hover {
+  color: var(--color-text-tertiary);
+}
+.sc-notes-footer__toggle {
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  width: var(--space-32);
+  height: var(--space-32);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  opacity: 0;
+  pointer-events: none;
+  --glass-press-scale: 1.05;
+  transition: opacity 0.14s ease;
+}
+.sc-notes[data-hovered] .sc-notes-footer__toggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+.sc-notes-footer__toggle::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-2));
+}
+
+/* Formatting pill (§7.2 formatting mode). */
+.sc-notes-format {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-full);
+}
+.sc-notes-format__button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--space-24);
+  height: var(--space-24);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-6);
+  color: var(--color-text-tertiary);
+}
+.sc-notes-format__button::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-2));
+}
+.sc-notes-format__button:first-child {
+  border-top-left-radius: var(--radius-12);
+  border-bottom-left-radius: var(--radius-12);
+}
+.sc-notes-format__button:last-child,
+.sc-notes-format > :last-child .sc-notes-format__button {
+  border-top-right-radius: var(--radius-12);
+  border-bottom-right-radius: var(--radius-12);
+}
+.sc-notes-format__button[data-active] {
+  color: var(--color-text-primary);
+}
+.sc-notes-format__button:hover,
+.sc-notes-format__button[data-state="open"] {
+  background: var(--fg-5);
+}
+.sc-notes-format__button:active {
+  opacity: 0.8;
+}
+.sc-notes-format__divider {
+  width: 1px;
+  height: var(--space-16);
+  margin: 0 var(--space-4);
+  background: var(--color-border-separator);
+}
+
+/* ---- find & replace (§7.5) -------------------------------------------------------------- */
+
+.sc-notes-find {
+  position: absolute;
+  top: round(calc(54 * var(--spx)), 1px);
+  left: var(--space-16);
+  width: calc(100% - var(--space-32));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border-radius: var(--radius-18);
+}
+.sc-notes-find__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-4);
+}
+.sc-notes-find__input {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-13);
+}
+.sc-notes-find__input::selection {
+  background: var(--accent-40);
+}
+.sc-notes-find__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+.sc-notes-find__replace-input {
+  margin-inline-start: round(calc(26 * var(--spx)), 1px);
+}
+.sc-notes-find__actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.sc-notes-find__count {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-12);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+.sc-notes-find__icon-button {
+  display: grid;
+  place-items: center;
+  width: var(--space-20);
+  height: var(--space-20);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+}
+.sc-notes-find__icon-button:hover:enabled {
+  background: var(--fg-5);
+}
+.sc-notes-find__icon-button:disabled {
+  opacity: 0.4;
+}
+.sc-notes-find__chevron .sc-icon {
+  transition: transform 0.15s ease;
+}
+.sc-notes-find__chevron[data-open] .sc-icon {
+  transform: rotate(90deg);
+}
+.sc-notes-find__divider {
+  width: 1px;
+  height: round(calc(14 * var(--spx)), 1px);
+  margin-inline: var(--space-2);
+  background: var(--color-border-separator);
+}
+.sc-notes-find__separator {
+  height: 1px;
+  margin-inline: var(--space-2);
+  background: var(--color-border-separator);
+}
+
+/* ---- link popover (§7.6) ------------------------------------------------------------------ */
+
+.sc-notes-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+}
+.sc-notes-link__input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--font-size-13);
+}
+.sc-notes-link__input::placeholder {
+  color: var(--color-text-tertiary);
+}
+.sc-notes-link__input::selection {
+  background: var(--accent-40);
+}
+.sc-notes-link__divider {
+  align-self: stretch;
+  width: 1px;
+  background: var(--color-border-separator);
+}
+.sc-notes-link__actions {
+  display: flex;
+  gap: var(--space-4);
+}
+.sc-notes-link__button {
+  display: grid;
+  place-items: center;
+  width: var(--space-24);
+  height: var(--space-24);
+  border-radius: var(--radius-6);
+  color: var(--color-text-secondary);
+}
+.sc-notes-link__button:hover:enabled {
+  background: var(--fg-5);
+}
+.sc-notes-link__button:disabled {
+  opacity: 0.4;
+}
+
+/* ---- note browser (§7.6) -------------------------------------------------------------------- */
+
+.sc-notes-browse__search {
+  flex: none;
+}
+.sc-notes-browse__list {
+  position: relative;
+  min-height: 0;
+}
+.sc-notes-browse__item {
+  height: 100%;
+  margin: 0 var(--list-padding-x);
+  padding: 0 var(--list-item-padding-x);
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  border-radius: var(--radius-row-small);
+}
+.sc-notes-browse__item:hover {
+  background: var(--selection-5);
+}
+.sc-notes-browse__item[data-selected] {
+  background: var(--selection-10);
+}
+.sc-notes-browse__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-size: var(--font-size-13);
+  font-feature-settings: var(--font-features-list);
+}
+.sc-notes-browse__title {
+  color: var(--color-text-primary);
+}
+.sc-notes-browse__subtitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--color-text-secondary);
+}
+.sc-notes-browse__dot {
+  flex-shrink: 0;
+  width: round(calc(5 * var(--spx)), 1px);
+  height: round(calc(5 * var(--spx)), 1px);
+  border-radius: 50%;
+  background: var(--accent);
+}
+.sc-notes-browse__accessories {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sc-notes-browse__icon-button {
+  display: grid;
+  place-items: center;
+  width: var(--space-24);
+  height: var(--space-24);
+  border-radius: var(--radius-6);
+  color: var(--color-text-secondary);
+}
+.sc-notes-browse__icon-button:hover {
+  background: var(--fg-10);
+  color: var(--color-text-primary);
+}

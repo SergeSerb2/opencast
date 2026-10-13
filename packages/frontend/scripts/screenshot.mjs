@@ -50,6 +50,14 @@ const SCENES = [
   { name: "toast", url: "gallery.html#toast", steps: [{ wait: 1700 }] },
   { name: "toast-failure", url: "gallery.html#toast-failure", steps: [{ wait: 400 }] },
   { name: "gallery", url: "gallery.html", size: [1500, 1000], fullPage: true },
+  // Notes window at Raycast's saved 396×500 frame; hovering reveals the header and footer controls.
+  { name: "notes", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-empty", url: "notes.html#new", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-format", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { press: "Alt+Meta+Comma" }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-browse", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }, { press: "Meta+p", wait: 400 }] },
+  { name: "notes-actions", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }, { press: "Meta+k", wait: 400 }] },
+  { name: "notes-find", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { press: "Meta+f" }, { type: "the" }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-light", url: "notes.html?appearance=light", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }] },
 ];
 
 function parseArgs(argv) {

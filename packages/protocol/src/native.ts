@@ -282,6 +282,8 @@ export interface NativeMethods {
     params: { canChooseFiles?: boolean; canChooseDirectories?: boolean; allowMultipleSelection?: boolean; allowedTypes?: string[]; directory?: string; title?: string; prompt?: string };
     result: string[] | null;
   };
+  /** NSSavePanel: write `content` as UTF-8 to the chosen file (Notes export). Resolves with the path, or null when cancelled. */
+  "dialog.saveFile": { params: { suggestedName: string; content: string; allowedTypes?: string[]; title?: string }; result: string | null };
 
   // --- menu bar extras (extension "menu-bar" commands) --------------------------
   "menubar.set": { params: { id: string; title?: string; icon?: ImageLike; tooltip?: string; items: MenuBarExtraItem[] }; result: void };
@@ -301,6 +303,7 @@ export interface NativeEvents {
   /**
    * A window was asked to show a route (hotkey or deeplink launch, `window.show({ route })`).
    * Launcher routes: "command:<CommandId>", "root", "quick-ai".
+   * Notes routes: "<noteId>" or "note:<noteId>" (open), "new" (payload `{ text? }`), "" (show).
    */
   "window.route": { kind: WindowKind; route: string; payload?: unknown };
   "window.didHide": { kind: WindowKind };

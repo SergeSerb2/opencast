@@ -14,7 +14,8 @@ src/
   components/   design system (List, Grid, Detail, Form, ActionPanel, Footer, controls…)
   launcher/     main.html: navigation stack, views registry, root search, window behavior
   extension-renderer/  UINode trees from extension sessions → components
-  pages/        entry points of the secondary windows
+  notes/        notes.html: Notes window (TipTap editor, note browser, find & replace)
+  pages/        entry points of the other secondary windows
   gallery/      component gallery + full-window demos (dev only)
 ```
 
@@ -45,8 +46,8 @@ Screenshot scenes: `node scripts/screenshot.mjs --list`. Custom:
 ## Bootstrapping a window
 
 ```tsx
-// src/pages/notes/main.tsx
-import { mountWindow } from "../../app/mount";
+// src/notes/main.tsx
+import { mountWindow } from "../app/mount";
 mountWindow(<NotesApp />);
 ```
 
