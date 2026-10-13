@@ -46,7 +46,7 @@ minimum supported OS. The current signature is ad hoc; public distribution requi
 Developer ID signing and notarization.
 
 `./scripts/make-icon.sh` regenerates `Resources/AppIcon.icns` from `assets/icon.svg`
-using Quick Look, sips and iconutil.
+using the pinned SVG renderer, sips and iconutil (requires pnpm).
 
 Run the complete app with `open build/OpenCast.app`, or invoke its executable directly
 when setting environment overrides. Option-Space toggles the launcher. The status
@@ -144,4 +144,4 @@ privacy markers and source app; ignored bundle IDs produce no events. Temporary
 clipboard restoration only runs if a newer copy has not replaced the inserted content.
 
 Existing installs reuse legacy SurgeCast data and log directories and read legacy
-Keychain services. See [upgrade notes](../../README.md#upgrade-from-surgecast). New installs and writes use the OpenCast names.
+Keychain services. New installs and writes use the OpenCast names.

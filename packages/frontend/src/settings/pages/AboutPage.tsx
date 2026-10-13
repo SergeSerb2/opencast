@@ -60,7 +60,7 @@ export function AboutPage() {
   return (
     <PageFrame title="About">
       <Intro
-        icon={{ tile: { glyph: "opencast-logo", background: ["#FF7A7A", "#E5383B"] } }}
+        icon={{ tile: { glyph: "opencast-logo", background: ["#24594F", "#102D29"] } }}
         title="OpenCast"
         description="An open-source launcher for macOS. Your AI keys, your sync server, no paywalls."
       >

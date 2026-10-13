@@ -320,7 +320,7 @@ export function builtinCatalog(): Builtin[] {
     await ctx.native.call("open.url", {
       url:
         (process.env.OPENCAST_DOCS_URL ?? process.env.SURGECAST_DOCS_URL) ??
-        "https://github.com/SergeSerb2/surgecast/tree/main/docs",
+        "https://github.com/SergeSerb2/opencast/tree/main/docs",
     });
     return done();
   });

@@ -12,6 +12,8 @@
   "scripts": {
     "build": "pnpm -r --filter=!@opencast/sync-worker run build",
     "build:app": "./scripts/build-app.sh",
+    "build:dmg": "./scripts/build-dmg.sh",
+    "release:mac": "./scripts/release-macos.sh",
     "dev": "./scripts/dev.sh",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",

@@ -1,0 +1,77 @@
+name: Release OpenCast DMG
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Keep a job for every merged commit; the single local runner serializes builds.
+concurrency:
+  group: macos-release-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and verify on the local Mac
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: [self-hosted, macOS, ARM64, opencast-release]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Use checksum-pinned Node and pnpm for build tools
+        run: |
+          node_path="$(./scripts/prepare-release-node.sh)"
+          printf '%s\n' "$(dirname "$node_path")" >> "$GITHUB_PATH"
+          printf 'OPENCAST_NODE=%s\n' "$node_path" >> "$GITHUB_ENV"
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck packaged TypeScript with tsc-rs
+        run: ./scripts/typecheck-release.sh
+      - name: Build and verify the DMG
+        run: ./scripts/build-dmg.sh
+      - name: Upload verified release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencast-dmg-${{ github.event.workflow_run.head_sha || github.sha }}
+          path: |
+            build/releases/**/*.dmg
+            build/releases/**/*.dmg.sha256
+            build/releases/**/*.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    name: Publish the verified DMG
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: opencast-dmg-${{ github.event.workflow_run.head_sha || github.sha }}
+          path: build/releases
+      - name: Publish without running build tools
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: ./scripts/release-macos.sh

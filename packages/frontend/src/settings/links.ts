@@ -1,5 +1,5 @@
 /** Project links used by About, Cloud Sync and AI onboarding. */
-export const PROJECT_URL = "https://github.com/SergeSerb2/surgecast";
+export const PROJECT_URL = "https://github.com/SergeSerb2/opencast";
 export const LINKS = {
   website: PROJECT_URL,
   issues: `${PROJECT_URL}/issues`,
