@@ -2,7 +2,7 @@ import type { TileImage } from "@surgecast/protocol";
 
 /** A glyph on a neutral rounded tile, as Raycast draws content rows (clipboard text, snippets). */
 export function glyphTile(glyph: string): TileImage {
-  return { tile: { glyph, background: "var(--fg-10)", foreground: "var(--color-text-primary)" } };
+  return { tile: { glyph, background: "var(--fg-10)", foreground: "var(--color-text-primary)", flat: true } };
 }
 
 /** A small filled dot in a theme color (tag filters, tag lists). */

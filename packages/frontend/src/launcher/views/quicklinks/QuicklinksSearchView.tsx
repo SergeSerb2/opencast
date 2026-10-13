@@ -37,7 +37,8 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
   }, []);
 
   const tags = useMemo(() => [...new Set((quicklinks ?? []).flatMap((q) => q.tags ?? []))].sort((a, b) => a.localeCompare(b)), [quicklinks]);
-  const visible = useMemo(() => (quicklinks ?? []).filter((q) => tag === ALL_TAGS || q.tags?.includes(tag)).sort((a, b) => a.name.localeCompare(b.name)), [quicklinks, tag]);
+  const activeTag = tags.includes(tag) ? tag : ALL_TAGS;
+  const visible = useMemo(() => (quicklinks ?? []).filter((q) => activeTag === ALL_TAGS || q.tags?.includes(activeTag)).sort((a, b) => a.name.localeCompare(b.name)), [quicklinks, activeTag]);
   const appName = (id?: string) => (id ? (apps.find((a) => a.bundleId === id || a.path === id)?.name ?? id) : undefined);
 
   const create = (initial?: Parameters<typeof QuicklinkFormView>[0]["initial"], mode: "create" | "duplicate" = "create") => navigation.push(<QuicklinkFormView initial={initial} mode={mode} navigationIcon={icon} />);
@@ -132,7 +133,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
       navigationIcon={icon}
       searchBarAccessory={
         tags.length > 0 ? (
-          <List.Dropdown tooltip="Filter by Tag" id="quicklinks-tag" storeValue value={tag} onChange={setTag}>
+          <List.Dropdown tooltip="Filter by Tag" id="quicklinks-tag" storeValue onChange={setTag}>
             <List.Dropdown.Section>
               <List.Dropdown.Item title="All Tags" value={ALL_TAGS} icon="tag-16" />
             </List.Dropdown.Section>

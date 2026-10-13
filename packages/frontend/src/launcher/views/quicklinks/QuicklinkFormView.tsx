@@ -111,7 +111,6 @@ export function QuicklinkFormView({ quicklink, initial, mode = quicklink ? "edit
       actions={
         <ActionPanel>
           <Action title={mode === "edit" ? "Update Quicklink" : "Save Quicklink"} icon="checkmark-16" onAction={save} />
-          <Action title="Add Placeholder" icon="text-input-16" onAction={() => editorRef.current?.startPlaceholder()} />
           <Action title="Choose File or Directory" icon="folder-16" shortcut={sc("cmd", "shift", "o")} onAction={chooseFile} />
         </ActionPanel>
       }
@@ -127,10 +126,10 @@ export function QuicklinkFormView({ quicklink, initial, mode = quicklink ? "edit
           aria-label="Link"
           toolbar={
             <div className="sc-quicklink-form__tools">
-              <button type="button" className="sc-quicklink-form__tool" title="Add Placeholder  {" aria-label="Add Placeholder" onMouseDown={(e) => e.preventDefault()} onClick={() => editorRef.current?.startPlaceholder()}>
+              <button type="button" tabIndex={-1} className="sc-quicklink-form__tool" title="Add Placeholder  {" aria-label="Add Placeholder" onMouseDown={(e) => e.preventDefault()} onClick={() => editorRef.current?.startPlaceholder()}>
                 <Icon name="text-input-16" size={16} />
               </button>
-              <button type="button" className="sc-quicklink-form__tool" title="Choose File or Directory" aria-label="Choose File or Directory" onMouseDown={(e) => e.preventDefault()} onClick={() => void chooseFile()}>
+              <button type="button" tabIndex={-1} className="sc-quicklink-form__tool" title="Choose File or Directory" aria-label="Choose File or Directory" onMouseDown={(e) => e.preventDefault()} onClick={() => void chooseFile()}>
                 <Icon name="folder-16" size={16} />
               </button>
             </div>

@@ -123,7 +123,7 @@ export function FileSearchView({ props, title, icon }: LauncherViewProps<{ query
       navigationTitle={title ?? "Search Files"}
       navigationIcon={icon}
       searchBarAccessory={
-        <List.Dropdown tooltip="Filter by Type" id="file-search-type" storeValue value={type} onChange={(value) => setType(value as FileTypeFilter)}>
+        <List.Dropdown tooltip="Filter by Type" id="file-search-type" storeValue onChange={(value) => setType(value as FileTypeFilter)}>
           <List.Dropdown.Section>
             <List.Dropdown.Item title={FILE_TYPE_FILTERS[0].title} value={FILE_TYPE_FILTERS[0].value} icon={FILE_TYPE_FILTERS[0].icon} />
           </List.Dropdown.Section>

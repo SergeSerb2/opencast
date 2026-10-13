@@ -255,7 +255,7 @@ export function ViewFrame({
             primaryShortcut={primaryShortcut}
           />
         )}
-        <ActionPanelPopover model={effectiveActions} open={isActive && panel === "actions"} onClose={() => setPanel(null)} onRun={runAction} />
+        <ActionPanelPopover model={effectiveActions} open={isActive && panel === "actions"} onClose={() => setPanel(null)} onRun={runAction} primaryShortcut={primaryShortcut} />
         {menu && (
           <ActionPanelPopover model={menu} open={isActive && panel === "menu"} onClose={() => setPanel(null)} onRun={runAction} anchor={(root) => ({ x: 8, y: root.height - 8 })} align="start" />
         )}

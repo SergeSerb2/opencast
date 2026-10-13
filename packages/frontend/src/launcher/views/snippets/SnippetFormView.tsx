@@ -92,7 +92,6 @@ function SnippetFormBody({ snippet, initial, onSaved }: Pick<SnippetFormViewProp
   useRegisterActions(
     <ActionPanel>
       <Action title="Save Snippet" icon="checkmark-16" onAction={save} />
-      <Action title="Add Placeholder" icon="text-input-16" onAction={() => editorRef.current?.startPlaceholder()} />
     </ActionPanel>,
   );
 
@@ -112,7 +111,7 @@ function SnippetFormBody({ snippet, initial, onSaved }: Pick<SnippetFormViewProp
           aria-label="Snippet"
           toolbar={
             <div className="sc-snippet-form__toolbar">
-              <button type="button" className="sc-snippet-form__tool" title="Add Placeholder  {" aria-label="Add Placeholder" onMouseDown={(e) => e.preventDefault()} onClick={() => editorRef.current?.startPlaceholder()}>
+              <button type="button" tabIndex={-1} className="sc-snippet-form__tool" title="Add Placeholder  {" aria-label="Add Placeholder" onMouseDown={(e) => e.preventDefault()} onClick={() => editorRef.current?.startPlaceholder()}>
                 <Icon name="text-input-16" size={16} />
               </button>
             </div>

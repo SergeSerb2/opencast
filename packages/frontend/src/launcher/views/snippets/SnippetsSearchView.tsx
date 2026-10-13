@@ -31,7 +31,9 @@ export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ q
   const navTitle = title ?? "Search Snippets";
 
   const tags = useMemo(() => [...new Set((snippets ?? []).flatMap((s) => s.tags ?? []))].sort((a, b) => a.localeCompare(b)), [snippets]);
-  const visible = useMemo(() => (snippets ?? []).filter((s) => tag === ALL_TAGS || s.tags?.includes(tag)), [snippets, tag]);
+  // A remembered tag that no snippet uses any more falls back to all tags.
+  const activeTag = tags.includes(tag) ? tag : ALL_TAGS;
+  const visible = useMemo(() => (snippets ?? []).filter((s) => activeTag === ALL_TAGS || s.tags?.includes(activeTag)), [snippets, activeTag]);
   const sections = useMemo(() => {
     if (query.trim()) return [{ title: undefined, items: visible }];
     const pinned = visible.filter((s) => s.pinned);
@@ -109,7 +111,7 @@ export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ q
     <ActionPanel title={snippet.name}>
       <ActionPanel.Section>
         <Action title={pasteTitle(target)} icon={pasteIcon(target)} onAction={() => use(snippet, "paste")} />
-        <Action title="Copy to Clipboard" icon="copy-clipboard-16" shortcut={sc("cmd", "shift", "c")} onAction={() => use(snippet, "copy")} />
+        <Action title="Copy to Clipboard" icon="copy-clipboard-16" onAction={() => use(snippet, "copy")} />
       </ActionPanel.Section>
       <ActionPanel.Section>
         <Action title={snippet.pinned ? "Unpin Snippet" : "Pin Snippet"} icon={snippet.pinned ? "tack-disabled-16" : "tack-16"} shortcut={sc("cmd", ".")} onAction={() => togglePin(snippet)} />
@@ -120,7 +122,7 @@ export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ q
           shortcut={sc("cmd", "d")}
           onAction={() => create({ ...snippet, name: copyName(snippet.name, (snippets ?? []).map((s) => s.name)), keyword: "" })}
         />
-        <Action title="Create Snippet" icon="blank-document-16" shortcut={sc("cmd", "n")} onAction={() => create({ text: query.trim() || undefined, tags: tag === ALL_TAGS ? undefined : [tag] })} />
+        <Action title="Create Snippet" icon="blank-document-16" shortcut={sc("cmd", "n")} onAction={() => create({ text: query.trim() || undefined, tags: activeTag === ALL_TAGS ? undefined : [activeTag] })} />
       </ActionPanel.Section>
       <ActionPanel.Section>
         <Action title="Export Snippet…" icon="save-document-16" shortcut={sc("cmd", "opt", "shift", "s")} onAction={() => exportOne(snippet)} />
@@ -145,7 +147,7 @@ export function SnippetsSearchView({ props, title, icon }: LauncherViewProps<{ q
       navigationIcon={icon}
       searchBarAccessory={
         tags.length > 0 ? (
-          <List.Dropdown tooltip="Filter by Tag" id="snippets-tag" storeValue value={tag} onChange={setTag}>
+          <List.Dropdown tooltip="Filter by Tag" id="snippets-tag" storeValue onChange={setTag}>
             <List.Dropdown.Section>
               <List.Dropdown.Item title="All Tags" value={ALL_TAGS} icon="tag-16" />
             </List.Dropdown.Section>

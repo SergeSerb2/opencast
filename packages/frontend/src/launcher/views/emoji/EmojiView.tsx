@@ -101,7 +101,7 @@ export function EmojiView({ props, title, icon }: LauncherViewProps<{ query?: st
       navigationIcon={icon}
       onSelectionChange={setSelectedKey}
       searchBarAccessory={
-        <Grid.Dropdown tooltip="Filter by Category" id="emoji-category" storeValue value={filter} onChange={setFilter}>
+        <Grid.Dropdown tooltip="Filter by Category" id="emoji-category" storeValue onChange={setFilter}>
           <Grid.Dropdown.Section>
             <Grid.Dropdown.Item title="All Categories" value={ALL_CATEGORIES} icon="app-window-grid-3x3-16" />
           </Grid.Dropdown.Section>

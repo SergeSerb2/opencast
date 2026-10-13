@@ -157,7 +157,7 @@ export function ClipboardHistoryView({ props, title, icon }: LauncherViewProps<C
     const json = item.kind === "text" && item.text ? formattedJson(item.text) : null;
     const color = item.kind === "color" && item.color ? parseHexColor(item.color) : null;
     const pasteAction = <Action key="paste" title={pasteTitle(target)} icon={pasteIcon(target)} onAction={() => paste(item)} />;
-    const copyAction = <Action key="copy" title="Copy to Clipboard" icon="copy-clipboard-16" shortcut={primary === "copy" ? undefined : sc("cmd", "shift", "c")} onAction={() => copy(item)} />;
+    const copyAction = <Action key="copy" title="Copy to Clipboard" icon="copy-clipboard-16" shortcut={primary === "copy" ? sc("cmd", "shift", "c") : undefined} onAction={() => copy(item)} />;
     return (
       <ActionPanel title={item.title}>
         <ActionPanel.Section>
@@ -228,7 +228,7 @@ export function ClipboardHistoryView({ props, title, icon }: LauncherViewProps<C
       navigationIcon={icon}
       pagination={{ hasMore: (data?.total ?? 0) > items.length, onLoadMore: () => setLimit((l) => l + PAGE), pageSize: PAGE }}
       searchBarAccessory={
-        <List.Dropdown tooltip="Filter by Type" id="clipboard-category" storeValue value={kind} onChange={(value) => setKind(value as TypeFilter)}>
+        <List.Dropdown tooltip="Filter by Type" id="clipboard-category" storeValue onChange={(value) => setKind(value as TypeFilter)}>
           <List.Dropdown.Section>
             <List.Dropdown.Item title={TYPE_FILTERS[0].title} value={TYPE_FILTERS[0].value} icon={TYPE_FILTERS[0].icon} />
           </List.Dropdown.Section>

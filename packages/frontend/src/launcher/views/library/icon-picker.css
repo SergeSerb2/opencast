@@ -1,9 +1,13 @@
+/* Raycast's icon accessory sits closer to the divider than the field's default gap. */
+.sc-field:has(> .sc-field__accessory > .sc-icon-picker) {
+  gap: var(--space-4);
+}
 .sc-icon-picker {
   height: 100%;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-6);
-  padding: 0 var(--space-8) 0 var(--space-10);
+  gap: var(--space-8);
+  padding: 0 var(--space-6);
   color: var(--color-text-primary);
   transition: background-color 0.15s ease-out;
 }

@@ -15,10 +15,10 @@ export interface TileImageViewProps {
  */
 export const TileImageView = memo(function TileImageView({ tile, size = 22, className, style }: TileImageViewProps) {
   const [top, bottom] = Array.isArray(tile.background) ? tile.background : [tile.background, tile.background];
-  const glyphSize = Math.round(size * 0.64);
+  const glyphSize = Math.round(size * (tile.flat ? 0.72 : 0.64));
   return (
     <span
-      className={`sc-tile${className ? ` ${className}` : ""}`}
+      className={`sc-tile${tile.flat ? " sc-tile--flat" : ""}${className ? ` ${className}` : ""}`}
       style={{ width: size, height: size, background: `linear-gradient(180deg, ${top}, ${bottom})`, color: tile.foreground ?? "#fff", ...style }}
       aria-hidden="true"
     >
