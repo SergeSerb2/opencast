@@ -180,6 +180,23 @@ export const commandsService: Service = {
       launch: (command, request) => byId.get(command.id)!.launch(ctx, request),
     });
     const rootFiles = new Map<string, FileResult>();
+    // Running apps, for the dot under application icons. Cached briefly because
+    // root search runs on every keystroke.
+    let running = { ids: new Set<string>(), at: 0 };
+    const runningAppIds = async () => {
+      if (Date.now() - running.at < 2000) return running.ids;
+      const apps = await ctx.native.call("apps.running", undefined).catch(() => []);
+      const ids = new Set<string>();
+      for (const app of apps) {
+        if (app.bundleId) ids.add(`app:${app.bundleId}`);
+        ids.add(`app:${app.path}`);
+      }
+      running = { ids, at: Date.now() };
+      return ids;
+    };
+    ctx.onShutdown(ctx.native.on("frontmost.changed", () => (running.at = 0)));
+    const markRunning = (items: CommandInfo[], ids: Set<string>): RootSearchItem[] =>
+      items.map((c) => (c.kind === "app" && ids.has(c.id) ? { ...c, running: true } : c));
     ctx.commands.registerProvider({
       id: "files",
       list: () =>
@@ -470,6 +487,7 @@ export const commandsService: Service = {
             .list<CommandPrefs>("commandPrefs")
             .map((r) => [r.id, r.data]),
         );
+        const runningIds = await runningAppIds();
         if (!query.trim()) {
           const favorites = commands
             .filter((c) => c.favorite)
@@ -487,17 +505,17 @@ export const commandsService: Service = {
           return {
             query,
             sections: [
-              { id: "favorites", title: "Favorites", items: favorites },
+              { id: "favorites", title: "Favorites", items: markRunning(favorites, runningIds) },
               {
                 id: "suggestions",
                 title: "Suggestions",
-                items: root.suggestions,
+                items: markRunning(root.suggestions, runningIds),
               },
               { id: "commands", title: "Commands", items: root.commands },
               {
                 id: "applications",
                 title: "Applications",
-                items: root.applications,
+                items: markRunning(root.applications, runningIds),
               },
             ].filter((s) => s.items.length),
             fallbacks: [],
@@ -536,7 +554,7 @@ export const commandsService: Service = {
                   {
                     id: "results",
                     title: "Results",
-                    items: ranked as RootSearchItem[],
+                    items: markRunning(ranked, runningIds),
                   },
                 ]
               : []),
