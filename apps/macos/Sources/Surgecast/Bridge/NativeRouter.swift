@@ -116,6 +116,7 @@ import AppKit
     case "menus.list", "menus.press":
       return try await MenuItems.call(method, p, previous: windows.launcher.previous)
     case "files.icon", "files.metadata": return try await FileInfo.call(method, p)
+    case "dialog.saveFile": return try await FileDialog.save(p)
     case "dialog.openFiles": return await FileDialog.open(p)
     case "screen.capture": return try await ScreenCapture.capture(p)
     case "speech.say": try speech.say(p)

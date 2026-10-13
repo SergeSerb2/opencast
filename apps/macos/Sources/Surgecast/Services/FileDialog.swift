@@ -4,6 +4,25 @@ import UniformTypeIdentifiers
 /// `dialog.openFiles`: a standard open panel for form file pickers and
 /// file/directory preferences. Resolves with the chosen paths, or null on cancel.
 @MainActor enum FileDialog {
+  static func save(_ p: [String: Any]) async throws -> Any {
+    let name = try p.string("suggestedName")
+    let content = try p.string("content")
+    let panel = NSSavePanel()
+    panel.nameFieldStringValue = (name as NSString).lastPathComponent
+    panel.canCreateDirectories = true
+    if let title = p["title"] as? String { panel.message = title }
+    if let types = p["allowedTypes"] as? [String], !types.isEmpty {
+      panel.allowedContentTypes = types.compactMap { UTType(filenameExtension: $0) ?? UTType($0) }
+    }
+    NSApp.activate(ignoringOtherApps: true)
+    let response = await withCheckedContinuation { continuation in
+      panel.begin { continuation.resume(returning: $0) }
+    }
+    guard response == .OK, let url = panel.url else { return NSNull() }
+    do { try content.write(to: url, atomically: true, encoding: .utf8) }
+    catch { throw RpcError.failure("Cannot save the selected file") }
+    return url.path
+  }
   static func open(_ p: [String: Any]) async -> Any {
     let panel = NSOpenPanel()
     panel.canChooseFiles = p["canChooseFiles"] as? Bool ?? true

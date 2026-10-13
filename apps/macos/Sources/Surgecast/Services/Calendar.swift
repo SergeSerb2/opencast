@@ -48,6 +48,7 @@ import EventKit
       ).map { event -> [String: Any] in
         var o: [String: Any] = [
           "id": event.eventIdentifier ?? "", "calendarId": event.calendar.calendarIdentifier,
+          "calendarTitle": event.calendar.title,
           "title": event.title ?? "", "start": f.string(from: event.startDate),
           "end": f.string(from: event.endDate), "isAllDay": event.isAllDay,
           "color": Self.color(event.calendar.cgColor),
