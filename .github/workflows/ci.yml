@@ -23,7 +23,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Check release script syntax
-        run: bash -n scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh scripts/make-icon.sh
+        run: bash -n scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh scripts/make-icon.sh scripts/prepare-release-node.sh scripts/verify-node.sh
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

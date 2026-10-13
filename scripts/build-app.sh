@@ -62,7 +62,7 @@ if [ "$BUNDLE_NODE" = 1 ]; then
     if [ -z "$NODE" ]; then NODE="$("${SHELL:-/bin/zsh}" -lc 'command -v node' || true)"; fi
     if [ -z "$NODE" ]; then for candidate in /opt/homebrew/bin/node /usr/local/bin/node; do if [ -x "$candidate" ]; then NODE="$candidate"; break; fi; done; fi
     if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then echo 'Node not found; set OPENCAST_NODE' >&2; exit 1; fi
-    "$NODE" -e 'const [a,b]=process.versions.node.split(".").map(Number); if(a<22||(a===22&&b<13))process.exit(1)'
+    ./scripts/verify-node.sh "$NODE"
     mkdir -p "$STAGE/Contents/Resources/node/bin"
     cp -L "$NODE" "$STAGE/Contents/Resources/node/bin/node"
     codesign --force -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE/Contents/Resources/node/bin/node"

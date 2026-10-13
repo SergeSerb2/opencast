@@ -3,9 +3,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 if [ "$#" != 0 ]; then echo "Usage: $0" >&2; exit 2; fi
-if [ "$(uname -s)" != Darwin ] || [ "$(uname -m)" != arm64 ]; then
-    echo 'Published Mac releases currently require an Apple silicon Mac' >&2; exit 1
-fi
 if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
     echo 'Fetch the full Git history before assigning a release build number' >&2; exit 1
 fi
@@ -17,7 +14,7 @@ VERSION="$(node -p 'require("./package.json").version')"
 BUILD_NUMBER="$(git rev-list --count HEAD)"
 REVISION="$(git rev-parse HEAD)"
 TAG="v${VERSION}-build.${BUILD_NUMBER}"
-NAME="OpenCast-${VERSION}-build.${BUILD_NUMBER}-$(uname -m)"
+NAME="OpenCast-${VERSION}-build.${BUILD_NUMBER}-arm64"
 OUT="$ROOT/build/releases/$TAG"
 DEFAULT_BRANCH="$(gh api "repos/$REPO" --jq .default_branch)"
 STATUS="$(gh api "repos/$REPO/compare/$REVISION...$DEFAULT_BRANCH" --jq .status)"
@@ -47,7 +44,21 @@ if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
         exit 0
     fi
 fi
-./scripts/build-dmg.sh
+# Publishing consumes verified files; it never installs dependencies or builds.
+for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
+    test -s "$OUT/$asset"
+done
+node --input-type=module - "$OUT" "$NAME" "$VERSION" "$BUILD_NUMBER" "$REVISION" <<'JS'
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import assert from 'node:assert/strict';
+const [dir, name, version, build, revision] = process.argv.slice(2);
+const manifest = JSON.parse(readFileSync(`${dir}/${name}.json`, 'utf8'));
+assert.deepEqual(manifest, { version, build: Number(build), revision, architecture: 'arm64',
+  asset: `${name}.dmg`, signing: 'ad-hoc', notarized: false, builtOn: 'macOS' });
+const hash = createHash('sha256').update(readFileSync(`${dir}/${name}.dmg`)).digest('hex');
+assert.equal(readFileSync(`${dir}/${name}.dmg.sha256`, 'utf8'), `${hash}  ${name}.dmg\n`);
+JS
 NOTES="$OUT/notes.md"
 cat > "$NOTES" <<EOF
 OpenCast $VERSION, build $BUILD_NUMBER, for Apple silicon Macs running macOS 14 or later.

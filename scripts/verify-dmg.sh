@@ -2,6 +2,7 @@
 set -euo pipefail
 if [ "$#" != 1 ]; then echo "Usage: $0 path/to/OpenCast.dmg" >&2; exit 2; fi
 DMG="$1"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 hdiutil verify "$DMG"
 MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/opencast-dmg.XXXXXX")"
 MOUNTED=0
@@ -32,6 +33,7 @@ if [ -n "${OPENCAST_EXPECTED_BUILD_NUMBER:-}" ]; then test "$BUILD_NUMBER" = "$O
 for binary in Contents/MacOS/OpenCast Contents/Resources/node/bin/node; do
     test "$(lipo -archs "$APP/$binary")" = "$(uname -m)"
 done
+"$ROOT/scripts/verify-node.sh" "$APP/Contents/Resources/node/bin/node"
 for path in backend/index.mjs frontend/main.html frontend/ai-chat.html frontend/notes.html \
     frontend/settings.html raycast-api/runtime.cjs raycast-api/worker.cjs; do
     test -s "$APP/Contents/Resources/$path"

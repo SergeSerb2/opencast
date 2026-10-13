@@ -29,7 +29,11 @@ the source commit in its bundle. Releases use drafts until all assets are upload
 Re-running a published release checks its commit and assets instead of replacing
 it. Older queued commits do not replace a newer commit as the Latest release.
 
-The runner uses the workflow's short-lived `GITHUB_TOKEN` to publish releases.
+The Mac builds and verifies the DMG with read-only repository permission. A
+separate GitHub-hosted job downloads those files and checks their checksum and
+source manifest before publishing. Only the publishing step receives the
+short-lived write token. It runs no dependency installs or build tools. Release
+actions are pinned to full commit SHAs.
 There is no personal access token or signing secret in the repository. Other
 repositories' runners on this Mac are independent of the OpenCast runner.
 
@@ -49,7 +53,15 @@ pnpm install --frozen-lockfile
 `build-dmg.sh` compiles the full app, bundles Node, stamps version/build/source
 metadata, creates an Applications link in the DMG, and mounts the finished image
 read-only for verification. Verification checks the app signature, architecture,
-page/backend/runtime files, and the bundled Node SQLite runtime.
+page/backend/runtime files, and the bundled Node SQLite runtime. Packaging uses
+a pinned official Node download with a fixed SHA-256 checksum. Both the source
+runtime and the mounted copy must link only to macOS system libraries; a
+Homebrew-dependent executable is rejected. `OPENCAST_NODE` can select another
+standalone runtime that passes these checks.
+
+`release-macos.sh` publishes existing release files. Run `build-dmg.sh` first;
+publishing never builds or installs dependencies. It checks the artifact's
+checksum and source manifest before creating or uploading a release.
 
 Each release contains the DMG, its `.dmg.sha256` checksum, and a JSON source
 manifest. To check a downloaded image, put its checksum file beside it and run:

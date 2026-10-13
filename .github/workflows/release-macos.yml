@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 # Keep a job for every merged commit; the single local runner serializes builds.
 concurrency:
@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Build and publish on the local Mac
+  build:
+    name: Build and verify on the local Mac
     if: >-
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
@@ -25,17 +25,14 @@ jobs:
       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: [self-hosted, macOS, ARM64, opencast-release]
     timeout-minutes: 60
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
@@ -45,5 +42,39 @@ jobs:
           for package in protocol frontend backend raycast-api; do
             pnpm dlx tsc-rs@0.5.0 --noEmit -p "packages/$package/tsconfig.json"
           done
-      - name: Build, verify, and publish the DMG
+      - name: Build and verify the DMG
+        run: ./scripts/build-dmg.sh
+      - name: Upload verified release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: opencast-dmg-${{ github.event.workflow_run.head_sha || github.sha }}
+          path: |
+            build/releases/**/*.dmg
+            build/releases/**/*.dmg.sha256
+            build/releases/**/*.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    name: Publish the verified DMG
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: opencast-dmg-${{ github.event.workflow_run.head_sha || github.sha }}
+          path: build/releases
+      - name: Publish without running build tools
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: ./scripts/release-macos.sh

@@ -15,6 +15,8 @@ TAG="v${VERSION}-build.${BUILD_NUMBER}"
 OUT="$ROOT/build/releases/$TAG"
 NAME="OpenCast-${VERSION}-build.${BUILD_NUMBER}-${ARCH}"
 export OPENCAST_VERSION="$VERSION" OPENCAST_BUILD_NUMBER="$BUILD_NUMBER"
+export OPENCAST_NODE="${OPENCAST_NODE:-$(./scripts/prepare-release-node.sh)}"
+./scripts/verify-node.sh "$OPENCAST_NODE"
 ./scripts/build-app.sh --bundle-node
 APP="$ROOT/build/OpenCast.app"
 for path in Contents/MacOS/OpenCast Contents/Resources/backend/index.mjs \
