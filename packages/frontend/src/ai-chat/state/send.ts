@@ -27,7 +27,7 @@ export async function commandMessage(command: AICommand, input: string): Promise
   const result = applyCommandPrompt(command.prompt, { input, clipboard, focusedApp, now: new Date() });
   if (!result.ok) {
     const what = result.unsupported.map((k) => (k === "browser-tab" ? "the browser tab" : k)).join(" and ");
-    throw new Error(`“${command.name}” needs ${what}, which AI Chat can’t read. Run it from the launcher instead.`);
+    throw new Error(`“${command.name}” needs ${what}, which AI Chat can’t resolve. Run it from the launcher instead.`);
   }
   return result.prompt;
 }

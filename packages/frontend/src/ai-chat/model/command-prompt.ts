@@ -58,10 +58,12 @@ export function applyCommandPrompt(template: string, context: PromptContext): Pr
   const unsupported = new Set<string>();
   let usedInput = false;
   let firstArgument: string | undefined;
+  const argumentsSeen = new Set<string>();
   const prompt = template.replace(PLACEHOLDER, (raw, key: string, tail = "") => {
     const root = key.split(".")[0];
     if (!KNOWN.has(root)) return raw;
     const attrs = attributes(tail);
+    if (["date", "datetime", "time", "day"].includes(root) && (attrs.format !== undefined || attrs.offset !== undefined)) unsupported.add(`${root} format or offset`);
     let value: string;
     switch (root) {
       case "selection":
@@ -69,15 +71,18 @@ export function applyCommandPrompt(template: string, context: PromptContext): Pr
         value = context.input;
         break;
       case "argument": {
-        const name = attrs.name ?? "";
+        const name = attrs.name || `Argument ${argumentsSeen.size + 1}`;
+        argumentsSeen.add(name);
         firstArgument ??= name;
         if (name === firstArgument) {
           usedInput = true;
           value = context.input || attrs.default || "";
         } else value = attrs.default ?? "";
+        if (!value && attrs.default === undefined) unsupported.add(`argument "${name}"`);
         break;
       }
       case "clipboard":
+        if (attrs.offset !== undefined && (!/^\d+$/.test(attrs.offset) || Number(attrs.offset) !== 0)) unsupported.add("clipboard offset");
         if (context.clipboard === undefined) unsupported.add("clipboard");
         value = context.clipboard ?? "";
         break;

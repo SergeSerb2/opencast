@@ -73,7 +73,25 @@ describe("applyCommandPrompt", () => {
 
   it("puts the composer text into {selection} and the first argument", () => {
     expect(applyCommandPrompt("Fix:\n\n{selection}", { input: "teh cat", now })).toEqual({ ok: true, prompt: "Fix:\n\nteh cat" });
-    expect(applyCommandPrompt('Translate to {argument name="lang" default="French"}: {argument name="text"}', { input: "German", now })).toEqual({ ok: true, prompt: "Translate to German: " });
+    expect(applyCommandPrompt('Translate {argument name="text"} to {argument name="lang" default="French"}', { input: "hello", now })).toEqual({ ok: true, prompt: "Translate hello to French" });
+  });
+
+  it("rejects required arguments the composer cannot supply", () => {
+    expect(applyCommandPrompt('Translate {argument name="text"} to {argument name="language"}', { input: "hello", now })).toEqual({ ok: false, unsupported: ['argument "language"'] });
+    expect(applyCommandPrompt('{argument} {argument}', { input: "hello", now })).toEqual({ ok: false, unsupported: ['argument "Argument 2"'] });
+    expect(applyCommandPrompt('{argument name="text"}', { input: "", now })).toEqual({ ok: false, unsupported: ['argument "text"'] });
+    expect(applyCommandPrompt('{argument name="text"} {argument name="text"}', { input: "hello", now })).toEqual({ ok: true, prompt: "hello hello" });
+  });
+
+  it("rejects clipboard history offsets instead of using the current clipboard", () => {
+    expect(applyCommandPrompt('{clipboard offset="2"}', { input: "", clipboard: "current", now })).toEqual({ ok: false, unsupported: ["clipboard offset"] });
+    expect(applyCommandPrompt('{clipboard offset="0"}', { input: "", clipboard: "current", now })).toEqual({ ok: true, prompt: "current" });
+  });
+
+  it.each(["date", "datetime", "time", "day"])("rejects unsupported %s formats and offsets", (kind) => {
+    for (const attrs of ['format="yyyy-MM-dd"', 'offset="+1d"', 'format="yyyy-MM-dd" offset="+1d"']) {
+      expect(applyCommandPrompt(`{${kind} ${attrs}}`, { input: "", now })).toEqual({ ok: false, unsupported: [`${kind} format or offset`] });
+    }
   });
 
   it("appends the input when the template has no input placeholder", () => {
