@@ -86,7 +86,9 @@ export class SettingsService {
   }
 
   private notify(key: SettingsKey, value: unknown): void {
-    for (const l of this.listeners) l(key, value);
-    this.events.emit("settings.changed", { key, value });
+    this.db.afterCommit(() => {
+      for (const l of this.listeners) l(key, value);
+      this.events.emit("settings.changed", { key, value });
+    });
   }
 }

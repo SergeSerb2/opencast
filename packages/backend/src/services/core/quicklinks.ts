@@ -131,7 +131,8 @@ export async function openQuicklink(
     await ctx.native.call("open.url", { url: url.href, app: link.openWith,
       ...(ctx.settings.get("quicklinks.preferExistingTabs") ? { preferExistingTabs: true } : {}) });
   }
-  save(ctx, "quicklinks", { ...link, openCount: (link.openCount ?? 0) + 1 });
+  const current = ctx.entities.get<Quicklink>("quicklinks", link.id)?.data;
+  if (current) save(ctx, "quicklinks", { ...current, openCount: (current.openCount ?? 0) + 1 });
 }
 export const quicklinksService: Service = {
   name: "core.quicklinks",

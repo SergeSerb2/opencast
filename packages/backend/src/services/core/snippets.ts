@@ -155,6 +155,12 @@ export const snippetsService: Service = {
           },
         }),
       );
+    const trackUse = (id: string) => {
+      const current = ctx.entities.get<Snippet>("snippets", id)?.data;
+      if (current) save(ctx, "snippets", {
+        ...current, copyCount: (current.copyCount ?? 0) + 1, lastUsedAt: Date.now(),
+      });
+    };
     const use = async (
       id: string,
       arguments_: Record<string, string> | undefined,
@@ -172,22 +178,14 @@ export const snippetsService: Service = {
           for (let i = 0; i < resolved.cursorOffset; i++)
             await ctx.native.call("input.pressKeys", { key: "arrowLeft" });
       } else await ctx.native.call("clipboard.write", { content });
-      save(ctx, "snippets", {
-        ...snippet,
-        copyCount: (snippet.copyCount ?? 0) + 1,
-        lastUsedAt: Date.now(),
-      });
+      trackUse(id);
     };
     ctx.native.serve("snippets.resolve", async ({ id }) => {
       const snippet = ctx.entities.get<Snippet>("snippets", id)?.data;
       if (!snippet || !ctx.settings.get("snippets.autoExpansionEnabled"))
         return null;
       const resolved = await render(snippet.text, undefined, id);
-      save(ctx, "snippets", {
-        ...snippet,
-        copyCount: (snippet.copyCount ?? 0) + 1,
-        lastUsedAt: Date.now(),
-      });
+      trackUse(id);
       return { text: resolved.text, cursorOffset: resolved.cursorOffset };
     });
     ctx.rpc.handleAll({

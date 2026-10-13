@@ -221,6 +221,6 @@ export class EntityStore {
   }
 
   private notify(change: EntityChange): void {
-    for (const l of this.listeners) l(change);
+    this.db.afterCommit(() => { for (const l of this.listeners) l(change); });
   }
 }

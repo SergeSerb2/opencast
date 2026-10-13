@@ -57,6 +57,14 @@ export const notesService: Service = {
       index(id);
       ctx.events.emit("notes.changed", { id, deleted });
     });
+    const withMetadata = (note: Note): Note => ({
+      ...note,
+      ...(ctx.entities.get<Pick<Note, "lastOpenedAt" | "caret">>("localState", `note:${note.id}`)?.data ?? {}),
+    });
+    const metadata = (id: string, patch: Pick<Note, "lastOpenedAt" | "caret">) =>
+      ctx.entities.put("localState", `note:${id}`, {
+        ...(ctx.entities.get("localState", `note:${id}`)?.data ?? {}), ...patch,
+      });
     ctx.rpc.handleAll({
       "notes.list": ({ query = "" }) => {
         const match = ftsQuery(query);
@@ -77,13 +85,13 @@ export const notesService: Service = {
               Number(!!b.pinned) - Number(!!a.pinned) ||
               b.updatedAt - a.updatedAt,
           )
-          .map(summary);
+          .map(n => summary(withMetadata(n)));
       },
       "notes.get": ({ id }) => {
         const note = ctx.entities.get<Note>("notes", id)?.data;
-        return note
-          ? save(ctx, "notes", { ...note, lastOpenedAt: Date.now() })
-          : null;
+        if (!note) return null;
+        metadata(id, { lastOpenedAt: Date.now() });
+        return withMetadata(requireEntity<Note>(ctx, "notes", id));
       },
       "notes.create": ({ content = "" }) =>
         save(ctx, "notes", {
@@ -94,19 +102,22 @@ export const notesService: Service = {
         }),
       "notes.update": ({ id, content, pinned, caret }) => {
         const old = requireEntity<Note>(ctx, "notes", id);
-        return save(ctx, "notes", {
+        if (caret !== undefined) metadata(id, { caret });
+        if ((content === undefined || content === old.content) &&
+            (pinned === undefined || pinned === old.pinned)) return withMetadata(old);
+        return withMetadata(save(ctx, "notes", {
           ...old,
           content: content ?? old.content,
           title: noteTitle(content ?? old.content),
           pinned: pinned ?? old.pinned,
-          caret: caret ?? old.caret,
-        });
+        }));
       },
       "notes.delete": ({ id }) => {
         ctx.entities.delete("notes", id);
+        ctx.entities.delete("localState", `note:${id}`);
       },
       "notes.recent": () =>
-        list<Note>(ctx, "notes").sort(
+        list<Note>(ctx, "notes").map(withMetadata).sort(
           (a, b) =>
             (b.lastOpenedAt ?? b.updatedAt) - (a.lastOpenedAt ?? a.updatedAt),
         )[0] ?? null,

@@ -23,6 +23,7 @@ export class Database {
   private readonly statements = new Map<string, StatementSync>();
   private readonly migrations: Migration[] = [];
   private txDepth = 0;
+  private commitHooks: (() => void)[][] = [];
 
   constructor(readonly path: string) {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
@@ -85,16 +86,28 @@ export class Database {
     const savepoint = `sp_${this.txDepth}`;
     this.raw.exec(this.txDepth === 0 ? "BEGIN IMMEDIATE" : `SAVEPOINT ${savepoint}`);
     this.txDepth++;
+    this.commitHooks.push([]);
+    let result: T;
     try {
-      const result = fn();
-      this.txDepth--;
-      this.raw.exec(this.txDepth === 0 ? "COMMIT" : `RELEASE ${savepoint}`);
-      return result;
+      result = fn();
+      this.raw.exec(this.txDepth === 1 ? "COMMIT" : `RELEASE ${savepoint}`);
     } catch (error) {
+      this.raw.exec(this.txDepth === 1 ? "ROLLBACK" : `ROLLBACK TO ${savepoint}`);
+      this.commitHooks.pop();
       this.txDepth--;
-      this.raw.exec(this.txDepth === 0 ? "ROLLBACK" : `ROLLBACK TO ${savepoint}`);
       throw error;
     }
+    const hooks = this.commitHooks.pop()!;
+    this.txDepth--;
+    if (this.txDepth) this.commitHooks[this.txDepth - 1].push(...hooks);
+    else for (const hook of hooks) hook();
+    return result;
+  }
+
+  /** Side effects run only after the outer transaction commits. */
+  afterCommit(fn: () => void): void {
+    if (this.txDepth) this.commitHooks[this.txDepth - 1].push(fn);
+    else fn();
   }
 
   close(): void {

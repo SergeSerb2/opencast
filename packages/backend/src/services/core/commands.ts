@@ -276,6 +276,19 @@ export const commandsService: Service = {
         throw RpcError.invalidParams(
           `Command is disabled or unavailable: ${id}`,
         );
+      if (request.source === "deeplink" && (
+        id === "builtin:clipboard.clearClipboardHistory" ||
+        ["emptyTrash", "restart", "shutDown", "logOut", "sleep", "quitAllApplications", "quitAllApplicationsExceptFrontmost", "ejectAllDisks"].some(action => id === `builtin:system.${action}`) ||
+        id === "builtin:core.quitApp"
+      )) {
+        const { index } = await ctx.native.call("alert.show", {
+          title: `Run ${command.title}?`,
+          message: "An external link requested this command. Confirm to continue.",
+          buttons: ["Cancel", command.title],
+          style: "warning",
+        });
+        if (index !== 1) return { kind: "done", closeWindow: false };
+      }
       for (const arg of command.arguments ?? []) {
         const value =
           request.arguments?.[arg.name] ??
