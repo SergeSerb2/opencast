@@ -1,6 +1,6 @@
 import AppKit
 import Carbon
-import SurgecastCore
+import OpenCastCore
 
 @MainActor final class Hotkeys {
   var hyperEnabled = false
@@ -104,7 +104,7 @@ import SurgecastCore
   }
   private func pressed(_ number: UInt32) {
     guard let id = ids[number] else { return }
-    if id == "surgecast.toggle" { toggle?() } else { hub.emit("hotkey.pressed", ["id": id]) }
+    if id == "opencast.toggle" { toggle?() } else { hub.emit("hotkey.pressed", ["id": id]) }
   }
   func record() async -> Any {
     cancelRecording()

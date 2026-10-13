@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ScriptCommand } from "@surgecast/protocol";
+import type { ScriptCommand } from "@opencast/protocol";
 import {
   ALL_PACKAGES,
   abbreviateHome,
@@ -97,7 +97,7 @@ describe("helpers", () => {
   });
 
   it("builds title deeplinks", () => {
-    expect(scriptDeeplink({ title: "Kill Port / Process" })).toBe("surgecast://script-commands/Kill%20Port%20%2F%20Process");
+    expect(scriptDeeplink({ title: "Kill Port / Process" })).toBe("opencast://script-commands/Kill%20Port%20%2F%20Process");
   });
 
   it("names the language from the shebang or the extension", () => {

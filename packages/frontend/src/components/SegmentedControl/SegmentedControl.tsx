@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Image } from "../../icons/Image";
 import "./segmented-control.css";
 

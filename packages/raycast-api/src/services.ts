@@ -109,7 +109,7 @@ export async function showToast(optionsOrStyle: any, title?: string, message?: s
   const toast = new Toast(typeof optionsOrStyle === "string" ? { style: optionsOrStyle, title, message } : optionsOrStyle);
   await toast.show(); return toast;
 }
-const browserUnavailable = async () => { throw new Error("BrowserExtension is not supported yet: Surgecast has no connected browser extension"); };
+const browserUnavailable = async () => { throw new Error("BrowserExtension is not supported yet: OpenCast has no connected browser extension"); };
 export const BrowserExtension = { getTabs: browserUnavailable, getContent: browserUnavailable, executeJavaScript: browserUnavailable };
 setCapability("browser", BrowserExtension);
 export const WindowManagement = {

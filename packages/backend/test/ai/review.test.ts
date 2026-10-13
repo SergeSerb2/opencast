@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import type { AIMessage, AIToolInfo } from "@surgecast/protocol";
+import type { AIMessage, AIToolInfo } from "@opencast/protocol";
 import { configuredProvider, harness, sseResponse, completion } from "./harness";
 import { mapRequest, toolName } from "../../src/services/ai/request-mapping";
 import { replayMessage } from "../../src/services/ai/chats";
@@ -44,7 +44,7 @@ it("reconciles later unrecorded tool calls after an earlier completed snapshot",
 it.each(["text", "image", "pdf"])("preserves submitted %s attachments after original edits and deletion", async kind => {
   h = await harness();
   await h.rpc("ai.providers.upsert", { provider: configuredProvider });
-  directory = await mkdtemp(join(tmpdir(), "surgecast-review-attachment-"));
+  directory = await mkdtemp(join(tmpdir(), "opencast-review-attachment-"));
   const path = join(directory, kind === "image" ? "image.png" : kind === "pdf" ? "document.pdf" : "file.txt");
   await writeFile(path, kind === "pdf" ? "%PDF-1.4\nBT (Original) Tj ET" : "Original");
   const bodies: any[] = [];

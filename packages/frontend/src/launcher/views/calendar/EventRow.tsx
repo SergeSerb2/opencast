@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { CalendarEvent } from "@surgecast/protocol";
+import type { CalendarEvent } from "@opencast/protocol";
 import { Tag, Tooltip } from "../../../components";
 import { Icon } from "../../../icons/Icon";
 import { conferenceProvider, hasEnded, relativeTag, timeLabel } from "./schedule";

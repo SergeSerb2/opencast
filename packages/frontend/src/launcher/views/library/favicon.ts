@@ -1,4 +1,4 @@
-import type { SettingsValues } from "@surgecast/protocol";
+import type { SettingsValues } from "@opencast/protocol";
 
 export type FaviconProvider = SettingsValues["advanced.faviconProvider"];
 

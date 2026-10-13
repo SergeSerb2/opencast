@@ -1,4 +1,4 @@
-import type { CommandInfo, CommandKind, ImageLike, InstalledExtension } from "@surgecast/protocol";
+import type { CommandInfo, CommandKind, ImageLike, InstalledExtension } from "@opencast/protocol";
 import { BUILTIN_PAGES, commandGroup, EXTENSION_FALLBACK_ICON } from "./catalog";
 
 export type ShortcutCategoryId = "applications" | "extensions" | "scripts" | "quicklinks" | "snippets" | "ai" | "window-layouts";
@@ -121,8 +121,8 @@ export function buildShortcutTree(commands: readonly CommandInfo[], extensions: 
     const grouped = new Map<string, CommandInfo[]>();
     for (const command of members) {
       const group = commandGroup(command);
-      const coreCommand = command.kind === "builtin" && command.extensionTitle === "Surgecast" && !BUILTIN_PAGES.some((page) => page.commandGroups?.includes(group ?? ""));
-      const key = coreCommand ? "surgecast" : group ?? "other";
+      const coreCommand = command.kind === "builtin" && command.extensionTitle === "OpenCast" && !BUILTIN_PAGES.some((page) => page.commandGroups?.includes(group ?? ""));
+      const key = coreCommand ? "opencast" : group ?? "other";
       grouped.set(key, [...(grouped.get(key) ?? []), command]);
     }
     const groups = [...grouped].map(([key, list]) => groupFor(key, list, extensions)).sort(byTitle);

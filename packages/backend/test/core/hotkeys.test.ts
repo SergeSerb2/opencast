@@ -1,11 +1,11 @@
 import { afterEach, expect, it, vi } from "vitest";
-import type { Hotkey } from "@surgecast/protocol";
+import type { Hotkey } from "@opencast/protocol";
 import { fixture } from "./fixture";
 let f: Awaited<ReturnType<typeof fixture>>;
 afterEach(async () => { await f?.close(); });
 it.each(["global", "command"] as const)("preserves a %s hotkey on conflict, retries and removes only when requested", async (kind) => {
   f = await fixture();
-  const id = kind === "global" ? "surgecast.toggle" : "builtin:core.copySurgecastVersion";
+  const id = kind === "global" ? "opencast.toggle" : "builtin:core.copyOpenCastVersion";
   const old: Hotkey = kind === "global" ? f.ctx.settings.get("general.globalHotkey") : { modifiers: ["opt"], key: "space" };
   const conflicting: Hotkey = { modifiers: ["cmd"], key: "space" };
   const replacement: Hotkey = { modifiers: ["cmd", "shift"], key: "v" };

@@ -26,14 +26,14 @@ import WebKit
       [
         "ai-chat": "AI Chat", "notes": "Notes", "settings": "Settings", "welcome": "Welcome",
         "theme-studio": "Theme Studio",
-      ][kind] ?? "Surgecast"
+      ][kind] ?? "OpenCast"
     window.titlebarAppearsTransparent = true
     window.titleVisibility = .hidden
     window.isReleasedWhenClosed = false
     if kind == "ai-chat" { window.minSize = NSSize(width: 640, height: 420) }
     window.contentView = web
     window.center()
-    window.setFrameAutosaveName("Surgecast.\(kind)")
+    window.setFrameAutosaveName("OpenCast.\(kind)")
     super.init(window: window)
     window.delegate = self
   }

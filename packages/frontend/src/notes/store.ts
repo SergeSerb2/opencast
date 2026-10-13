@@ -1,4 +1,4 @@
-import type { Note } from "@surgecast/protocol";
+import type { Note } from "@opencast/protocol";
 import { create } from "zustand";
 import { UNTITLED } from "./lib/text";
 

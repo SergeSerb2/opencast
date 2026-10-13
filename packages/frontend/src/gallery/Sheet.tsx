@@ -32,7 +32,7 @@ import { ListItemRow } from "../components/List/ListItemRow";
 import { tile } from "../bridge/mock/fixtures/commands";
 import { RAYCAST_ICONS } from "../icons/raycast-icons.generated";
 import { Image } from "../icons/Image";
-import { SurgecastLogo } from "../icons/glyphs";
+import { OpenCastLogo } from "../icons/glyphs";
 import { sc } from "../lib/keyboard";
 import { ThemeScope, type Appearance } from "../theme/ThemeProvider";
 
@@ -51,7 +51,7 @@ function Controls() {
   const [on, setOn] = useState(true);
   const [check, setCheck] = useState(true);
   const [segment, setSegment] = useState<"list" | "grid" | "detail">("list");
-  const [text, setText] = useState("Surgecast");
+  const [text, setText] = useState("OpenCast");
   const [area, setArea] = useState("Multi-line text\ngrows with content");
   const [tags, setTags] = useState(["design", "launcher"]);
   const [choice, setChoice] = useState("all");
@@ -186,7 +186,7 @@ function Column({ appearance }: { appearance: Appearance }) {
             <Image source={{ fileIcon: "/Applications/Safari.app" }} size={22} />
             <Image source={{ fileIcon: "/Users/me/Documents/" }} size={22} />
             <span className="gallery-logo">
-              <SurgecastLogo size={22} />
+              <OpenCastLogo size={22} />
             </span>
           </div>
         </Section>
@@ -265,7 +265,7 @@ function Column({ appearance }: { appearance: Appearance }) {
                 <Metadata.TagList.Item text="work" color="raycast-blue" />
                 <Metadata.TagList.Item text="urgent" color="raycast-red" />
               </Metadata.TagList>
-              <Metadata.Link title="URL" text="surgecast.app" target="https://surgecast.app" />
+              <Metadata.Link title="URL" text="opencast.app" target="https://opencast.app" />
             </MetadataView>
             <MetadataView layout="narrow">
               <Metadata.Label title="Author" text="Mira" icon="person-16" />
@@ -276,8 +276,8 @@ function Column({ appearance }: { appearance: Appearance }) {
 
         <Section title="Markdown">
           <div className="gallery-markdown">
-            <Markdown>{"## Detail markdown\n\nParagraph with **bold**, `inline code` and a [link](https://surgecast.app).\n\n- one\n- two\n\n- [x] done\n- [ ] todo\n\n```js\nconst x = 42; // answer\n```"}</Markdown>
-            <Markdown variant="chat">{"### Chat markdown\n\nBody text at 14px with a [link](https://surgecast.app).\n\n```ts\nexport function add(a: number, b: number) {\n  return a + b;\n}\n```\n\n| A | B |\n|---|---|\n| 1 | 2 |"}</Markdown>
+            <Markdown>{"## Detail markdown\n\nParagraph with **bold**, `inline code` and a [link](https://opencast.app).\n\n- one\n- two\n\n- [x] done\n- [ ] todo\n\n```js\nconst x = 42; // answer\n```"}</Markdown>
+            <Markdown variant="chat">{"### Chat markdown\n\nBody text at 14px with a [link](https://opencast.app).\n\n```ts\nexport function add(a: number, b: number) {\n  return a + b;\n}\n```\n\n| A | B |\n|---|---|\n| 1 | 2 |"}</Markdown>
           </div>
         </Section>
       </div>

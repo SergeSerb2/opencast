@@ -1,6 +1,6 @@
 import AppKit
 import ApplicationServices
-import SurgecastCore
+import OpenCastCore
 
 @MainActor final class Input {
   static let injected: Int64 = 0x5343_4748

@@ -1,5 +1,5 @@
 import { memo, useState, type CSSProperties } from "react";
-import type { ColorLike, ImageLike, ImageMask } from "@surgecast/protocol";
+import type { ColorLike, ImageLike, ImageMask } from "@opencast/protocol";
 import { getEnv } from "../bridge/env";
 import { useTheme } from "../theme/ThemeProvider";
 import { resolveColor } from "./colors";
@@ -29,7 +29,7 @@ function fileIconFallback(path: string): ResolvedImage {
 
 /**
  * Renders any Raycast `Image.ImageLike`: Icon enum glyphs, emoji, URLs, local
- * paths (`surgecast-file://`), Finder icons (`surgecast-icon://`), tiles,
+ * paths (`opencast-file://`), Finder icons (`opencast-icon://`), tiles,
  * light/dark pairs, tint colors and circle/rounded-rectangle masks, with fallback.
  */
 export const Image = memo(function Image({ source, size = 16, className, style, placeholder = false, tintColor, alt = "" }: ImageProps) {

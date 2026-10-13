@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useSetting } from "../../../bridge/settings";

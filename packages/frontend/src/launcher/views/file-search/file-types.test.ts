@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FileResult } from "@surgecast/protocol";
+import type { FileResult } from "@opencast/protocol";
 import { fileTypeName, isImageFile, isTextFile, matchesFileType } from "./file-types";
 
 const file = (name: string, kind = "File"): FileResult => ({ path: `/Users/me/${name}`, name, kind });

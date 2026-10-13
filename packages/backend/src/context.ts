@@ -11,7 +11,7 @@ import type {
   LaunchResult,
   ModelRef,
   ToastState,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { Database } from "./db/database";
 import type { EntityStore } from "./db/entities";
 import type { EventBus } from "./events";

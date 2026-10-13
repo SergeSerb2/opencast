@@ -1,4 +1,4 @@
-import type { ClipboardItem } from "@surgecast/protocol";
+import type { ClipboardItem } from "@opencast/protocol";
 import { useRef, useState } from "react";
 import { backend } from "../../../bridge/backend";
 import { Action, ActionPanel, Form, showFailureToast, showToast, useNavigation } from "../../../components";

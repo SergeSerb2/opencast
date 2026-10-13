@@ -1,4 +1,4 @@
-import type { AppInfo, CalculatorResult, EmojiItem, FileResult } from "@surgecast/protocol";
+import type { AppInfo, CalculatorResult, EmojiItem, FileResult } from "@opencast/protocol";
 
 const now = Date.now();
 const min = 60_000;
@@ -22,11 +22,11 @@ const HOME = "/Users/me";
 export const FILES: FileResult[] = [
   { path: `${HOME}/Documents/Quarterly Report.pdf`, name: "Quarterly Report.pdf", kind: "File", size: 2_480_000, modified: now - 1 * day },
   { path: `${HOME}/Documents/Roadmap 2027.key`, name: "Roadmap 2027.key", kind: "File", size: 18_200_000, modified: now - 3 * day },
-  { path: `${HOME}/Downloads/surgecast-0.1.0.dmg`, name: "surgecast-0.1.0.dmg", kind: "File", size: 96_400_000, modified: now - 2 * hour },
+  { path: `${HOME}/Downloads/opencast-0.1.0.dmg`, name: "opencast-0.1.0.dmg", kind: "File", size: 96_400_000, modified: now - 2 * hour },
   { path: `${HOME}/Desktop/Screenshot 2026-10-12 at 09.41.22.png`, name: "Screenshot 2026-10-12 at 09.41.22.png", kind: "File", size: 412_000, modified: now - 1 * day - 5 * hour },
-  { path: `${HOME}/Developer/surgecast`, name: "surgecast", kind: "Folder", size: 0, modified: now - 20 * min },
-  { path: `${HOME}/Developer/surgecast/README.md`, name: "README.md", kind: "File", size: 6_120, modified: now - 4 * hour },
-  { path: `${HOME}/Developer/surgecast/package.json`, name: "package.json", kind: "File", size: 1_204, modified: now - 6 * day },
+  { path: `${HOME}/Developer/opencast`, name: "opencast", kind: "Folder", size: 0, modified: now - 20 * min },
+  { path: `${HOME}/Developer/opencast/README.md`, name: "README.md", kind: "File", size: 6_120, modified: now - 4 * hour },
+  { path: `${HOME}/Developer/opencast/package.json`, name: "package.json", kind: "File", size: 1_204, modified: now - 6 * day },
   { path: `${HOME}/Documents/Invoices`, name: "Invoices", kind: "Folder", size: 0, modified: now - 12 * day },
   { path: `${HOME}/Documents/Invoices/Invoice-1042.pdf`, name: "Invoice-1042.pdf", kind: "File", size: 88_000, modified: now - 12 * day },
   { path: `${HOME}/Pictures/Wallpapers/Sequoia Sunrise.heic`, name: "Sequoia Sunrise.heic", kind: "File", size: 5_400_000, modified: now - 40 * day },

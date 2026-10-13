@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { AIModel, AIProvider, AIToolCall } from "@surgecast/protocol";
+import type { AIModel, AIProvider, AIToolCall } from "@opencast/protocol";
 import type { AICompletionRequest } from "../../context";
 import type { PreparedTurn, Part } from "./attachments";
 import {

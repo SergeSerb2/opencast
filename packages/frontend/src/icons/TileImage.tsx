@@ -1,5 +1,5 @@
 import { memo, type CSSProperties } from "react";
-import type { TileImage } from "@surgecast/protocol";
+import type { TileImage } from "@opencast/protocol";
 import { Icon } from "./Icon";
 
 export interface TileImageViewProps {

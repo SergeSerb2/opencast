@@ -1,4 +1,4 @@
-import type { EmojiItem } from "@surgecast/protocol";
+import type { EmojiItem } from "@opencast/protocol";
 
 /** Backend emoji groups, in display order, with their filter icons. */
 export const EMOJI_CATEGORIES: { title: string; icon: string }[] = [

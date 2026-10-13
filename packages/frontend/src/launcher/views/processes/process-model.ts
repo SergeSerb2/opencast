@@ -1,4 +1,4 @@
-import type { ImageLike, ProcessInfo } from "@surgecast/protocol";
+import type { ImageLike, ProcessInfo } from "@opencast/protocol";
 import { fuzzyFilter, type MatchRange } from "../../../lib/fuzzy";
 
 export type ProcessScope = "all" | "apps";

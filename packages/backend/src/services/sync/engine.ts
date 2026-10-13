@@ -2,7 +2,7 @@ import { hostname } from "node:os";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
 import { SYNC_CATEGORIES, SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncStatus, type SyncDevice,
-  type SyncVault, type SyncPullPage, type SyncPushResult, type SyncPushRecord } from "@surgecast/protocol";
+  type SyncVault, type SyncPullPage, type SyncPushResult, type SyncPushRecord } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import type { EntityRecord } from "../../db/entities";
 import { createVault, unwrapVault, deriveKeys, decode, encryptRecord, decryptRecord, validateVault, type VaultKeys } from "./crypto";
@@ -361,7 +361,7 @@ export class SyncEngine {
       await this.stop();
       this.ctx.settings.set("sync.enabled", false);
       this.phase = "disabled"; this.emit();
-      await http.request("/v1/vault", "DELETE", undefined, { "X-Surgecast-Confirm": "wipe" });
+      await http.request("/v1/vault", "DELETE", undefined, { "X-OpenCast-Confirm": "wipe", "X-Surgecast-Confirm": "wipe" });
       await this.ctx.secrets.delete("sync:vmk"); await this.ctx.secrets.delete("sync:token");
       this.setState("cursor", "0"); this.phase = "disabled"; this.lastError = undefined; this.emit();
     });

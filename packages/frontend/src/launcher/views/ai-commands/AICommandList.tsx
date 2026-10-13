@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { AICommand, ImageLike } from "@surgecast/protocol";
+import type { AICommand, ImageLike } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";

@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import type { BackendMethods, AIStreamEvent } from "@surgecast/protocol";
+import type { BackendMethods, AIStreamEvent } from "@opencast/protocol";
 import type { AppContext } from "../../src/context";
 import type { NativeApi } from "../../src/native/client";
 import { Database } from "../../src/db/database";

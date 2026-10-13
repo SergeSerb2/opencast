@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { basename } from "node:path";
-import type { ProcessInfo } from "@surgecast/protocol";
+import type { ProcessInfo } from "@opencast/protocol";
 import type { Service } from "../../context";
 import { RpcError } from "../../util/errors";
 const exec = promisify(execFile);
@@ -52,7 +52,7 @@ export const processesService: Service = {
       "system.killProcess": async ({ pid, force = false }) => {
         if (!Number.isSafeInteger(pid) || pid <= 1 || pid === process.pid)
           throw RpcError.invalidParams(
-            "Choose a valid process other than Surgecast",
+            "Choose a valid process other than OpenCast",
           );
         const list = await processes();
         const target = list.find((p) => p.pid === pid);

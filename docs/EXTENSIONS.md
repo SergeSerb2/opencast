@@ -1,6 +1,6 @@
-# Extensions in Surgecast
+# Extensions in OpenCast
 
-Surgecast runs built Raycast extension commands without rewriting their JavaScript.
+OpenCast runs built Raycast extension commands without rewriting their JavaScript.
 The implementation lives in `packages/raycast-api` and
 `packages/backend/src/services/extensions`. The public API declarations and enum
 constants come from the MIT-licensed public API; the runtime and host are original.
@@ -17,7 +17,7 @@ normally from the extension's folder. Standard store bundles include their utili
 `build.mjs` produces `dist/runtime.cjs`, `dist/worker.cjs`, declarations, notices and
 shared React/reconciler/scheduler modules. Keep this whole directory together when
 packaging the application. The backend finds it at `Resources/raycast-api/`, at the
-monorepo package path, or through `SURGECAST_EXTENSION_WORKER`.
+monorepo package path, or through `OPENCAST_EXTENSION_WORKER`.
 
 The API uses React 19 and a persistence reconciler. Commits send full UINode trees at
 most once per 16 ms, following `EXTENSION-UI.md`. React element props such as actions,
@@ -59,7 +59,7 @@ own RPCs. Session trees arrive through `ext.session.updated`.
 
 Store search, details, README retrieval, install and version updates use the public
 store API at `https://backend.raycast.com/api/v1`. Anonymous access was verified.
-Owners can override the base with `SURGECAST_EXTENSION_STORE_URL`. Store updates
+Owners can override the base with `OPENCAST_EXTENSION_STORE_URL`. Store updates
 compare commit/version identity. Installation stages the new package and backs up
 an existing install before replacing it; a failed database write restores the old
 files. ZIPs are checked for traversal, absolute paths, duplicate destinations,
@@ -92,7 +92,7 @@ worker stdout/stderr is drained without forwarding it into backend logs.
 
 LocalStorage uses the local `extension_storage` SQLite table and is shared between
 commands of an extension. Cache is synchronous, namespaced, persisted in a separate
-SQLite database under `extension-support/<name>/com.surgecast.api.cache/`, and evicts
+SQLite database under `extension-support/<name>/com.opencast.api.cache/`, and evicts
 by UTF-8 value size/LRU. Its default capacity is 10,000,000 bytes. Cache subscriptions
 work across Cache objects in a worker, including the unbound subscribe function used
 by `@raycast/utils.useCachedState`. Cache and LocalStorage do not sync.
@@ -106,10 +106,10 @@ ID, or an explicit local alias. The host rejects missing models clearly. Decisio
 requests also use the configured engine and validate their JSON answers.
 
 PKCE authorization generates a random state/verifier and SHA-256 challenge. The
-host opens the provider URL and accepts a matching state from `surgecast://oauth`
+host opens the provider URL and accepts a matching state from `opencast://oauth`
 or `raycast://oauth` native URL events. Flows expire and state cannot be reused.
-Providers must accept the Surgecast redirect and the extension's own client ID.
-Surgecast does not use Raycast's OAuth proxy or client metadata servers. Bundles
+Providers must accept the OpenCast redirect and the extension's own client ID.
+OpenCast does not use Raycast's OAuth proxy or client metadata servers. Bundles
 that hardcode Raycast-owned OAuth clients/redirects need provider-side configuration
 or an extension change. Token refresh and exchange remain the extension's job.
 
@@ -139,7 +139,7 @@ Build the extension with its own build script, then call:
 {"method":"extensions.develop","params":{"path":"/absolute/path/to/project"}}
 ```
 
-Surgecast watches JS, JSON and asset changes recursively, coalesces rebuilds for
+OpenCast watches JS, JSON and asset changes recursively, coalesces rebuilds for
 250 ms, reloads active view/menu workers and preserves launch arguments/context.
 It leaves the developer's files in place. Build failures surface as a toast. Pending
 reloads finish before uninstall/shutdown so they cannot resurrect an uninstalled
@@ -184,13 +184,13 @@ Reproduce after building both packages:
 
 ```sh
 node packages/backend/dist/index.mjs --no-native --dev \
-  --resources "$PWD" --data-dir /tmp/surgecast-extension-check --port 18943 --token t
+  --resources "$PWD" --data-dir /tmp/opencast-extension-check --port 18943 --token t
 # In a second terminal:
 node packages/backend/test/extensions/verify-store.mjs 'ws://127.0.0.1:18943/rpc?token=t'
 ```
 
 The opt-in runner downloads the public bundles and emits its report. Set
-`SURGECAST_EXTENSION_REPORT` to save JSON. It returns a failing status for incorrect
+`OPENCAST_EXTENSION_REPORT` to save JSON. It returns a failing status for incorrect
 view types or missing setup. Unit tests use temporary fixtures and do not need store
 access.
 

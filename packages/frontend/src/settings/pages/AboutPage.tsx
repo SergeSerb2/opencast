@@ -9,7 +9,7 @@ import { Dialog } from "../ui/Dialog";
 import { Intro, NavRow, Row, Section } from "../ui/layout";
 import { PageFrame } from "../ui/PageFrame";
 
-/** Major open-source components shipped in Surgecast and their licenses. */
+/** Major open-source components shipped in OpenCast and their licenses. */
 const THIRD_PARTY: { name: string; license: string }[] = [
   { name: "React", license: "MIT" },
   { name: "Zustand", license: "MIT" },
@@ -40,7 +40,7 @@ function useVersion(): string | null {
 function LicensesDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog title="Licenses" onClose={onClose} width={440} footer={<Button onClick={onClose}>Done</Button>}>
-      <p className="sc-s-dialog-text">Surgecast is free software under the MIT License. It builds on these open-source projects:</p>
+      <p className="sc-s-dialog-text">OpenCast is free software under the MIT License. It builds on these open-source projects:</p>
       <ul className="sc-s-results">
         {THIRD_PARTY.map((entry) => (
           <li key={entry.name} className="sc-s-results__item">
@@ -60,8 +60,8 @@ export function AboutPage() {
   return (
     <PageFrame title="About">
       <Intro
-        icon={{ tile: { glyph: "surgecast-logo", background: ["#FF7A7A", "#E5383B"] } }}
-        title="Surgecast"
+        icon={{ tile: { glyph: "opencast-logo", background: ["#FF7A7A", "#E5383B"] } }}
+        title="OpenCast"
         description="An open-source launcher for macOS. Your AI keys, your sync server, no paywalls."
       >
         <span className="sc-s-value" data-selectable="true">
@@ -74,13 +74,13 @@ export function AboutPage() {
         <NavRow title="Report an Issue" icon="bug-16" indicator="external" onClick={() => openUrl(LINKS.issues)} />
       </Section>
       <Section anchor="licenses">
-        <Row title="Licenses" description="Surgecast is MIT-licensed open source.">
+        <Row title="Licenses" description="OpenCast is MIT-licensed open source.">
           <Button size="small" onClick={() => setLicenses(true)}>
             Show Licenses
           </Button>
         </Row>
       </Section>
-      <p className="sc-s-disclaimer">Surgecast is an independent project. It is not affiliated with, endorsed by, or sponsored by Raycast Technologies Ltd. “Raycast” is a trademark of its owner.</p>
+      <p className="sc-s-disclaimer">OpenCast is an independent project. It is not affiliated with, endorsed by, or sponsored by Raycast Technologies Ltd. “Raycast” is a trademark of its owner.</p>
       {licenses && <LicensesDialog onClose={() => setLicenses(false)} />}
     </PageFrame>
   );

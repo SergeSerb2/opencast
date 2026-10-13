@@ -44,14 +44,14 @@ describe("settings runtime integration", () => {
     await backup.tick();
     const first = (await readdir(location))[0];
     const decoded = await decodeConfig(await readFile(join(location, first)), "synthetic-backup-passphrase", true);
-    expect(decoded.family).toBe("surge");
+    expect(decoded.family).toBe("opencast");
     expect(JSON.stringify(decoded.payload)).not.toContain("synthetic-backup-passphrase");
-    await writeFile(join(location, "personal.surgeconfig"), "keep");
+    await writeFile(join(location, "personal.openconfig"), "keep");
     await backup.tick();
     expect(await readdir(location)).toHaveLength(2);
     await backup.tick(Date.now() + 86400001);
-    expect((await readdir(location)).filter(name => name.startsWith("surgecast-backup-"))).toHaveLength(1);
-    expect(await readFile(join(location, "personal.surgeconfig"), "utf8")).toBe("keep");
+    expect((await readdir(location)).filter(name => name.startsWith("opencast-backup-"))).toHaveLength(1);
+    expect(await readFile(join(location, "personal.openconfig"), "utf8")).toBe("keep");
   });
   it("honors weather opt-out and caches explicit city forecasts", async () => {
     f = await fixture();
@@ -67,7 +67,7 @@ describe("settings runtime integration", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
   it("uses content predicates and nested ignore files including negations", async () => {
-    const root = await mkdtemp(join(tmpdir(), "surgecast-ignore-"));
+    const root = await mkdtemp(join(tmpdir(), "opencast-ignore-"));
     try {
       await mkdir(join(root, "nested"));
       await writeFile(join(root, ".gitignore"), "*.txt\n");

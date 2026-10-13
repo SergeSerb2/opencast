@@ -6,7 +6,7 @@ describe("native receiver", () => {
     // What the Swift host injects at document start (WebViewBridge.listeners), after it
     // already received a route while the page's modules had not run yet.
     const route = { kind: "settings", route: "ai" } as const;
-    window.__surgecastNative = { pending: [["window.route", route]], emit: () => undefined, on: () => () => undefined } as unknown as NativeReceiver;
+    window.__opencastNative = { pending: [["window.route", route]], emit: () => undefined, on: () => () => undefined } as unknown as NativeReceiver;
 
     vi.resetModules();
     const { installNativeReceiver, native } = await import("../bridge/native");
@@ -17,17 +17,17 @@ describe("native receiver", () => {
     expect(onRoute).toHaveBeenCalledWith(route);
 
     const later = { kind: "settings", route: "cloud-sync" } as const;
-    window.__surgecastNative?.emit("window.route", later);
+    window.__opencastNative?.emit("window.route", later);
     expect(onRoute).toHaveBeenLastCalledWith(later);
   });
 
   it("replays a route that arrived before the first subscriber", async () => {
-    window.__surgecastNative = undefined;
+    window.__opencastNative = undefined;
     vi.resetModules();
     const { installNativeReceiver, native } = await import("../bridge/native");
     installNativeReceiver();
     const route = { kind: "settings", route: "cloud-sync" } as const;
-    (window.__surgecastNative as NativeReceiver | undefined)?.emit("window.route", route);
+    (window.__opencastNative as NativeReceiver | undefined)?.emit("window.route", route);
 
     const onRoute = vi.fn();
     native.on("window.route", onRoute);

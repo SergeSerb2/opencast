@@ -42,7 +42,7 @@ import WebKit
       // Events with no listener yet are queued: WebKit can finish loading before the page's
       // modules run, and the frontend drains `pending` when it installs its own receiver.
       const pending = [];
-      window.__surgecastNative = {
+      window.__opencastNative = {
         pending,
         emit(topic, payload) {
           const fns = [...(listeners.get(topic) || [])];

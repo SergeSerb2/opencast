@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { native } from "../../../bridge/native";
@@ -19,7 +19,7 @@ type ImportState = { phase: "idle" } | { phase: "importing" } | { phase: "done";
 
 export interface ImportViewProps {
   kind: TransferKind;
-  /** JSON documents handed over by a deeplink (`surgecast://snippets/import?snippet=…`). */
+  /** JSON documents handed over by a deeplink (`opencast://snippets/import?snippet=…`). */
   pending?: string[];
   title?: string;
   icon?: ImageLike;
@@ -73,7 +73,7 @@ export function ImportView({ kind, pending, title, icon }: ImportViewProps) {
         ? [{ text: `⚠ ${state.message}`, tone: "warning" }]
         : handover && !pendingImport
           ? [{ text: "⚠ The shared data is not in the expected format", tone: "warning" }]
-          : [{ text: pendingImport ? `Add them to your ${noun.title.toLowerCase()}?` : `Choose a JSON file exported from Surgecast or Raycast` }];
+          : [{ text: pendingImport ? `Add them to your ${noun.title.toLowerCase()}?` : `Choose a JSON file exported from OpenCast or Raycast` }];
 
   const actions =
     state.phase === "done" ? (
@@ -101,7 +101,7 @@ export interface ExportViewProps {
   icon?: ImageLike;
 }
 
-/** Export Snippets / Export Quicklinks as a JSON file Raycast and Surgecast can import. */
+/** Export Snippets / Export Quicklinks as a JSON file Raycast and OpenCast can import. */
 export function ExportView({ kind, title, icon }: ExportViewProps) {
   const noun = NOUN[kind];
   const navigation = useNavigation();

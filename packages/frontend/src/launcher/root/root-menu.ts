@@ -13,7 +13,7 @@ const showWindow = (kind: "settings" | "ai-chat" | "notes", route?: string) =>
 /** The root search menu (left footer pill, ⇧⌘K). */
 export function rootMenu(): ActionPanelModel {
   return {
-    title: "Surgecast",
+    title: "OpenCast",
     sections: [
       {
         actions: [
@@ -25,7 +25,7 @@ export function rootMenu(): ActionPanelModel {
       },
       {
         actions: [
-          { id: "about", title: "About Surgecast", icon: "info-01-16", onAction: () => showWindow("settings", "about") },
+          { id: "about", title: "About OpenCast", icon: "info-01-16", onAction: () => showWindow("settings", "about") },
           { id: "docs", title: "Documentation", icon: "book-16", onAction: () => native.call("open.url", { url: "https://github.com/SergeSerb2/surgecast#readme" }).then(hideLauncher) },
           { id: "feedback", title: "Report an Issue", icon: "bug-16", onAction: () => native.call("open.url", { url: "https://github.com/SergeSerb2/surgecast/issues/new" }).then(hideLauncher) },
         ],
@@ -34,12 +34,12 @@ export function rootMenu(): ActionPanelModel {
         actions: [
           {
             id: "quit",
-            title: "Quit Surgecast",
+            title: "Quit OpenCast",
             icon: "power-16",
             style: "destructive",
             shortcut: sc("cmd", "q"),
             onAction: async () => {
-              if (await confirmAlert({ title: "Quit Surgecast?", message: "Hotkeys, snippets and clipboard history stop until you open it again.", primaryAction: { title: "Quit", style: "destructive" } }))
+              if (await confirmAlert({ title: "Quit OpenCast?", message: "Hotkeys, snippets and clipboard history stop until you open it again.", primaryAction: { title: "Quit", style: "destructive" } }))
                 await native.call("app.quit");
             },
           },

@@ -1,4 +1,4 @@
-import type { AIProvider } from "@surgecast/protocol";
+import type { AIProvider } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
 import { errorMessage } from "../../../bridge/errors";
@@ -102,7 +102,7 @@ export function ModelsPage() {
   return (
     <PageFrame title="Models & Providers" titleMode="always">
       {!isLoading && !error && !providers?.length && <OnboardingCard />}
-      <Section title="Providers" description="Surgecast sends prompts straight to these providers with your own keys." actions={<AddProviderButton />}>
+      <Section title="Providers" description="OpenCast sends prompts straight to these providers with your own keys." actions={<AddProviderButton />}>
         {providers?.length ? (
           providers.map((provider) => <ProviderListRow key={provider.id} provider={provider} needsKey={needsKey(provider.template)} />)
         ) : (

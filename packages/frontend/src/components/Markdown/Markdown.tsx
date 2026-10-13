@@ -16,7 +16,7 @@ export interface MarkdownProps {
   onOpenLink?: (url: string) => void;
 }
 
-const SAFE_URL = /^(https?:|mailto:|surgecast:|raycast:|surgecast-file:|file:|data:image\/)/i;
+const SAFE_URL = /^(https?:|mailto:|opencast:|raycast:|opencast-file:|file:|data:image\/)/i;
 
 /** Allow web links, app deeplinks, local files and inline images; drop script-like schemes. */
 export function markdownUrlTransform(url: string): string {
@@ -25,7 +25,7 @@ export function markdownUrlTransform(url: string): string {
   return SAFE_URL.test(trimmed) ? trimmed : "";
 }
 
-/** Resolve markdown image sources: local paths → surgecast-file://, keep sizing hints from Raycast's query params. */
+/** Resolve markdown image sources: local paths → opencast-file://, keep sizing hints from Raycast's query params. */
 export function resolveMarkdownImage(src: string): { url: string; width?: number; height?: number; tintColor?: string } {
   let url = src;
   let width: number | undefined;

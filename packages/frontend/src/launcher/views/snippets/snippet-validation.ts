@@ -1,4 +1,4 @@
-import type { Snippet } from "@surgecast/protocol";
+import type { Snippet } from "@opencast/protocol";
 import { validateTemplate } from "./placeholders";
 
 export const MAX_SNIPPET_LENGTH = 65_536;

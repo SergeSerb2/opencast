@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BackendEvents } from "@surgecast/protocol";
+import type { BackendEvents } from "@opencast/protocol";
 import { Emitter } from "../../../bridge/emitter";
 import { createLibraryHandlers } from "../../../bridge/mock/library";
 

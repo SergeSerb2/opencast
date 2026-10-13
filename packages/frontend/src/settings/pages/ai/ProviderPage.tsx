@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AIModel, AIProvider } from "@surgecast/protocol";
+import type { AIModel, AIProvider } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
@@ -46,9 +46,9 @@ const API_HELP: Partial<Record<string, string>> = {
 /** Setup notes shown when adding a provider from these templates. */
 const TEMPLATE_HINTS: Record<string, string> = {
   cliproxyapi: "Start CLIProxyAPI and sign in with your ChatGPT, Claude or Gemini account (see its README). If you set api-keys in its config.yaml, paste one of them as the API key.",
-  ollama: "Install Ollama and pull at least one model, e.g. `ollama pull llama3.2`. Surgecast lists the models you have installed.",
+  ollama: "Install Ollama and pull at least one model, e.g. `ollama pull llama3.2`. OpenCast lists the models you have installed.",
   lmstudio: "In LM Studio, open the Developer tab and start the local server with a model loaded.",
-  litellm: "Point Surgecast at your LiteLLM proxy. Use a virtual key as the API key if your proxy requires one.",
+  litellm: "Point OpenCast at your LiteLLM proxy. Use a virtual key as the API key if your proxy requires one.",
   azure: "Put your resource name and deployment in the URL. The API key is under Keys and Endpoint in the Azure portal.",
   custom: "Any server that implements the OpenAI API works, including vLLM, llama.cpp server, Jan and LocalAI.",
 };

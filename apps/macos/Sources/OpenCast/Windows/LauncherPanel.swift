@@ -101,6 +101,6 @@ import WebKit
   }
   func windowDidResignKey(_ notification: Notification) {
     hub.emit("window.didResignKey", ["kind": "main"])
-    if !keepVisible && Environment.env["SURGECAST_KEEP_OPEN"] != "1" { hide() }
+    if !keepVisible && Environment.env["OPENCAST_KEEP_OPEN"] != "1" { hide() }
   }
 }

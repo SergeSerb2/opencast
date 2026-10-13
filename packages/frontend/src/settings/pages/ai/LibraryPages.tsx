@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AICommand, AIPreset } from "@surgecast/protocol";
+import type { AICommand, AIPreset } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
 import { errorMessage } from "../../../bridge/errors";
@@ -26,7 +26,7 @@ function useModelName(): (ref: string | undefined) => string | undefined {
 async function importCommands() {
   const values = await promptForm({
     title: "Import AI Commands",
-    message: "Paste AI Commands exported from Surgecast or Raycast (JSON).",
+    message: "Paste AI Commands exported from OpenCast or Raycast (JSON).",
     fields: [{ id: "json", label: "JSON", type: "textarea", placeholder: '[{ "title": "Summarize", "prompt": "Summarize {selection}" }]', required: true }],
     primaryTitle: "Import",
   });
@@ -149,7 +149,7 @@ export function PresetsPage() {
   const importPresets = async () => {
     const values = await promptForm({
       title: "Import Agents",
-      message: "Paste agents exported from Surgecast as JSON. Existing agents are kept.",
+      message: "Paste agents exported from OpenCast as JSON. Existing agents are kept.",
       fields: [{ id: "json", label: "JSON", type: "textarea", required: true }],
       primaryTitle: "Import",
       validate: ({ json }) => {

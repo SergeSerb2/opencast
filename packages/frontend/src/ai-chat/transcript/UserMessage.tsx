@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
-import type { AIMessage } from "@surgecast/protocol";
+import type { AIMessage } from "@opencast/protocol";
 import { Button } from "../../components/Button/Button";
 import type { BranchInfo } from "../model/message-tree";
 import { segmentMentions, type Toolset } from "../model/mentions";

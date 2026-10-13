@@ -1,4 +1,4 @@
-import type { BackendParams, Theme } from "@surgecast/protocol";
+import type { BackendParams, Theme } from "@opencast/protocol";
 import type { Palette } from "../../../theme/palettes";
 
 /** Editable colors, in the order the editor lists them. */

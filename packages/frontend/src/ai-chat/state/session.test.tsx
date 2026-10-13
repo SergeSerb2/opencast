@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AIChat, AIMessage } from "@surgecast/protocol";
+import type { AIChat, AIMessage } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { useChatSession } from "./useChatSession";
 import { registerStream, receiveStreamEvent, useStreams } from "./streams";

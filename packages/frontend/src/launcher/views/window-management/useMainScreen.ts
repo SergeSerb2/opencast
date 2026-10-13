@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ScreenInfo } from "@surgecast/protocol";
+import type { ScreenInfo } from "@opencast/protocol";
 import { native } from "../../../bridge/native";
 
 /**

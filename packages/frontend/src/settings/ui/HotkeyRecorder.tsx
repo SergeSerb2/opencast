@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Hotkey, KeyModifier } from "@surgecast/protocol";
+import type { Hotkey, KeyModifier } from "@opencast/protocol";
 import { native } from "../../bridge/native";
 import { errorMessage } from "../../bridge/errors";
 import { Popover } from "../../components/Popover/Popover";

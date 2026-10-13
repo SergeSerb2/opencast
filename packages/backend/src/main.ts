@@ -1,8 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { format } from "node:util";
-import type { BackendEvents, BackendMethods } from "@surgecast/protocol";
+import type { BackendEvents, BackendMethods } from "@opencast/protocol";
 import { Database } from "./db/database";
 import { EntityStore, entitiesMigration } from "./db/entities";
 import { EventBus } from "./events";
@@ -19,13 +18,14 @@ import { DefaultLauncherApi } from "./registries/launcher";
 import { unconfiguredAI } from "./registries/ai-unconfigured";
 import type { AppContext } from "./context";
 import { createLogger, setLogLevel } from "./util/log";
+import { databasePath, defaultDataDirectory } from "./util/app-storage";
 
 // stdout is the native JSON-RPC channel: never let console.* write to it.
 for (const method of ["log", "info", "debug", "warn", "error", "trace"] as const) {
   console[method] = (...args: unknown[]) => process.stderr.write(format(...args) + "\n");
 }
 
-const VERSION = process.env.SURGECAST_VERSION ?? "0.1.0";
+const VERSION = (process.env.OPENCAST_VERSION ?? process.env.SURGECAST_VERSION) ?? "0.1.0";
 const log = createLogger("main");
 
 interface Args {
@@ -43,24 +43,24 @@ function parseArgs(argv: string[]): Args {
     return i >= 0 ? argv[i + 1] : undefined;
   };
   const has = (name: string) => argv.includes(`--${name}`);
-  const dev = has("dev") || process.env.SURGECAST_DEV === "1";
+  const dev = has("dev") || (process.env.OPENCAST_DEV ?? process.env.SURGECAST_DEV) === "1";
   return {
-    dataDir: resolve(get("data-dir") ?? process.env.SURGECAST_DATA_DIR ?? join(homedir(), "Library", "Application Support", dev ? "Surgecast-Dev" : "Surgecast")),
-    resourcesDir: resolve(get("resources") ?? process.env.SURGECAST_RESOURCES ?? join(import.meta.dirname ?? ".", "..")),
-    port: Number(get("port") ?? process.env.SURGECAST_PORT ?? 0),
-    token: get("token") ?? process.env.SURGECAST_TOKEN ?? randomBytes(24).toString("base64url"),
+    dataDir: resolve(get("data-dir") ?? (process.env.OPENCAST_DATA_DIR ?? process.env.SURGECAST_DATA_DIR) ?? defaultDataDirectory(dev)),
+    resourcesDir: resolve(get("resources") ?? (process.env.OPENCAST_RESOURCES ?? process.env.SURGECAST_RESOURCES) ?? join(import.meta.dirname ?? ".", "..")),
+    port: Number(get("port") ?? (process.env.OPENCAST_PORT ?? process.env.SURGECAST_PORT) ?? 0),
+    token: get("token") ?? (process.env.OPENCAST_TOKEN ?? process.env.SURGECAST_TOKEN) ?? randomBytes(24).toString("base64url"),
     dev,
-    noNative: has("no-native") || process.env.SURGECAST_NO_NATIVE === "1",
+    noNative: has("no-native") || (process.env.OPENCAST_NO_NATIVE ?? process.env.SURGECAST_NO_NATIVE) === "1",
   };
 }
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (args.dev) setLogLevel("debug");
-  log.info(`Surgecast backend ${VERSION} starting`, { dataDir: args.dataDir, dev: args.dev, native: !args.noNative });
+  log.info(`OpenCast backend ${VERSION} starting`, { dataDir: args.dataDir, dev: args.dev, native: !args.noNative });
 
   const native: NativeApi = args.noNative ? new DevNative(args.dataDir) : new StdioNativeClient();
-  const db = new Database(join(args.dataDir, "surgecast.db"));
+  const db = new Database(databasePath(args.dataDir));
   db.addMigrations(entitiesMigration, settingsMigration);
   const events = new EventBus();
   const entities = new EntityStore(db);
@@ -137,7 +137,7 @@ async function main(): Promise<void> {
 
   const ready = { port, token: args.token, version: VERSION };
   if (native instanceof StdioNativeClient) native.write({ jsonrpc: "2.0", method: "backend.ready", params: ready });
-  else process.stderr.write(`SURGECAST_BACKEND_READY ${JSON.stringify(ready)}\n`);
+  else process.stderr.write(`OPENCAST_BACKEND_READY ${JSON.stringify(ready)}\n`);
   log.info(`ready on port ${port} with ${rpc.methods().length} methods`);
 
   let shuttingDown = false;

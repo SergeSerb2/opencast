@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { FileResult, NativeResult } from "@surgecast/protocol";
+import type { FileResult, NativeResult } from "@opencast/protocol";
 import { native } from "../../../bridge/native";
 import { ItemDetail, Metadata } from "../../../components";
 import { Image } from "../../../icons/Image";

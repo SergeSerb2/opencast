@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AIStreamEvent } from "@surgecast/protocol";
+import type { AIStreamEvent } from "@opencast/protocol";
 
 const mock = vi.hoisted(() => ({ call: vi.fn(), listeners: new Set<(event: AIStreamEvent) => void>() }));
 vi.mock("../../../bridge/backend", () => ({ backend: {

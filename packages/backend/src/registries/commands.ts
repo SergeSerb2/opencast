@@ -1,4 +1,4 @@
-import type { CommandInfo, CommandPrefs, LaunchResult } from "@surgecast/protocol";
+import type { CommandInfo, CommandPrefs, LaunchResult } from "@opencast/protocol";
 import type { CommandProvider, CommandRegistry, LaunchRequest } from "../context";
 import type { EntityStore } from "../db/entities";
 import type { EventBus } from "../events";
@@ -45,7 +45,8 @@ export class DefaultCommandRegistry implements CommandRegistry {
     const out: CommandInfo[] = [];
     for (const provider of this.providers.values()) {
       for (const cmd of await this.listProvider(provider)) {
-        const merged = applyPrefs(cmd, prefs.get(cmd.id));
+        const merged = applyPrefs(cmd, prefs.get(cmd.id) ?? (cmd.id === "builtin:core.copyOpenCastVersion"
+          ? prefs.get("builtin:core.copySurgecastVersion") : undefined));
         if (merged.enabled || options?.includeDisabled) out.push(merged);
       }
     }

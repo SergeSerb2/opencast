@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@surgecast/protocol";
+import type { CalendarEvent } from "@opencast/protocol";
 
 /**
  * Pure date logic for "My Schedule": day sections, time labels, relative

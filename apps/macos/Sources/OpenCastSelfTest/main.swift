@@ -1,6 +1,6 @@
 import CoreGraphics
 import Foundation
-import SurgecastCore
+import OpenCastCore
 
 func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
   if !condition() {
@@ -8,6 +8,20 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
     exit(1)
   }
 }
+let storageHome = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+let storageRoot = storageHome.appendingPathComponent("Library/Application Support")
+let currentStorage = storageRoot.appendingPathComponent("OpenCast")
+let legacyStorage = storageRoot.appendingPathComponent("Surgecast")
+expect(AppStorage.directory(home: storageHome, parent: "Library/Application Support").path == currentStorage.path,
+  "Fresh installs use OpenCast storage")
+try FileManager.default.createDirectory(at: legacyStorage, withIntermediateDirectories: true)
+expect(AppStorage.directory(home: storageHome, parent: "Library/Application Support").path == legacyStorage.path,
+  "Existing data stays accessible without moving stored files")
+try FileManager.default.createDirectory(at: currentStorage, withIntermediateDirectories: true)
+expect(AppStorage.directory(home: storageHome, parent: "Library/Application Support").path == currentStorage.path,
+  "Existing OpenCast storage takes priority")
+try FileManager.default.removeItem(at: storageHome)
+print("PASS: fresh and legacy application storage selection")
 let primary = CGRect(x: 0, y: 0, width: 1440, height: 900)
 let secondary = CGRect(x: -1920, y: 300, width: 1920, height: 1080)
 for screen in [primary, secondary] {
@@ -60,7 +74,7 @@ expect(KeyMap.code("not-a-key") == nil, "Invalid key rejected")
 print(
   "PASS: geometry on two displays, halves/thirds/sixths, AX transforms, gaps, display movement, key mappings"
 )
-let home = URL(fileURLWithPath: "/Users/surgecast-policy-check")
+let home = URL(fileURLWithPath: "/Users/opencast-policy-check")
 let keychains = home.appendingPathComponent("Library/Keychains")
 expect(
   FileAccessPolicy.allows(

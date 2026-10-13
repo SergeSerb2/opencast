@@ -1,4 +1,4 @@
-import type { WindowKind } from "@surgecast/protocol";
+import type { WindowKind } from "@opencast/protocol";
 
 /** Default native window sizes in points (docs/ARCHITECTURE.md → Windows). */
 export const WINDOW_SIZES: Record<WindowKind, { width: number; height: number }> = {

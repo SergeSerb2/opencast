@@ -1,4 +1,4 @@
-import type { BackendMethods } from "@surgecast/protocol";
+import type { BackendMethods } from "@opencast/protocol";
 type Template = BackendMethods["ai.providers.templates"]["result"][number];
 const openai = (
   id: string,

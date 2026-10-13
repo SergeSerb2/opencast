@@ -1,4 +1,4 @@
-import type { ScriptCommand } from "@surgecast/protocol";
+import type { ScriptCommand } from "@opencast/protocol";
 import { confirmAlert } from "../../../components";
 
 /** Inline refreshes never prompt; manually launched scripts can opt into confirmation. */

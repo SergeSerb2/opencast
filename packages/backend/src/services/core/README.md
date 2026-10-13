@@ -26,7 +26,7 @@ registration. No dependency or package configuration changes are required.
   direct execution, confirmation, inline refresh, streaming and cancellation.
 - `themes.ts`: synced themes, default dark/light palettes and three classic palettes.
 - `config-format.ts`, `data.ts`: all three Raycast container families, synthetic-file
-  compatibility tests, category imports and authenticated Surgecast backups.
+  compatibility tests, category imports and authenticated OpenCast backups.
 
 Syncable user content uses EntityStore. Clipboard, calculator history, emoji usage and
 command frecency use local tables. Entity-change listeners also handle remote sync
@@ -82,10 +82,10 @@ syntax. Bare numbers and ordinary launcher words do not produce calculator cards
 From the repository root:
 
 ```sh
-pnpm --filter @surgecast/backend typecheck
-pnpm --filter @surgecast/protocol typecheck
-pnpm --filter @surgecast/backend test
-pnpm --filter @surgecast/backend build
+pnpm --filter @opencast/backend typecheck
+pnpm --filter @opencast/protocol typecheck
+pnpm --filter @opencast/backend test
+pnpm --filter @opencast/backend build
 node packages/backend/test/core/e2e.mjs
 ```
 
@@ -109,9 +109,9 @@ content, with errors for oversized exports rather than producing unrestorable fi
 Raycast imports preserve supported user content additively rather than deleting
 missing existing content. They map snippets, quicklinks, notes, themes, general
 settings, AI commands and AI presets; Raycast hosted model references are omitted so
-configured Surgecast provider defaults apply.
+configured OpenCast provider defaults apply.
 
-The docs command supports `SURGECAST_DOCS_URL`; its default GitHub documentation URL
+The docs command supports `OPENCAST_DOCS_URL`; its default GitHub documentation URL
 needs confirmation when the project publishes its canonical repository. Sequential
 paste requires the new native queue contract above. Other native actions, permissions,
 window geometry and view rendering were not verified by the no-native E2E run.

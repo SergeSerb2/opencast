@@ -1,4 +1,4 @@
-import type { CalculatorResult, CommandInfo, RootSearchItem, RootSearchResult, RootSearchSection } from "@surgecast/protocol";
+import type { CalculatorResult, CommandInfo, RootSearchItem, RootSearchResult, RootSearchSection } from "@opencast/protocol";
 import { fuzzyFilter } from "../../lib/fuzzy";
 import { RUNNING_APP_IDS, SUGGESTION_IDS } from "./fixtures/commands";
 

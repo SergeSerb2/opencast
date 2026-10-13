@@ -17,7 +17,7 @@ import {
   resolve,
 } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { CommandInfo, ScriptCommand } from "@surgecast/protocol";
+import type { CommandInfo, ScriptCommand } from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import { background, expandPath, nonempty } from "./shared";
 import { RpcError } from "../../util/errors";

@@ -42,7 +42,7 @@ describe("formatting", () => {
     expect(tildePath("/Users/me/Documents/a.pdf")).toBe("~/Documents/a.pdf");
     expect(displayDirectory("/Users/me/Documents/a.pdf")).toBe("~/Documents");
     expect(displayDirectory("/Applications/Safari.app/")).toBe("/Applications");
-    expect(basename("/Users/me/Developer/surgecast/")).toBe("surgecast");
+    expect(basename("/Users/me/Developer/opencast/")).toBe("opencast");
   });
 
   it("names duplicates", () => {

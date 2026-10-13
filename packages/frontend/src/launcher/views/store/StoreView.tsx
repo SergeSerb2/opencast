@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { InstalledExtension, StoreExtension } from "@surgecast/protocol";
+import type { InstalledExtension, StoreExtension } from "@opencast/protocol";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { List, showFailureToast, useNavigation, type ActionPanelModel, type ListAccessory } from "../../../components";

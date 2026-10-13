@@ -1,4 +1,4 @@
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { native } from "../../../bridge/native";
 import { Action, ActionPanel, List, showFailureToast, showToast, useNavigation } from "../../../components";
 import { sc } from "../../../lib/keyboard";

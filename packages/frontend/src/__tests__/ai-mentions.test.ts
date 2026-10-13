@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AIToolInfo } from "@surgecast/protocol";
+import type { AIToolInfo } from "@opencast/protocol";
 import { applyCommandPrompt, placeholderKinds } from "../ai-chat/model/command-prompt";
 import { findTrigger, mentionedToolsets, mentionSlug, replaceTrigger, segmentMentions, toolsetsFromTools } from "../ai-chat/model/mentions";
 

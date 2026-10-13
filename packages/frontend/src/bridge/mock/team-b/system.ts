@@ -1,4 +1,4 @@
-import { RpcErrorCode, type CalendarEvent, type CommandInfo, type MenuItemInfo, type ProcessInfo, type RunningAppInfo, type WindowLayout, type WindowLayoutRect } from "@surgecast/protocol";
+import { RpcErrorCode, type CalendarEvent, type CommandInfo, type MenuItemInfo, type ProcessInfo, type RunningAppInfo, type WindowLayout, type WindowLayoutRect } from "@opencast/protocol";
 import { RpcError } from "../../errors";
 import { tile } from "../fixtures/commands";
 import type { MockArea, MockContext } from "./types";
@@ -129,7 +129,7 @@ const SAFARI_MENUS: [string, MenuSpec[]][] = [
       ["Add Bookmark…", "⌘D"],
       ["Add to Reading List", "⇧⌘D"],
       ["Show Reading List", "⌃⌘2"],
-      ["Favorites", undefined, { children: [["Surgecast Docs"], ["GitHub"], ["Hacker News"]] }],
+      ["Favorites", undefined, { children: [["OpenCast Docs"], ["GitHub"], ["Hacker News"]] }],
     ],
   ],
   [
@@ -176,12 +176,12 @@ const CALENDARS = {
 type CalendarKey = keyof typeof CALENDARS;
 
 const PEOPLE = {
-  me: { name: "Serge Alex", email: "serge@surgecast.app" },
-  priya: { name: "Priya Raman", email: "priya@surgecast.app" },
-  jonas: { name: "Jonas Weber", email: "jonas@surgecast.app" },
-  mei: { name: "Mei Tanaka", email: "mei@surgecast.app" },
+  me: { name: "Serge Alex", email: "serge@opencast.app" },
+  priya: { name: "Priya Raman", email: "priya@opencast.app" },
+  jonas: { name: "Jonas Weber", email: "jonas@opencast.app" },
+  mei: { name: "Mei Tanaka", email: "mei@opencast.app" },
   alex: { name: "Alex Moreau", email: "alex@hey.com" },
-  dana: { name: "Dana Ortiz", email: "dana@surgecast.app" },
+  dana: { name: "Dana Ortiz", email: "dana@opencast.app" },
 };
 
 function atClock(dayOffset: number, hours: number, minutes = 0): Date {
@@ -398,7 +398,7 @@ export function createSystemMock({ events }: MockContext): MockArea {
         return processes.map(publicInfo);
       },
       "system.killProcess": async ({ pid, force }) => {
-        if (!Number.isSafeInteger(pid) || pid <= 1) invalid("Choose a valid process other than Surgecast");
+        if (!Number.isSafeInteger(pid) || pid <= 1) invalid("Choose a valid process other than OpenCast");
         const target = processes.find((p) => p.pid === pid);
         if (!target) return notFound(`Process ${pid}`);
         if (target.system) invalid("Cannot terminate this process; it may have exited or belong to another user");

@@ -1,4 +1,4 @@
-import type { ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import type { ImageLike, KeyboardShortcut } from "@opencast/protocol";
 
 export type ActionStyle = "default" | "destructive";
 

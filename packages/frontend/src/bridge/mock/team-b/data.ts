@@ -1,4 +1,4 @@
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 import { RpcError } from "../../errors";
 import type { MockArea, MockContext } from "./types";
 
@@ -18,8 +18,8 @@ const RAYCONFIG_CONTENT: Record<string, { imported: number } | { error: string }
   themes: { error: "Theme “Midnight Pro” has an invalid accent color" },
 };
 
-/** Collections of the sample Surgecast export (`data.import`). */
-const SURGECAST_CONTENT: Record<string, number> = {
+/** Collections of the sample OpenCast export (`data.import`). */
+const OPENCAST_CONTENT: Record<string, number> = {
   settings: 42,
   commandPrefs: 17,
   snippets: 24,
@@ -55,8 +55,8 @@ export function createDataMock(_ctx: MockContext): MockArea {
       },
       "data.import": async ({ path }) => {
         await delay(600);
-        if (/\.rayconfig$/i.test(path)) invalid("Expected a Surgecast configuration");
-        return { results: Object.entries(SURGECAST_CONTENT).map(([category, imported]) => ({ category, imported })) };
+        if (/\.rayconfig$/i.test(path)) invalid("Expected an OpenCast configuration");
+        return { results: Object.entries(OPENCAST_CONTENT).map(([category, imported]) => ({ category, imported })) };
       },
       "data.export": async ({ path, categories }) => {
         await delay(500);

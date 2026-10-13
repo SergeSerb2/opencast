@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AIModelOption, AIPreset, Creativity, ModelRef } from "@surgecast/protocol";
+import type { AIModelOption, AIPreset, Creativity, ModelRef } from "@opencast/protocol";
 import { Dropdown } from "../../components/Dropdown/Dropdown";
 import { IconButton } from "../../components/Button/Button";
 import { Switch } from "../../components/Switch/Switch";

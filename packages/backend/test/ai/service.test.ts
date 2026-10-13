@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AIMessage, AIToolInfo } from "@surgecast/protocol";
+import type { AIMessage, AIToolInfo } from "@opencast/protocol";
 import { CompletionEngine } from "../../src/services/ai/engine";
 import { visibleBranch, durationMs } from "../../src/services/ai/chats";
 import {

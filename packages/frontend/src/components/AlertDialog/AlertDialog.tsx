@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import type { AlertOptions } from "@surgecast/protocol";
+import type { AlertOptions } from "@opencast/protocol";
 import { Image } from "../../icons/Image";
-import { SurgecastLogo } from "../../icons/glyphs";
+import { OpenCastLogo } from "../../icons/glyphs";
 import { useAlertStore } from "../feedback/alert-store";
 import "./alert-dialog.css";
 
@@ -40,7 +40,7 @@ export function AlertDialog({ options, onResult }: AlertDialogProps) {
   return createPortal(
     <div className="sc-alert-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onResult(false)}>
       <div className="sc-alert sc-glass-panel" role="alertdialog" aria-modal="true" aria-labelledby="sc-alert-title" aria-describedby={options.message ? "sc-alert-message" : undefined}>
-        <div className="sc-alert__icon">{options.icon ? <Image source={options.icon} size={48} /> : <SurgecastLogo size={44} />}</div>
+        <div className="sc-alert__icon">{options.icon ? <Image source={options.icon} size={48} /> : <OpenCastLogo size={44} />}</div>
         <div id="sc-alert-title" className="sc-alert__title">
           {options.title}
         </div>

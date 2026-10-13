@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Theme } from "@surgecast/protocol";
+import type { Theme } from "@opencast/protocol";
 import { useBackend } from "../bridge/hooks";
 import { BUILTIN_PALETTES } from "../theme/palettes";
 

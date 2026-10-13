@@ -17,7 +17,7 @@ import IOKit.ps
       var assertion: IOPMAssertionID = 0
       let result = IOPMAssertionCreateWithName(
         kIOPMAssertionTypePreventUserIdleSystemSleep as CFString,
-        IOPMAssertionLevel(kIOPMAssertionLevelOn), "Surgecast AI response" as CFString, &assertion)
+        IOPMAssertionLevel(kIOPMAssertionLevelOn), "OpenCast AI response" as CFString, &assertion)
       guard result == kIOReturnSuccess else { throw RpcError.failure("Cannot prevent idle sleep") }
       assertions[id] = assertion
     } else if let assertion = assertions.removeValue(forKey: id) { IOPMAssertionRelease(assertion) }

@@ -1,4 +1,4 @@
-import type { CommandInfo, RootSearchItem } from "@surgecast/protocol";
+import type { CommandInfo, RootSearchItem } from "@opencast/protocol";
 
 type Sensitivity = "low" | "medium" | "high";
 interface Match {

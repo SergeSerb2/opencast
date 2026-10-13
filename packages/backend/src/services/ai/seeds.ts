@@ -1,4 +1,4 @@
-import type { AICommand, AIPreset } from "@surgecast/protocol";
+import type { AICommand, AIPreset } from "@opencast/protocol";
 const writing = (instruction: string) =>
   `${instruction} Preserve the language, facts, intent, links, and emoji. Return only the revised text.\n\n{selection}`;
 const definitions: [string, string, string][] = [

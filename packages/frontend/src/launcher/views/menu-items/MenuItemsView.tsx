@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RpcErrorCode, type ImageLike } from "@surgecast/protocol";
+import { RpcErrorCode, type ImageLike } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage, RpcError } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
@@ -101,7 +101,7 @@ export function MenuItemsView({ props, title, icon }: LauncherViewProps<{ query?
         <List.EmptyView
           icon="lock-16"
           title="Accessibility Access Needed"
-          description="Surgecast reads menu bar items through the Accessibility API. Allow it in System Settings → Privacy & Security → Accessibility."
+          description="OpenCast reads menu bar items through the Accessibility API. Allow it in System Settings → Privacy & Security → Accessibility."
           actions={
             <ActionPanel>
               <Action title="Open System Settings" icon="cog-16" onAction={() => native.call("permissions.openSettings", { kind: "accessibility" })} />
@@ -110,7 +110,7 @@ export function MenuItemsView({ props, title, icon }: LauncherViewProps<{ query?
           }
         />
       ) : entries.length === 0 ? (
-        <List.EmptyView icon="app-window-list-16" title="No Menu Items" description={error ? errorMessage(error) : `Surgecast couldn’t find any menu items it can open in ${appName}.`} actions={<ActionPanel>{refresh}</ActionPanel>} />
+        <List.EmptyView icon="app-window-list-16" title="No Menu Items" description={error ? errorMessage(error) : `OpenCast couldn’t find any menu items it can open in ${appName}.`} actions={<ActionPanel>{refresh}</ActionPanel>} />
       ) : (
         <List.EmptyView title="No Matching Menu Items" description={`Nothing in ${appName}’s menus matches “${searchText.trim()}”.`} actions={<ActionPanel>{refresh}</ActionPanel>} />
       )}

@@ -1,4 +1,4 @@
-import { RpcErrorCode, type Theme } from "@surgecast/protocol";
+import { RpcErrorCode, type Theme } from "@opencast/protocol";
 import { RpcError } from "../../errors";
 import type { MockArea, MockContext } from "./types";
 
@@ -13,9 +13,9 @@ function theme(id: string, name: string, appearance: Theme["appearance"], colors
 
 /** The real backend also lists its built-in palettes (flagged `builtin`); the theme browser folds them into its own. */
 const BACKEND_BUILTINS: Theme[] = [
-  theme("surgecast-dark", "Surgecast Dark", "dark", { background: "#000000", backgroundSecondary: "#000000", text: "#FFFFFF", accent: "#4FA3F8", selection: "#FFFFFF", loader: "#FFFFFF", red: "#FF6363", orange: "#FF9217", yellow: "#FFC531", green: "#59D499", blue: "#56C2FF", purple: "#A485FF", magenta: "#CF2F98" }, { builtin: true }),
-  theme("surgecast-light", "Surgecast Light", "light", { background: "#FFFFFF", backgroundSecondary: "#FFFFFF", text: "#000000", accent: "#138AF2", selection: "#000000", loader: "#000000", red: "#B12424", orange: "#C75D07", yellow: "#F8A300", green: "#006B4F", blue: "#138AF2", purple: "#6A3DEC", magenta: "#9A1B6E" }, { builtin: true }),
-  theme("surgecast-sky", "Sky", "dark", { background: "#0E1C3F", backgroundSecondary: "#173036", text: "#D7F0F4", accent: "#4FA3F8", selection: "#6688FF", loader: "#47FFFF", red: "#ED5959", orange: "#ED8659", yellow: "#EDD559", green: "#47FF91", blue: "#1A9FFF", purple: "#7759ED", magenta: "#ED59B2" }, { builtin: true }),
+  theme("opencast-dark", "OpenCast Dark", "dark", { background: "#000000", backgroundSecondary: "#000000", text: "#FFFFFF", accent: "#4FA3F8", selection: "#FFFFFF", loader: "#FFFFFF", red: "#FF6363", orange: "#FF9217", yellow: "#FFC531", green: "#59D499", blue: "#56C2FF", purple: "#A485FF", magenta: "#CF2F98" }, { builtin: true }),
+  theme("opencast-light", "OpenCast Light", "light", { background: "#FFFFFF", backgroundSecondary: "#FFFFFF", text: "#000000", accent: "#138AF2", selection: "#000000", loader: "#000000", red: "#B12424", orange: "#C75D07", yellow: "#F8A300", green: "#006B4F", blue: "#138AF2", purple: "#6A3DEC", magenta: "#9A1B6E" }, { builtin: true }),
+  theme("opencast-sky", "Sky", "dark", { background: "#0E1C3F", backgroundSecondary: "#173036", text: "#D7F0F4", accent: "#4FA3F8", selection: "#6688FF", loader: "#47FFFF", red: "#ED5959", orange: "#ED8659", yellow: "#EDD559", green: "#47FF91", blue: "#1A9FFF", purple: "#7759ED", magenta: "#ED59B2" }, { builtin: true }),
 ];
 
 const USER_THEMES: Theme[] = [

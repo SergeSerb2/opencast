@@ -10,9 +10,9 @@ interface NotesPreferences {
 }
 
 const KEYS: Record<keyof NotesPreferences, string> = {
-  formatBarVisible: "surgecast-notes-format-bar-visible",
-  autoSize: "surgecast-notes-window-auto-size-enabled",
-  countMode: "surgecast-notes-count-mode",
+  formatBarVisible: "opencast-notes-format-bar-visible",
+  autoSize: "opencast-notes-window-auto-size-enabled",
+  countMode: "opencast-notes-count-mode",
 };
 
 function read<K extends keyof NotesPreferences>(key: K, fallback: NotesPreferences[K]): NotesPreferences[K] {

@@ -5,7 +5,7 @@ import React from "react";
 import { configure, dispatch, revive, reportError } from "./bridge";
 import type { Initialization } from "./bridge";
 import { ExtensionRenderer } from "./renderer";
-if (!parentPort) throw new Error("The Surgecast extension runtime must run in a worker thread");
+if (!parentPort) throw new Error("The OpenCast extension runtime must run in a worker thread");
 const port = parentPort;
 let options: Initialization = workerData;
 let renderer: ExtensionRenderer | undefined;
@@ -13,7 +13,7 @@ let requestId = 0;
 const pending = new Map<number, { resolve(value: any): void; reject(error: Error): void }>();
 function configureRuntime(input: Initialization) {
   options = input;
-  for (const [key, value] of Object.entries({ EXTENSION_NAME: input.extensionName, COMMAND_NAME: input.commandName, ASSETS_PATH: input.assetsPath, SUPPORT_PATH: input.supportPath, RAYCAST_SESSION: input.sessionId, RAYCAST_VERSION: "2.7.3", RAYCASTX: "1", RAYCAST_SCHEME: "surgecast" })) process.env[key] = value;
+  for (const [key, value] of Object.entries({ EXTENSION_NAME: input.extensionName, COMMAND_NAME: input.commandName, ASSETS_PATH: input.assetsPath, SUPPORT_PATH: input.supportPath, RAYCAST_SESSION: input.sessionId, RAYCAST_VERSION: "2.7.3", RAYCASTX: "1", RAYCAST_SCHEME: "opencast" })) process.env[key] = value;
   configure(input, (method, params) => new Promise((resolve, reject) => {
     const id = ++requestId; pending.set(id, { resolve, reject }); port.postMessage({ kind: "request", id, method, params });
   }), (method, params) => port.postMessage({ kind: "notify", method, params }));

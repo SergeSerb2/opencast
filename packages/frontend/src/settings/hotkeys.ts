@@ -1,4 +1,4 @@
-import type { CommandInfo, Hotkey, KeyModifier } from "@surgecast/protocol";
+import type { CommandInfo, Hotkey, KeyModifier } from "@opencast/protocol";
 import { eventKey, shortcutKeys, shortcutLabel } from "../lib/keyboard";
 
 /** macOS virtual key codes (Carbon kVK_*) for keys the recorder can produce. */
@@ -145,17 +145,17 @@ export function hotkeyLabel(hotkey: Hotkey): string {
   return hotkey.hyper ? `Hyper ${shortcutLabel({ modifiers: [], key: hotkey.key })}` : shortcutLabel({ modifiers: hotkey.modifiers, key: hotkey.key });
 }
 
-/** The surgecast-wide hotkey is stored as a setting, command hotkeys on commands. */
+/** The opencast-wide hotkey is stored as a setting, command hotkeys on commands. */
 export const GLOBAL_HOTKEY_OWNER = "global";
 
 /**
- * Who already uses `hotkey`: another command, the Surgecast hotkey, or the
+ * Who already uses `hotkey`: another command, the OpenCast hotkey, or the
  * system. `ownerId` is the command (or GLOBAL_HOTKEY_OWNER) being edited.
  */
 export function findHotkeyConflict(hotkey: Hotkey, ownerId: string, commands: readonly Pick<CommandInfo, "id" | "title" | "hotkey">[], globalHotkey: Hotkey | null): string | null {
   const system = SYSTEM_SHORTCUTS.find((s) => sameHotkey(hotkey, { modifiers: s.modifiers, key: s.key }));
   if (system) return `Used by ${system.owner}`;
-  if (ownerId !== GLOBAL_HOTKEY_OWNER && sameHotkey(hotkey, globalHotkey)) return "Used by the Surgecast Hotkey";
+  if (ownerId !== GLOBAL_HOTKEY_OWNER && sameHotkey(hotkey, globalHotkey)) return "Used by the OpenCast Hotkey";
   const command = commands.find((c) => c.id !== ownerId && sameHotkey(hotkey, c.hotkey));
   return command ? `Already used by “${command.title}”` : null;
 }

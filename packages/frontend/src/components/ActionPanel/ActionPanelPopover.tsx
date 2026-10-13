@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useState } from "react";
 import { Menu, type MenuSection } from "../Menu/Menu";
 import { Popover, type PopoverAnchor } from "../Popover/Popover";
-import type { KeyboardShortcut } from "@surgecast/protocol";
+import type { KeyboardShortcut } from "@opencast/protocol";
 import { sc } from "../../lib/keyboard";
 import { primaryActions, type ActionModel, type ActionPanelModel, type ActionSectionModel, type ActionSubmenuModel } from "../actions/model";
 import "./action-panel.css";

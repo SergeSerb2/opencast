@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Button, IconButton, type ButtonProps } from "../../components/Button/Button";
 import { Menu, type MenuItem, type MenuSection } from "../../components/Menu/Menu";
 import { Popover } from "../../components/Popover/Popover";

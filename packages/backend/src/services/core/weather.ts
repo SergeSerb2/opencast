@@ -1,4 +1,4 @@
-import type { CalculatorResult } from "@surgecast/protocol";
+import type { CalculatorResult } from "@opencast/protocol";
 interface Place { name: string; latitude: number; longitude: number; country?: string; }
 /** Explicit city queries only; never request or infer the user's location. */
 export function weatherPlace(input: string): string | null {

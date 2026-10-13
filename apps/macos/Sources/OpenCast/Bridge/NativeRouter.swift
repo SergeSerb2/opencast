@@ -78,7 +78,7 @@ import AppKit
           "/bin/sh",
           [
             "-c", "while kill -0 \"$1\" 2>/dev/null; do sleep 0.1; done; exec /usr/bin/open \"$2\"",
-            "surgecast-relaunch", String(pid), bundle.path,
+            "opencast-relaunch", String(pid), bundle.path,
           ], timeout: 15)
       }
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { NSApp.terminate(nil) }

@@ -1,5 +1,5 @@
 import AppKit
-import SurgecastCore
+import OpenCastCore
 
 @MainActor final class WindowManager {
   var respectStageManager = true

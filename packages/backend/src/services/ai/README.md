@@ -3,7 +3,7 @@
 `aiService.register(ctx)` installs `CompletionEngine` as `ctx.ai` and registers all
 AI RPC methods. Every completion, including titles and extension `AI.ask`, uses
 an explicitly configured, enabled provider/model. No environment keys are imported,
-no account or credit checks exist, and no hosted Surgecast/Raycast fallback exists.
+no account or credit checks exist, and no hosted OpenCast/Raycast fallback exists.
 
 ## Modules
 
@@ -73,7 +73,7 @@ Models with `autoFetchModels` refresh after explicit setup, on startup, and ever
 three hours; failures preserve the existing models and set `modelFetchError`.
 Fetched models merge with user overrides, preserve manual models, and disable
 models that disappear. `ai.searchAgents` controls preset visibility in root search
-and defaults to false. Date/time placeholders are a deliberate Surgecast addition.
+and defaults to false. Date/time placeholders are a deliberate OpenCast addition.
 Clipboard offsets use the core service's local clipboard history RPC.
 
 Known OpenAI context defaults follow [GPT-4.1](https://developers.openai.com/api/docs/models/gpt-4.1), [GPT-4o](https://developers.openai.com/api/docs/models/gpt-4o), and [GPT-5](https://developers.openai.com/api/docs/models/gpt-5). Unknown models have no guessed context limit. For reasoning models that cannot disable reasoning, the no-reasoning choice uses the lowest documented effort.
@@ -88,9 +88,9 @@ The adapters follow the provider protocols documented by
 From the worktree root:
 
 ```sh
-pnpm --filter @surgecast/backend typecheck
-pnpm --filter @surgecast/backend test
-pnpm --filter @surgecast/backend build
+pnpm --filter @opencast/backend typecheck
+pnpm --filter @opencast/backend test
+pnpm --filter @opencast/backend build
 node packages/backend/test/ai/smoke.mjs
 node packages/backend/test/ai/smoke.mjs --responses
 ```

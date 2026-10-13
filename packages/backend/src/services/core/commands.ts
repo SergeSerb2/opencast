@@ -6,7 +6,7 @@ import type {
   LaunchResult,
   FileResult,
   RootSearchItem,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import { builtinCatalog } from "./builtins";
 import { searchFiles } from "./files";
@@ -53,6 +53,7 @@ const EXTENSION_ALIASES: Record<string, string> = {
   "open-ai": "ai",
 };
 const COMMAND_ALIASES: Record<string, string> = {
+  "core.copySurgecastVersion": "core.copyOpenCastVersion",
   "notes.openNotes": "notes.open",
   "notes.createNote": "notes.create",
   "notes.searchNotes": "notes.search",
@@ -70,7 +71,7 @@ export async function openDeeplink(
   } catch {
     throw RpcError.invalidParams("Invalid deeplink URL");
   }
-  if (!["surgecast:", "raycast:"].includes(url.protocol))
+  if (!["opencast:", "surgecast:", "raycast:"].includes(url.protocol))
     throw RpcError.invalidParams("Unsupported deeplink scheme");
   const parts = url.pathname
     .split("/")
@@ -78,7 +79,7 @@ export async function openDeeplink(
     .map((p) => decodeURIComponent(p));
   const args = decodeArguments(url.searchParams.get("arguments"));
   if (!url.host) {
-    // surgecast:// (and raycast://) with no route just shows the launcher.
+    // opencast:// (and raycast://) with no route just shows the launcher.
     await ctx.native.call("window.show", { kind: "main" });
     return { kind: "done", closeWindow: false };
   }
@@ -90,7 +91,7 @@ export async function openDeeplink(
     let id = `ext:${extension}.${command}`;
     const builtin = `builtin:${COMMAND_ALIASES[`${group}.${command}`] ?? `${group}.${command}`}`;
     if (
-      ["raycast", "surgecast"].includes(owner) &&
+      ["raycast", "opencast", "surgecast"].includes(owner) &&
       (await ctx.commands.get(builtin))
     )
       id = builtin;
@@ -321,7 +322,7 @@ export const commandsService: Service = {
     let ready = false;
     const syncHotkeys = async () => {
       const desired = new Map<string, Hotkey>();
-      desired.set("surgecast.toggle", ctx.settings.get("general.globalHotkey"));
+      desired.set("opencast.toggle", ctx.settings.get("general.globalHotkey"));
       for (const command of await ctx.commands.all())
         if (command.hotkey) desired.set(command.id, command.hotkey);
       for (const id of hotkeys.keys())
@@ -374,7 +375,7 @@ export const commandsService: Service = {
         background(
           ctx,
           (async () => {
-            if (id === "surgecast.toggle") {
+            if (id === "opencast.toggle") {
               await ctx.native.call("window.toggle", { kind: "main" });
               return;
             }

@@ -17,7 +17,7 @@ import {
   type SyncDevice,
   type SyncStatus,
   type Theme,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { Emitter } from "../emitter";
 import { RpcError } from "../errors";
 import { BUILTIN_PALETTES } from "../../theme/palettes";

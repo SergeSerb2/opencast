@@ -1,4 +1,4 @@
-import type { ImageLike, InstalledExtension } from "@surgecast/protocol";
+import type { ImageLike, InstalledExtension } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { native } from "../../../bridge/native";
 import { confirmAlert, showFailureToast, showToast } from "../../../components";
@@ -79,7 +79,7 @@ async function pickExtensionFolder(title: string, prompt: string): Promise<strin
   }
 }
 
-/** Copy a built extension folder into Surgecast (`source: "local"`). */
+/** Copy a built extension folder into OpenCast (`source: "local"`). */
 export async function importLocalExtension(): Promise<void> {
   const path = await pickExtensionFolder("Select Extension to Import", "Import");
   if (!path) return;

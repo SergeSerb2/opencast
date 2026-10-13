@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { UINode } from "@surgecast/protocol";
+import type { UINode } from "@opencast/protocol";
 import { UIControlContext, createUIControls } from "../components/View/UIControlContext";
 import { ExtensionForm, ExtensionList } from "../extension-renderer/ExtensionViews";
 
@@ -46,17 +46,17 @@ describe("extension UI controls and runtime persistence", () => {
   });
 
   it("uses runtime defaults instead of global form storage from another extension", () => {
-    localStorage.setItem("surgecast.form.project", JSON.stringify("other-extension"));
+    localStorage.setItem("opencast.form.project", JSON.stringify("other-extension"));
     const dispatch = vi.fn();
     const view = render(<ExtensionForm node={form(field("project", { storeValue: true, defaultValue: "runtime-cache" }))} options={{ dispatch, isLoading: false }} />);
     const input = view.getByRole("textbox") as HTMLInputElement;
     expect(input.value).toBe("runtime-cache");
     fireEvent.change(input, { target: { value: "new-project" } });
     expect(dispatch).toHaveBeenCalledWith({ $handler: "project" }, ["new-project"]);
-    expect(localStorage.getItem("surgecast.form.project")).toBe(JSON.stringify("other-extension"));
+    expect(localStorage.getItem("opencast.form.project")).toBe(JSON.stringify("other-extension"));
   });
   it("uses the runtime's scoped dropdown default instead of another extension's storage", () => {
-    localStorage.setItem("surgecast.dropdown.project", "other");
+    localStorage.setItem("opencast.dropdown.project", "other");
     const node: UINode = { id: "list", type: "List", props: { searchBarAccessory: {
       id: "dropdown", type: "List.Dropdown", props: { id: "project", tooltip: "Project", storeValue: true, defaultValue: "runtime" }, children: [
         { id: "other", type: "List.Dropdown.Item", props: { value: "other", title: "Other" }, children: [] },

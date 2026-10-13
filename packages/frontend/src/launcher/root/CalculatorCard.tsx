@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from "react";
-import type { CalculatorResult } from "@surgecast/protocol";
+import type { CalculatorResult } from "@opencast/protocol";
 import { useSetting } from "../../bridge/settings";
 import "./calculator-card.css";
 

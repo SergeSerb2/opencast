@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AIToolCall } from "@surgecast/protocol";
+import type { AIToolCall } from "@opencast/protocol";
 import type { AICompletionResult } from "../../context";
 import { checkedFetch, objectArguments, ProviderError, redact } from "./common";
 import { parseSSE } from "./sse";

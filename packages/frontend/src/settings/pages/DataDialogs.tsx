@@ -15,7 +15,7 @@ interface Category {
   title: string;
 }
 
-/** Categories a Raycast export can contain that Surgecast imports. */
+/** Categories a Raycast export can contain that OpenCast imports. */
 export const RAYCAST_IMPORT_CATEGORIES: readonly Category[] = [
   { id: "settings", title: "Settings, Aliases & Hotkeys" },
   { id: "snippets", title: "Snippets" },
@@ -25,7 +25,7 @@ export const RAYCAST_IMPORT_CATEGORIES: readonly Category[] = [
   { id: "ai", title: "AI Commands & Agents" },
 ];
 
-/** Collections a Surgecast export can contain (`data.export` categories). */
+/** Collections an OpenCast export can contain (`data.export` categories). */
 export const EXPORT_CATEGORIES: readonly Category[] = [
   { id: "settings", title: "Settings" },
   { id: "commandPrefs", title: "Aliases, Hotkeys & Favorites" },
@@ -88,7 +88,7 @@ function ResultList({ results, categories }: { results: ImportResult[]; categori
  * Import a Raycast `.rayconfig`: pick categories, enter the export password
  * (if it has one), then show what was imported per category.
  */
-export function ImportDialog({ path, format, onClose }: { path: string; format: "rayconfig" | "surgecast"; onClose: () => void }) {
+export function ImportDialog({ path, format, onClose }: { path: string; format: "rayconfig" | "opencast"; onClose: () => void }) {
   const categories = RAYCAST_IMPORT_CATEGORIES;
   const [selected, setSelected] = useState(() => new Set(categories.map((c) => c.id)));
   const [password, setPassword] = useState("");
@@ -117,7 +117,7 @@ export function ImportDialog({ path, format, onClose }: { path: string; format: 
   const fileName = path.split("/").pop() ?? path;
   return (
     <Dialog
-      title={format === "rayconfig" ? "Import from Raycast" : "Import Surgecast Data"}
+      title={format === "rayconfig" ? "Import from Raycast" : "Import OpenCast Data"}
       onClose={onClose}
       width={440}
       footer={
@@ -168,7 +168,7 @@ export function ImportDialog({ path, format, onClose }: { path: string; format: 
 
 function exportFileName(now = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `Surgecast ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}.${pad(now.getMinutes())}.surgeconfig`;
+  return `OpenCast ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}.${pad(now.getMinutes())}.openconfig`;
 }
 
 /** Export selected collections to an encrypted (or plain) file in `directory`. */

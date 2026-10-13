@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { useRegisterActions, ViewFrame, type ActionModel } from "../../../components";
 import { Icon } from "../../../icons/Icon";
 import { sc } from "../../../lib/keyboard";

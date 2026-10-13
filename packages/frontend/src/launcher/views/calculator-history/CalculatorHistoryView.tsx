@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CalculatorResult } from "@surgecast/protocol";
+import type { CalculatorResult } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
 import { native } from "../../../bridge/native";

@@ -14,7 +14,7 @@ export class SyncNotifier implements DurableObject {
       return Response.json({ ok: true });
     }
     const pair = new WebSocketPair();
-    pair[1].serializeAttachment(request.headers.get("X-Surgecast-Device"));
+    pair[1].serializeAttachment((request.headers.get("X-OpenCast-Device") ?? request.headers.get("X-Surgecast-Device")));
     this.state.acceptWebSocket(pair[1]);
     return new Response(null, { status: 101, webSocket: pair[0] });
   }

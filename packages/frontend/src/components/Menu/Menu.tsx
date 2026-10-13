@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import type { ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import type { ImageLike, KeyboardShortcut } from "@opencast/protocol";
 import { Image } from "../../icons/Image";
 import { Icon } from "../../icons/Icon";
 import { fuzzyFilter } from "../../lib/fuzzy";

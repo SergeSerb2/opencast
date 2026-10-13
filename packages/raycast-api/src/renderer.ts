@@ -4,7 +4,7 @@ import { DefaultEventPriority } from "react-reconciler/constants";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
-import type { UINode } from "@surgecast/protocol";
+import type { UINode } from "@opencast/protocol";
 import { environment } from "./environment";
 import { replaceNodeHandlers, reportError, sendTree } from "./bridge";
 import { NavigationStack } from "./navigation";
@@ -14,7 +14,7 @@ interface Container { children: Instance[]; commit(): void; }
 const hostContext = {};
 let priority = DefaultEventPriority;
 const hostConfig = {
-  rendererVersion: "0.1.0", rendererPackageName: "surgecast",
+  rendererVersion: "0.1.0", rendererPackageName: "opencast",
   isPrimaryRenderer: true, supportsPersistence: true, supportsMutation: false, supportsHydration: false,
   supportsMicrotasks: true, scheduleMicrotask: queueMicrotask,
   getRootHostContext: () => hostContext, getChildHostContext: () => hostContext,

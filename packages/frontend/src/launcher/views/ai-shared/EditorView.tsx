@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { ScrollArea, useNavigation, useRegisterActions, ViewFrame, type ActionsProp } from "../../../components";
 import "./ai-shared.css";
 

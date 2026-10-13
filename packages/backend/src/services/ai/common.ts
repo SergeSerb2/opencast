@@ -1,5 +1,5 @@
 import type { AICompletionRequest, AIEngine } from "../../context";
-import type { AIModel, AIProvider, Creativity } from "@surgecast/protocol";
+import type { AIModel, AIProvider, Creativity } from "@opencast/protocol";
 
 export type CompletionEvent =
   NonNullable<Parameters<AIEngine["complete"]>[1]> extends (
@@ -31,10 +31,10 @@ export function httpUrl(value: string): URL {
     throw new Error("Use an HTTP(S) URL without embedded credentials");
   if (
     /(^|\.)raycast\.(com|st)$/.test(url.hostname) ||
-    /(^|\.)surgecast\.(com|app)$/.test(url.hostname)
+    /(^|\.)(?:opencast|surgecast)\.(com|app)$/.test(url.hostname)
   )
     throw new Error(
-      "Hosted Surgecast/Raycast AI endpoints are not supported. Configure your own provider.",
+      "Hosted OpenCast/Raycast AI endpoints are not supported. Configure your own provider.",
     );
   return url;
 }

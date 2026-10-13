@@ -5,7 +5,7 @@ import type {
   ClipboardContent,
   ClipboardItem,
   ClipboardSnapshot,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import { background, boundedLimit, ftsQuery } from "./shared";
 import { parseColor } from "./colors";

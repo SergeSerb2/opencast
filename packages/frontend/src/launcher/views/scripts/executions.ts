@@ -1,4 +1,4 @@
-import type { BackendEvents } from "@surgecast/protocol";
+import type { BackendEvents } from "@opencast/protocol";
 import { backend, type BackendClient } from "../../../bridge/backend";
 
 export type ScriptCompletion = BackendEvents["scripts.completed"];

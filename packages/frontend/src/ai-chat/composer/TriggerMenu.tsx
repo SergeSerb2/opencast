@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { HighlightedText } from "../../components/HighlightedText/HighlightedText";
 import { Popover } from "../../components/Popover/Popover";
 import { Image } from "../../icons/Image";

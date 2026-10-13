@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AIMessage } from "@surgecast/protocol";
+import type { AIMessage } from "@opencast/protocol";
 import { parseChatRoute } from "../window/useChatRoutes";
 import { reduceStream, withLiveStream } from "./stream";
 

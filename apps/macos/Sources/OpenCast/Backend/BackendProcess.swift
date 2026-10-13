@@ -1,5 +1,5 @@
 import AppKit
-import SurgecastCore
+import OpenCastCore
 
 @MainActor final class BackendProcess {
   private var process: Process?
@@ -19,7 +19,7 @@ import SurgecastCore
   func start() { Task { await launch() } }
   private func resolveNode() async throws -> String {
     var candidates: [String] = []
-    if let override = Environment.env["SURGECAST_NODE"] { candidates.append(override) }
+    if let override = Environment.env["OPENCAST_NODE"] { candidates.append(override) }
     candidates.append(Environment.resources.appendingPathComponent("node/bin/node").path)
     let shell = Environment.env["SHELL"] ?? "/bin/zsh"
     if let r = try? await ProcessRunner.run(shell, ["-lc", "command -v node"], timeout: 5),
@@ -41,7 +41,7 @@ import SurgecastCore
       }
     }
     throw RpcError.failure(
-      "Node 22.13 or newer is required. Set SURGECAST_NODE to an executable Node binary.")
+      "Node 22.13 or newer is required. Set OPENCAST_NODE to an executable Node binary.")
   }
   private func launch() async {
     guard !stopping else { return }
@@ -51,7 +51,7 @@ import SurgecastCore
       let node = try await resolveNode()
       guard !stopping else { return }
       let entry =
-        Environment.env["SURGECAST_BACKEND_ENTRY"].map {
+        Environment.env["OPENCAST_BACKEND_ENTRY"].map {
           URL(fileURLWithPath: $0).standardizedFileURL
         } ?? Environment.resources.appendingPathComponent("backend/index.mjs")
       guard FileManager.default.fileExists(atPath: entry.path) else {

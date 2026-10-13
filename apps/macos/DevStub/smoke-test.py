@@ -18,11 +18,13 @@ frontend = work / 'frontend'
 frontend.mkdir(parents=True, exist_ok=True)
 for page in ['main', 'ai-chat', 'notes', 'settings', 'welcome', 'theme-studio']:
     shutil.copyfile(root / 'apps/macos/DevStub/main.html', frontend / f'{page}.html')
-log = Path.home() / 'Library/Logs/Surgecast/backend.log'
+log_dir = work / 'logs'
+log = log_dir / 'backend.log'
 start = log.stat().st_size if log.exists() else 0
-env = dict(os.environ, SURGECAST_BACKEND_ENTRY=str(root / 'apps/macos/DevStub/stub-backend.mjs'),
-           SURGECAST_RESOURCES=str(work), SURGECAST_SHOW_ON_START='1', SURGECAST_KEEP_OPEN='1')
-executable = root / 'build/Surgecast.app/Contents/MacOS/Surgecast'
+env = dict(os.environ, OPENCAST_BACKEND_ENTRY=str(root / 'apps/macos/DevStub/stub-backend.mjs'),
+           OPENCAST_RESOURCES=str(work), OPENCAST_DATA_DIR=str(work / 'data'), OPENCAST_LOG_DIR=str(log_dir),
+           OPENCAST_SHOW_ON_START='1', OPENCAST_KEEP_OPEN='1')
+executable = root / 'build/OpenCast.app/Contents/MacOS/OpenCast'
 children = set()
 
 def child_pids(parent):

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ToastStyle } from "@surgecast/protocol";
+import type { ToastStyle } from "@opencast/protocol";
 import { ActivityIndicator } from "../Spinner/Spinner";
 import { hideToast, useToastStore } from "../feedback/toast-store";
 import "./inline-toast.css";

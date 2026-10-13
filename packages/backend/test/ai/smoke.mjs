@@ -1,4 +1,4 @@
-/** Run after `pnpm --filter @surgecast/backend build`. All AI traffic stays on loopback. */
+/** Run after `pnpm --filter @opencast/backend build`. All AI traffic stays on loopback. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
@@ -9,7 +9,7 @@ import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import WebSocket from "ws";
-const dir = await mkdtemp(join(tmpdir(), "surgecast-ai-smoke-"));
+const dir = await mkdtemp(join(tmpdir(), "opencast-ai-smoke-"));
 const requests = [];
 const responsesMode = process.argv.includes("--responses");
 const wireTool = `sc_${createHash("sha256").update("datetime.now").digest("hex").slice(0, 24)}`;
@@ -172,7 +172,7 @@ try {
     );
     child.stderr.on("data", (chunk) => {
       logs += chunk;
-      const match = logs.match(/SURGECAST_BACKEND_READY (\{[^\n]+\})/);
+      const match = logs.match(/OPENCAST_BACKEND_READY (\{[^\n]+\})/);
       if (match) {
         clearTimeout(timeout);
         resolve(JSON.parse(match[1]));

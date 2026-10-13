@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { BackendParams, ScriptCommand } from "@surgecast/protocol";
+import type { BackendParams, ScriptCommand } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { errorMessage } from "../../bridge/errors";
 import { Button } from "../../components/Button/Button";
@@ -115,7 +115,7 @@ export function ScriptCommandsSection({ scripts, directories, onCreated }: { scr
           </div>
         ))
       ) : (
-        <CardEmpty title="No Script Commands" description="Scripts need a `@raycast.title` (or `@surgecast.title`) comment to appear here." />
+        <CardEmpty title="No Script Commands" description="Scripts need a `@raycast.title` (or `@opencast.title`) comment to appear here." />
       )}
       {creating && (
         <CreateScriptDialog

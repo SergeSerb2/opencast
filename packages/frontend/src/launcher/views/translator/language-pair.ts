@@ -11,7 +11,7 @@ export interface StoredLanguagePair extends LanguagePair {
   defaults: LanguagePair;
 }
 
-const STORAGE_KEY = "surgecast.translator.languages";
+const STORAGE_KEY = "opencast.translator.languages";
 
 function validSource(code: string | undefined): string | null {
   if (code === AUTO_LANGUAGE) return AUTO_LANGUAGE;

@@ -1,4 +1,4 @@
-import type { AIMessage } from "@surgecast/protocol";
+import type { AIMessage } from "@opencast/protocol";
 
 /** "Thought for 4s", "Thought for 1m 12s". */
 export function formatThoughtDuration(ms: number): string {

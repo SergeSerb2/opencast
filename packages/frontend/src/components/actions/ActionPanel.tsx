@@ -1,5 +1,5 @@
 import { Children, Fragment, isValidElement, type ReactElement, type ReactNode } from "react";
-import type { ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import type { ImageLike, KeyboardShortcut } from "@opencast/protocol";
 import type { ActionModel, ActionPanelModel, ActionSectionModel, ActionStyle } from "./model";
 
 /**
@@ -62,7 +62,7 @@ export interface ActionContext {
   getFormValues: () => Record<string, unknown> | undefined;
 }
 
-const FACTORY = Symbol.for("surgecast.actionFactory");
+const FACTORY = Symbol.for("opencast.actionFactory");
 
 type ActionComponent<P> = ((props: P) => null) & { [FACTORY]?: ActionFactory<P> };
 

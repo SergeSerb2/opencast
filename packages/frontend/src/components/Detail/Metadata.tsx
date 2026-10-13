@@ -1,5 +1,5 @@
 import { Children, Fragment, isValidElement, memo, type ReactElement, type ReactNode } from "react";
-import type { ColorLike, ImageLike } from "@surgecast/protocol";
+import type { ColorLike, ImageLike } from "@opencast/protocol";
 import { native } from "../../bridge/native";
 import { resolveColor } from "../../icons/colors";
 import { ArrowNeGlyph } from "../../icons/glyphs";

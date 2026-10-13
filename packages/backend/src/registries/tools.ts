@@ -1,4 +1,4 @@
-import type { AIToolInfo } from "@surgecast/protocol";
+import type { AIToolInfo } from "@opencast/protocol";
 import type { ToolProvider, ToolRegistry } from "../context";
 import { RpcError } from "../util/errors";
 import { createLogger } from "../util/log";

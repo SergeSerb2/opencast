@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { BuiltinView, ImageLike } from "@surgecast/protocol";
+import type { BuiltinView, ImageLike } from "@opencast/protocol";
 
 /** Props every registered launcher view receives. */
 export interface LauncherViewProps<P = Record<string, unknown>> {

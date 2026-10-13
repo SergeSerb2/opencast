@@ -9,7 +9,7 @@ import Carbon
   private let hub = EventHub()
   private var status: NSStatusItem?
   private var observers: [NSObjectProtocol] = []
-  private let showNotification = Notification.Name("app.surgecast.showLauncher")
+  private let showNotification = Notification.Name("app.opencast.showLauncher")
   private var instanceFD: Int32 = -1
   private var ownsInstance = false
   private var quitting = false
@@ -19,7 +19,7 @@ import Carbon
   private var signalSources: [DispatchSourceSignal] = []
   func applicationWillFinishLaunching(_ notification: Notification) {
     do { try Environment.prepare() } catch {
-      fputs("Surgecast data directory unavailable: \(error)\n", stderr)
+      fputs("OpenCast data directory unavailable: \(error)\n", stderr)
       NSApp.terminate(nil)
       return
     }
@@ -70,7 +70,7 @@ import Carbon
     }
     do {
       let result = try router.hotkeys.register(
-        "surgecast.toggle", hotkey: ["modifiers": ["opt"], "key": "space"])
+        "opencast.toggle", hotkey: ["modifiers": ["opt"], "key": "space"])
       if result["ok"] as? Bool != true { Environment.log("Default launcher hotkey unavailable") }
     } catch { Environment.log("Default hotkey registration failed") }
     observers.append(
@@ -96,7 +96,7 @@ import Carbon
       signalSources.append(source)
     }
     backend.start()
-    if Environment.env["SURGECAST_SHOW_ON_START"] == "1" { windows.launcher.show() }
+    if Environment.env["OPENCAST_SHOW_ON_START"] == "1" { windows.launcher.show() }
     Environment.log("Native host started")
   }
   @objc private func openURL(_ event: NSAppleEventDescriptor, reply: NSAppleEventDescriptor) {
@@ -148,17 +148,17 @@ import Carbon
     }
     guard status == nil else { return }
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    let image = NSImage(systemSymbolName: "bolt.circle.fill", accessibilityDescription: "Surgecast")
+    let image = NSImage(systemSymbolName: "bolt.circle.fill", accessibilityDescription: "OpenCast")
     image?.isTemplate = true
     item.button?.image = image
-    item.button?.toolTip = "Surgecast"
+    item.button?.toolTip = "OpenCast"
     let menu = NSMenu()
-    menu.addItem(menuItem("Open Surgecast", #selector(showLauncher), " ", [.option]))
+    menu.addItem(menuItem("Open OpenCast", #selector(showLauncher), " ", [.option]))
     menu.addItem(menuItem("AI Chat", #selector(showAI)))
     menu.addItem(menuItem("Notes", #selector(showNotes)))
     menu.addItem(menuItem("Settings…", #selector(showSettings), ","))
     menu.addItem(.separator())
-    menu.addItem(menuItem("Quit Surgecast", #selector(quit), "q"))
+    menu.addItem(menuItem("Quit OpenCast", #selector(quit), "q"))
     item.menu = menu
     status = item
   }
@@ -173,11 +173,11 @@ import Carbon
   }
   private func installMenu() {
     let main = NSMenu()
-    let appMenu = NSMenu(title: "Surgecast")
-    appMenu.addItem(menuItem("About Surgecast", #selector(about)))
+    let appMenu = NSMenu(title: "OpenCast")
+    appMenu.addItem(menuItem("About OpenCast", #selector(about)))
     appMenu.addItem(menuItem("Settings…", #selector(showSettings), ","))
     appMenu.addItem(.separator())
-    appMenu.addItem(menuItem("Quit Surgecast", #selector(quit), "q"))
+    appMenu.addItem(menuItem("Quit OpenCast", #selector(quit), "q"))
     let appItem = NSMenuItem()
     appItem.submenu = appMenu
     main.addItem(appItem)

@@ -1,8 +1,8 @@
 # Self-hosted encrypted Cloud Sync
 
-Surgecast sync connects directly to a Cloudflare Worker and D1 database that you deploy.
+OpenCast sync connects directly to a Cloudflare Worker and D1 database that you deploy.
 It requires an account-scoped bearer token and a vault passphrase. There are no hosted
-Surgecast endpoints, user accounts, credits, or paywalls.
+OpenCast endpoints, user accounts, credits, or paywalls.
 
 ## Threat model
 
@@ -37,7 +37,7 @@ respectively. Cryptography runs client-side using `node:crypto`; compression use
    16-byte salt, and a 256 MiB maximum memory allowance. Passphrases are used exactly as
    entered, with no Unicode normalization (1–4096 characters).
 3. Wrap the VMK with AES-256-GCM and a fresh 12-byte nonce. AAD is
-   `surgecast-vault-v1|<vaultId>|<keyEpoch>`. `wrapped.ct` concatenates ciphertext and
+   `opencast-vault-v1|<vaultId>|<keyEpoch>`. `wrapped.ct` concatenates ciphertext and
    the 16-byte authentication tag. The server vault contains only:
 
    ```json
@@ -49,13 +49,13 @@ respectively. Cryptography runs client-side using `node:crypto`; compression use
    ```
 
 4. Derive two 32-byte keys with HKDF-SHA256 using VMK as input and UTF-8 `vaultId` as salt:
-   info `surgecast/record/v1` gives `encKey`; info `surgecast/rid/v1` gives `ridKey`.
+   info `opencast/record/v1` gives `encKey`; info `opencast/rid/v1` gives `ridKey`.
 5. `rid = base64url(HMAC-SHA256(ridKey, UTF8(collection + "\u0000" + id)))`.
    Collection/ID strings must not contain NUL.
 6. Serialize `{ v: 1, collection, id, createdAt, updatedAt, deleted, data }` as JSON.
    Prefix byte `0x00` for uncompressed JSON, or `0x01` followed by gzip if the JSON
    exceeds 1024 bytes. Encrypt this entire prefixed payload with AES-256-GCM, a fresh
-   12-byte nonce per write, and AAD `surgecast-record-v1|<vaultId>|<rid>|<keyEpoch>`.
+   12-byte nonce per write, and AAD `opencast-record-v1|<vaultId>|<rid>|<keyEpoch>`.
    `ct` includes the 16-byte tag. Clients also verify the decrypted identity, deletion
    flag, version, bounded timestamps and gzip output size before applying it.
 
@@ -109,7 +109,7 @@ reset, even across wipes, avoiding cursor reuse.
 ## HTTP API
 
 All endpoints return JSON. Errors have `{ error, message }`. Except health, every request
-requires `Authorization: Bearer <token>` and `X-Surgecast-Device: <deviceId>`. Requests
+requires `Authorization: Bearer <token>` and `X-OpenCast-Device: <deviceId>`. Requests
 from revoked devices return 403 `device_revoked`, except explicit same-device registration.
 There is no CORS/browser authentication flow. Use HTTPS; localhost HTTP is supported for
 local development. Tokens never appear in URLs and redirects are refused by clients.
@@ -119,7 +119,7 @@ local development. Tokens never appear in URLs and redirects are refused by clie
 | GET | `/v1/health` | Unauthenticated `{ ok: true, version: 1 }` |
 | GET | `/v1/vault` | Vault JSON, or 404 `vault_not_found` |
 | PUT | `/v1/vault` | Create vault (201); 409 if present. Replace with vault fields plus `replace: true` and raw `If-Match: <existing vaultId>` |
-| DELETE | `/v1/vault` | Require `X-Surgecast-Confirm: wipe`; delete all account records/devices/vault; return `{ ok: true }` |
+| DELETE | `/v1/vault` | Require `X-OpenCast-Confirm: wipe`; delete all account records/devices/vault; return `{ ok: true }` |
 | POST | `/v1/devices` | Upsert `{ deviceId, name, platform, appVersion? }`; body ID must match header; explicit registration clears revocation; vault required |
 | GET | `/v1/devices` | Array of active devices including `deviceId, name, platform, appVersion, lastSeenAt` |
 | DELETE | `/v1/devices/:id` | Revoke device; return `{ ok: true }`; 404 if unknown |
@@ -150,7 +150,7 @@ old-epoch records are not automatically re-encrypted or readable with a new key.
 
 See [the Worker deployment guide](../packages/sync-worker/README.md), or run
 `./scripts/deploy-sync.sh` after `wrangler login`. Configure the returned HTTPS URL,
-server token, passphrase and optional device name through `sync.connect` in Surgecast.
+server token, passphrase and optional device name through `sync.connect` in OpenCast.
 Each additional Mac uses the same account token and passphrase. Separate tokens/accounts
 provide separate vaults; a shared team vault intentionally shares one administrative token.
 The script stops without Cloudflare login and never starts a login flow itself.
@@ -182,11 +182,11 @@ it does not recover a lost encryption key. Removing a device does not erase its 
 ## Verification
 
 ```sh
-pnpm --filter @surgecast/sync-worker typecheck
-pnpm --filter @surgecast/sync-worker test
-pnpm --filter @surgecast/backend typecheck
-pnpm --filter @surgecast/backend test
-pnpm --filter @surgecast/backend build
+pnpm --filter @opencast/sync-worker typecheck
+pnpm --filter @opencast/sync-worker test
+pnpm --filter @opencast/backend typecheck
+pnpm --filter @opencast/backend test
+pnpm --filter @opencast/backend build
 ```
 
 Backend integration tests use two separate data directories, real entity/settings/RPC
@@ -200,7 +200,7 @@ from local verification.
 For a full process/transport check while the dedicated local Wrangler server runs:
 
 ```sh
-pnpm --filter @surgecast/backend build
+pnpm --filter @opencast/backend build
 node packages/backend/test/sync/process-smoke.mjs
 ```
 

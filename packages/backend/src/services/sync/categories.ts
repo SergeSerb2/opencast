@@ -1,4 +1,4 @@
-import { ALWAYS_SYNCED_COLLECTIONS, SETTINGS, SYNC_CATEGORIES, isSettingsKey } from "@surgecast/protocol";
+import { ALWAYS_SYNCED_COLLECTIONS, SETTINGS, SYNC_CATEGORIES, isSettingsKey } from "@opencast/protocol";
 
 /** undefined means device-local or an unknown collection; deny by default. */
 export function categoryFor(collection: string, id: string): string | undefined {

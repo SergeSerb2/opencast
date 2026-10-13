@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Run after `pnpm --filter @surgecast/backend build`.
-const directory = await mkdtemp(join(tmpdir(), "surgecast-core-e2e-"));
+// Run after `pnpm --filter @opencast/backend build`.
+const directory = await mkdtemp(join(tmpdir(), "opencast-core-e2e-"));
 // Fixed, fresh rates make the screenshot regression independent of network/live rates.
 await writeFile(
   join(directory, "currency-rates.json"),
@@ -45,7 +45,7 @@ try {
     });
     child.stderr.on("data", (chunk) => {
       log += chunk;
-      const match = /SURGECAST_BACKEND_READY (.+)/.exec(log);
+      const match = /OPENCAST_BACKEND_READY (.+)/.exec(log);
       if (match) {
         clearTimeout(timeout);
         resolve(JSON.parse(match[1]).port);
@@ -233,7 +233,7 @@ try {
     ).view.id,
     "snippets.search",
   );
-  const exportPath = join(directory, "content.surgeconfig");
+  const exportPath = join(directory, "content.openconfig");
   await rpc("data.export", {
     path: exportPath,
     password: "test-passphrase",

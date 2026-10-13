@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AIMessage } from "@surgecast/protocol";
+import type { AIMessage } from "@opencast/protocol";
 import { branchInfo, buildMessageTree, fallbackLeaf, latestLeaf, resolveLeaf, visibleBranch } from "../ai-chat/model/message-tree";
 
 let clock = 0;

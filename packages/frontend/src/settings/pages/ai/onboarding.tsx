@@ -43,8 +43,8 @@ export function OnboardingCard() {
       <div className="sc-s-onboarding__body">
         <div className="sc-s-onboarding__title">Bring your own AI</div>
         <p className="sc-s-onboarding__text">
-          Surgecast talks directly to the providers you choose — nothing goes through Surgecast servers and there are no credits. Paste an API key from OpenAI, Anthropic, Google or OpenRouter, or
-          point Surgecast at a local model or proxy. Keys stay in your Keychain.
+          OpenCast talks directly to the providers you choose — nothing goes through OpenCast servers and there are no credits. Paste an API key from OpenAI, Anthropic, Google or OpenRouter, or
+          point OpenCast at a local model or proxy. Keys stay in your Keychain.
         </p>
         <p className="sc-s-onboarding__text">
           Already pay for ChatGPT, Claude or Gemini?{" "}

@@ -19,7 +19,7 @@ if [ "$SKIP_WEB" = 0 ]; then
     if [ ! -d node_modules ]; then pnpm install --frozen-lockfile; fi
     for package in frontend backend raycast-api; do
         # In-progress packages can have a build script before they have source/output.
-        if pnpm --filter "@surgecast/$package" build; then
+        if pnpm --filter "@opencast/$package" build; then
             if [ ! -d "packages/$package/dist" ]; then echo "Warning: $package has no dist output yet; skipping bundle copy" >&2; fi
         elif [ ! -d "packages/$package/dist" ]; then
             echo "Warning: $package is not buildable yet and has no dist output; continuing native assembly" >&2
@@ -31,13 +31,13 @@ if [ "$SKIP_WEB" = 0 ]; then
 fi
 swift build -c "$CONFIG" --package-path apps/macos
 BIN_DIR="$(swift build -c "$CONFIG" --package-path apps/macos --show-bin-path)"
-APP="$ROOT/build/Surgecast.app"
+APP="$ROOT/build/OpenCast.app"
 # Assemble in a sibling staging directory so a failed build preserves the previous app.
 mkdir -p "$ROOT/build"
-STAGE="$(mktemp -d "$ROOT/build/.Surgecast.XXXXXX")"
+STAGE="$(mktemp -d "$ROOT/build/.OpenCast.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources"
-cp "$BIN_DIR/Surgecast" "$STAGE/Contents/MacOS/Surgecast"
+cp "$BIN_DIR/OpenCast" "$STAGE/Contents/MacOS/OpenCast"
 cp apps/macos/Resources/Info.plist "$STAGE/Contents/Info.plist"
 if [ ! -f apps/macos/Resources/AppIcon.icns ]; then ./scripts/make-icon.sh; fi
 cp apps/macos/Resources/AppIcon.icns "$STAGE/Contents/Resources/AppIcon.icns"
@@ -47,17 +47,17 @@ if [ "$SKIP_WEB" = 0 ]; then
     done
 fi
 if [ "$BUNDLE_NODE" = 1 ]; then
-    NODE="${SURGECAST_NODE:-}"
+    NODE="${OPENCAST_NODE:-${SURGECAST_NODE:-}}"
     if [ -z "$NODE" ] && [ -x "$APP/Contents/Resources/node/bin/node" ]; then NODE="$APP/Contents/Resources/node/bin/node"; fi
     if [ -z "$NODE" ]; then NODE="$("${SHELL:-/bin/zsh}" -lc 'command -v node' || true)"; fi
     if [ -z "$NODE" ]; then for candidate in /opt/homebrew/bin/node /usr/local/bin/node; do if [ -x "$candidate" ]; then NODE="$candidate"; break; fi; done; fi
-    if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then echo 'Node not found; set SURGECAST_NODE' >&2; exit 1; fi
+    if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then echo 'Node not found; set OPENCAST_NODE' >&2; exit 1; fi
     "$NODE" -e 'const [a,b]=process.versions.node.split(".").map(Number); if(a<22||(a===22&&b<13))process.exit(1)'
     mkdir -p "$STAGE/Contents/Resources/node/bin"
     cp -L "$NODE" "$STAGE/Contents/Resources/node/bin/node"
-    codesign --force -s - --entitlements apps/macos/Surgecast.entitlements "$STAGE/Contents/Resources/node/bin/node"
+    codesign --force -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE/Contents/Resources/node/bin/node"
 fi
-codesign --force --deep -s - --entitlements apps/macos/Surgecast.entitlements "$STAGE"
+codesign --force --deep -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE"
 codesign --verify --deep --strict "$STAGE"
 rm -rf "$APP"
 mv "$STAGE" "$APP"

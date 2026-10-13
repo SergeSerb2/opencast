@@ -1,4 +1,4 @@
-import { RpcErrorCode, type CommandInfo, type ExtensionCommandManifest, type ExtensionPreference, type InstalledExtension, type StoreExtension } from "@surgecast/protocol";
+import { RpcErrorCode, type CommandInfo, type ExtensionCommandManifest, type ExtensionPreference, type InstalledExtension, type StoreExtension } from "@opencast/protocol";
 import { RpcError } from "../../errors";
 import { ALL_COMMANDS } from "../fixtures/commands";
 import { EXTENSIONS } from "../fixtures/content";
@@ -7,7 +7,7 @@ import type { MockArea, MockContext } from "./types";
 
 const DAY = 86_400_000;
 const PAGE_SIZE = 10;
-const INSTALL_ROOT = "/Users/me/Library/Application Support/Surgecast/extensions";
+const INSTALL_ROOT = "/Users/me/Library/Application Support/OpenCast/extensions";
 /** Updates of these extensions fail, so the update results show every outcome. */
 const FAILING_UPDATES = new Map([["spotify-player", "The Store didn't respond in time (502). Try again in a few minutes."]]);
 

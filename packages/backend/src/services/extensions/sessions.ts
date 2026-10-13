@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { access, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { ExtensionSessionState, InstalledExtension, BackendEvents, MenuBarExtraItem, UINode } from "@surgecast/protocol";
+import type { ExtensionSessionState, InstalledExtension, BackendEvents, MenuBarExtraItem, UINode } from "@opencast/protocol";
 import type { AppContext, LaunchRequest } from "../../context";
 import { safeName, within } from "./manifest";
 export interface HostSession {
@@ -32,9 +32,9 @@ export class ExtensionSessions {
     await access(entryPath).catch(() => { throw new Error(`Missing entry point file: ${commandName}`); });
     const supportPath = join(this.ctx.dataDir, "extension-support", safeName(extension.name)); await mkdir(supportPath, { recursive: true });
     const resources = this.ctx.resourcesDir;
-    const candidates = [process.env.SURGECAST_EXTENSION_WORKER, join(resources, "raycast-api/worker.cjs"), join(resources, "packages/raycast-api/dist/worker.cjs"), resolve(resources, "../raycast-api/dist/worker.cjs"), resolve(resources, "../packages/raycast-api/dist/worker.cjs")].filter((x): x is string => Boolean(x));
+    const candidates = [(process.env.OPENCAST_EXTENSION_WORKER ?? process.env.SURGECAST_EXTENSION_WORKER), join(resources, "raycast-api/worker.cjs"), join(resources, "packages/raycast-api/dist/worker.cjs"), resolve(resources, "../raycast-api/dist/worker.cjs"), resolve(resources, "../packages/raycast-api/dist/worker.cjs")].filter((x): x is string => Boolean(x));
     const runtime = candidates.find((x) => existsSync(x));
-    if (!runtime) throw new Error("Extension runtime is missing. Build @surgecast/raycast-api or set SURGECAST_EXTENSION_WORKER.");
+    if (!runtime) throw new Error("Extension runtime is missing. Build @opencast/raycast-api or set OPENCAST_EXTENSION_WORKER.");
     const id = randomUUID();
     const worker = new Worker(runtime, {
       resourceLimits: { maxOldGenerationSizeMb: 512 }, stdout: true, stderr: true,

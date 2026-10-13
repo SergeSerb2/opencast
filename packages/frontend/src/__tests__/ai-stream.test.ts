@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AIMessage, AIStreamEvent, AIToolCall } from "@surgecast/protocol";
+import type { AIMessage, AIStreamEvent, AIToolCall } from "@opencast/protocol";
 import { createLiveStream, reasoningDurationMs, reduceStream, withLiveStream, type LiveStream } from "../ai-chat/model/stream";
 
 const run = (events: AIStreamEvent[], start = 0, initial?: LiveStream): LiveStream => events.reduce<LiveStream | undefined>((s, e, i) => reduceStream(s, e, start + i * 100), initial) as LiveStream;

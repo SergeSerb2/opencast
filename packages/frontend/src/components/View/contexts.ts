@@ -20,7 +20,7 @@ export const NavigationContext = createContext<NavigationApi | null>(null);
 export function useNavigation(): NavigationApi {
   return (
     useContext(NavigationContext) ?? {
-      push: () => console.warn("[surgecast] push() outside the launcher navigation"),
+      push: () => console.warn("[opencast] push() outside the launcher navigation"),
       pop: () => undefined,
       popToRoot: () => undefined,
       depth: 0,

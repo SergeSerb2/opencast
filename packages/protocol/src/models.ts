@@ -245,7 +245,7 @@ export interface ClipboardItem {
 // AI
 // ---------------------------------------------------------------------------
 
-/** How Surgecast talks to a provider. */
+/** How OpenCast talks to a provider. */
 export type AIProviderApi = "openai" | "openai-responses" | "anthropic" | "google" | "ollama";
 
 /** (entity: aiProviders) API keys are in the Keychain at "ai.provider:<id>:apiKey". */
@@ -422,7 +422,7 @@ export interface AICommand {
   highlightEdits?: boolean;
   tags?: string[];
   webSearch?: boolean;
-  /** Built-in commands ship with Surgecast; they can be edited and reset. */
+  /** Built-in commands ship with OpenCast; they can be edited and reset. */
   builtin?: boolean;
   createdAt: number;
   updatedAt: number;

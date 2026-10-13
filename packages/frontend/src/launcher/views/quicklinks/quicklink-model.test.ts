@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Quicklink } from "@surgecast/protocol";
+import type { Quicklink } from "@opencast/protocol";
 import { duplicateNoteContent, titleMatchesFirst } from "../notes-search/notes-model";
 import { CUSTOM_ICON, DEFAULT_ICON, defaultLinkIcon, openedLabel, quicklinkDraft, quicklinkIcon, quicklinkPayload, validateQuicklink } from "./quicklink-model";
 

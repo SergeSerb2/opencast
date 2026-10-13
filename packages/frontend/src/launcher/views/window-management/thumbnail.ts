@@ -1,10 +1,10 @@
-import type { ImageLike, TileImage, WindowLayoutRect } from "@surgecast/protocol";
+import type { ImageLike, TileImage, WindowLayoutRect } from "@opencast/protocol";
 
 /** Same gradient the backend uses for window layout commands in root search. */
 const TILE_TOP = "#3B82F6";
 const TILE_BOTTOM = "#1D4ED8";
 
-const MARKER = 'data-surgecast="layout-thumbnail"';
+const MARKER = 'data-opencast="layout-thumbnail"';
 const PREFIX = "data:image/svg+xml,";
 
 const round = (value: number) => Math.round(value * 100) / 100;

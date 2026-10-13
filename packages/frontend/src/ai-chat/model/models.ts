@@ -1,4 +1,4 @@
-import type { AIModelOption, ModelRef } from "@surgecast/protocol";
+import type { AIModelOption, ModelRef } from "@opencast/protocol";
 
 /** The model to use: the explicit choice when it is still available, else the configured default, else the first model. */
 export function resolveModelRef(models: readonly AIModelOption[], ...preferences: (ModelRef | null | undefined)[]): ModelRef | undefined {

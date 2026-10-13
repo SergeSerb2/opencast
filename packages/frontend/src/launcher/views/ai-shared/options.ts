@@ -1,4 +1,4 @@
-import type { AICommandOutput, AIModelOption, Creativity, NamedColor, TileImage } from "@surgecast/protocol";
+import type { AICommandOutput, AIModelOption, Creativity, NamedColor, TileImage } from "@opencast/protocol";
 
 export type ReasoningEffort = "none" | "low" | "medium" | "high";
 

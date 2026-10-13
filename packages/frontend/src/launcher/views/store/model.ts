@@ -1,4 +1,4 @@
-import type { ImageLike, StoreExtension } from "@surgecast/protocol";
+import type { ImageLike, StoreExtension } from "@opencast/protocol";
 
 /** Category dropdown value that lists installed Store extensions instead of searching. */
 export const INSTALLED_FILTER = "__installed__";

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { AICommand, AIPreset } from "@surgecast/protocol";
+import type { AICommand, AIPreset } from "@opencast/protocol";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { backend } from "../../bridge/backend";

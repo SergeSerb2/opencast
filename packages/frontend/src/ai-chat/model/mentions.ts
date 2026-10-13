@@ -1,4 +1,4 @@
-import type { AIToolInfo, ImageLike } from "@surgecast/protocol";
+import type { AIToolInfo, ImageLike } from "@opencast/protocol";
 
 /** A group of tools the user can enable with an `@mention` (the backend enables tools per toolset). */
 export interface Toolset {

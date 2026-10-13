@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { MenuGlyph } from "../../icons/glyphs";
 import { Image } from "../../icons/Image";
 import { sc } from "../../lib/keyboard";
@@ -65,7 +65,7 @@ export const Footer = memo(function Footer({ menuButton, navigationTitle, naviga
         <ActionButton
           variant="secondary"
           outset
-          aria-label="Surgecast menu"
+          aria-label="OpenCast menu"
           aria-haspopup="menu"
           data-state={menuButton.open ? "open" : undefined}
           leading={<MenuGlyph size={18} className="sc-footer__menu-glyph" />}

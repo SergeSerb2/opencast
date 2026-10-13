@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { defaultSettings, type AIPreset, type BackendEvents } from "@surgecast/protocol";
+import { defaultSettings, type AIPreset, type BackendEvents } from "@opencast/protocol";
 import { Emitter } from "../../bridge/emitter";
 import { settingsMockHandlers } from "../../bridge/mock/settings-handlers";
 import { draftFromTemplate, reconcileProviderDraft, type ProviderTemplate } from "../pages/ai/provider-form";

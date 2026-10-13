@@ -1,4 +1,4 @@
-import type { AIPreset, BackendParams, Creativity } from "@surgecast/protocol";
+import type { AIPreset, BackendParams, Creativity } from "@opencast/protocol";
 
 type PresetInput = BackendParams<"ai.presets.upsert">;
 const CREATIVITY = new Set<Creativity>(["none", "low", "medium", "high", "maximum"]);

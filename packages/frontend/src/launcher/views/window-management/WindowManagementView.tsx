@@ -1,4 +1,4 @@
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import { EmptyView, ViewFrame } from "../../../components";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 import { WebSocketBackend, defaultTimeout, reconnectDelay } from "../bridge/backend";
 import { resolveEnvironment } from "../bridge/env";
 import { refetchRulesFor } from "../bridge/refetch";

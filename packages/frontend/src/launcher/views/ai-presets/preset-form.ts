@@ -1,4 +1,4 @@
-import type { AIModelOption, AIPreset, AIToolInfo, BackendParams, Creativity } from "@surgecast/protocol";
+import type { AIModelOption, AIPreset, AIToolInfo, BackendParams, Creativity } from "@opencast/protocol";
 import type { MetadataEntry } from "../../../components/Detail/Metadata";
 import { fuzzyFilter, type MatchRange } from "../../../lib/fuzzy";
 import { creativityLabel, DEFAULT_AI_ICON, formatTimestamp, modelLabel, reasoningLabel, type ReasoningEffort } from "../ai-shared/options";

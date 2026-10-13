@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import readline from 'node:readline';
 const token = randomBytes(24).toString('hex');
 const send = (value) => process.stdout.write(JSON.stringify({ jsonrpc: '2.0', ...value }) + '\n');
-const log = (...args) => console.error('[surgecast-dev-stub]', ...args);
+const log = (...args) => console.error('[opencast-dev-stub]', ...args);
 const pending = new Map();
 let next = 0;
 function native(method, params = {}) {
@@ -16,7 +16,7 @@ function frame(value) {
   const header = Buffer.alloc(4); header[0] = 0x81; header[1] = 126; header.writeUInt16BE(body.length, 2);
   return Buffer.concat([header, body]);
 }
-const server = http.createServer((_, res) => { res.writeHead(200); res.end('Surgecast dev stub'); });
+const server = http.createServer((_, res) => { res.writeHead(200); res.end('OpenCast dev stub'); });
 server.on('upgrade', (req, socket) => {
   const url = new URL(req.url, 'http://127.0.0.1');
   if (url.searchParams.get('token') !== token || !req.headers['sec-websocket-key']) { socket.destroy(); return; }
@@ -64,7 +64,7 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
 server.listen(0, '127.0.0.1', async () => {
   send({ method: 'backend.ready', params: { port: server.address().port, token, version: 'dev-stub' } });
   for (const method of ['app.info', 'apps.list', 'permissions.status', 'windows.screens', 'not.a.method']) await native(method);
-  await native('hotkeys.register', { id: 'surgecast.toggle', hotkey: { key: 'space', modifiers: ['opt'] } });
+  await native('hotkeys.register', { id: 'opencast.toggle', hotkey: { key: 'space', modifiers: ['opt'] } });
   await native('app.setMenuBarIconVisible'); // invalid params must not mutate the status item
   log('STARTUP_CHECKS_COMPLETE');
 });

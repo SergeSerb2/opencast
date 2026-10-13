@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AppInfo } from "@surgecast/protocol";
+import type { AppInfo } from "@opencast/protocol";
 import { native } from "../../bridge/native";
 import { Button, IconButton } from "../../components/Button/Button";
 import { Image } from "../../icons/Image";

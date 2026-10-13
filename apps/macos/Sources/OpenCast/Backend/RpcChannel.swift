@@ -7,7 +7,7 @@ import Foundation
   private var pending: [String: CheckedContinuation<Any, Error>] = [:]
   private var nextID = 0
   private var closed = false
-  private let writer = DispatchQueue(label: "app.surgecast.rpc.writer")
+  private let writer = DispatchQueue(label: "app.opencast.rpc.writer")
   var handler: Handler?
   var onReady: (([String: Any]) -> Void)?
   var onClosed: (() -> Void)?

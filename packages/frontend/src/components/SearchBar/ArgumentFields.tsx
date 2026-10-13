@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { CommandArgument } from "@surgecast/protocol";
+import type { CommandArgument } from "@opencast/protocol";
 import { Icon } from "../../icons/Icon";
 import { Menu } from "../Menu/Menu";
 import { Popover } from "../Popover/Popover";

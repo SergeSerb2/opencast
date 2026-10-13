@@ -1,7 +1,7 @@
-# Surgecast self-hosted sync
+# OpenCast self-hosted sync
 
 This MIT-licensed Worker stores only encrypted records. You own the Cloudflare account,
-D1 database, bearer tokens, and vault passphrase. No Surgecast account or service is used.
+D1 database, bearer tokens, and vault passphrase. No OpenCast account or service is used.
 
 ## Deploy
 
@@ -9,7 +9,7 @@ Requirements: Node 22.23+, pnpm, a Cloudflare account with Workers and D1 enable
 From the repository root:
 
 ```sh
-pnpm --filter @surgecast/sync-worker exec wrangler login
+pnpm --filter @opencast/sync-worker exec wrangler login
 ./scripts/deploy-sync.sh
 ```
 
@@ -20,12 +20,12 @@ and deploys. Review the prompts before proceeding. It does not store your token 
 Manual steps:
 
 ```sh
-pnpm --filter @surgecast/sync-worker exec wrangler whoami
-pnpm --filter @surgecast/sync-worker exec wrangler d1 create surgecast-sync
+pnpm --filter @opencast/sync-worker exec wrangler whoami
+pnpm --filter @opencast/sync-worker exec wrangler d1 create opencast-sync
 # Set database_id in packages/sync-worker/wrangler.toml to the printed UUID.
-pnpm --filter @surgecast/sync-worker exec wrangler d1 migrations apply surgecast-sync --remote
-pnpm --filter @surgecast/sync-worker exec wrangler secret put SYNC_TOKEN
-pnpm --filter @surgecast/sync-worker deploy
+pnpm --filter @opencast/sync-worker exec wrangler d1 migrations apply opencast-sync --remote
+pnpm --filter @opencast/sync-worker exec wrangler secret put SYNC_TOKEN
+pnpm --filter @opencast/sync-worker deploy
 ```
 
 Generate at least 32 random bytes for a token (for example with `openssl rand -hex 32`).
@@ -43,10 +43,10 @@ Never remove an existing class migration casually from an already deployed Worke
 ## Local verification
 
 ```sh
-pnpm --filter @surgecast/sync-worker typecheck
-pnpm --filter @surgecast/sync-worker test
-pnpm --filter @surgecast/sync-worker exec wrangler d1 migrations apply surgecast-sync --local
-pnpm --filter @surgecast/sync-worker exec wrangler dev --local --port 18787 --var SYNC_TOKEN:local-test
+pnpm --filter @opencast/sync-worker typecheck
+pnpm --filter @opencast/sync-worker test
+pnpm --filter @opencast/sync-worker exec wrangler d1 migrations apply opencast-sync --local
+pnpm --filter @opencast/sync-worker exec wrangler dev --local --port 18787 --var SYNC_TOKEN:local-test
 # In another terminal; uses and wipes ONLY the dedicated localhost account:
 node packages/sync-worker/test/local-smoke.mjs
 ```

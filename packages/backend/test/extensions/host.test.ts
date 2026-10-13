@@ -132,7 +132,7 @@ describe("extension host", () => {
     const launch = await h.call("ext.session.start", { name: "fixture", command: "list" }) as any; const session = h.host.sessions.get(launch.sessionId);
     const dispatch = vi.spyOn(h.host.sessions, "dispatch").mockResolvedValue(undefined);
     const flow = await h.host.broker.request(session, "initOAuth", { onRedirect: "callback", providerId: "provider" });
-    h.nativeEvents.emit("url.opened", { url: "surgecast://oauth?state=wrong&code=other" }); await new Promise((resolve) => setTimeout(resolve, 10)); expect(dispatch).not.toHaveBeenCalled();
+    h.nativeEvents.emit("url.opened", { url: "opencast://oauth?state=wrong&code=other" }); await new Promise((resolve) => setTimeout(resolve, 10)); expect(dispatch).not.toHaveBeenCalled();
     h.nativeEvents.emit("url.opened", { url: `raycast://oauth?state=${flow.state}&code=accepted` }); await waitFor(() => dispatch.mock.calls.length ? true : undefined);
     expect(dispatch).toHaveBeenCalledWith(session.id, "callback", [{ authorizationCode: "accepted" }]);
     await h.host.broker.request(session, "setOAuthTokens", { providerId: "provider", tokenSet: { accessToken: "sample-token" } });

@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import type { ColorLike, ImageLike, KeyboardShortcut } from "@surgecast/protocol";
+import type { ColorLike, ImageLike, KeyboardShortcut } from "@opencast/protocol";
 import type { MatchRange } from "../../lib/fuzzy";
 import type { ActionsProp } from "../actions/ActionPanel";
 
-/** Raycast `List.Item.Accessory`, plus Surgecast's root-search accessories. */
+/** Raycast `List.Item.Accessory`, plus OpenCast's root-search accessories. */
 export interface ListAccessory {
   text?: string | { value?: string | null; color?: ColorLike };
   icon?: ImageLike | { value: ImageLike | null | undefined; tooltip?: string | null } | null;
@@ -30,11 +30,11 @@ export interface ListItemProps {
   actions?: ActionsProp;
   /** `<List.Item.Detail>` shown in the detail pane when the list `isShowingDetail`. */
   detail?: ReactNode;
-  /** Surgecast: highlighted ranges of the title (fuzzy matches). */
+  /** OpenCast: highlighted ranges of the title (fuzzy matches). */
   titleRanges?: MatchRange[];
-  /** Surgecast: small dot under the icon (running application). */
+  /** OpenCast: small dot under the icon (running application). */
   iconDot?: "default" | "accent";
-  /** Surgecast: custom row height and content (e.g. the calculator card). */
+  /** OpenCast: custom row height and content (e.g. the calculator card). */
   height?: number;
   render?: (state: { selected: boolean }) => ReactNode;
   disabled?: boolean;

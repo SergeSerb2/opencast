@@ -1,4 +1,4 @@
-import type { RootSearchItem, RootSearchResult } from "@surgecast/protocol";
+import type { RootSearchItem, RootSearchResult } from "@opencast/protocol";
 import type { ListAccessory, ListItemModel, ListSectionModel } from "../../components/List/model";
 
 export const CALCULATOR_ID = "calculator";
@@ -68,8 +68,8 @@ export function commandDeeplink(item: Pick<RootSearchItem, "id" | "kind" | "exte
   const [kind, rest] = [item.id.slice(0, item.id.indexOf(":")), item.id.slice(item.id.indexOf(":") + 1)];
   if (kind === "builtin" || kind === "ext") {
     const [extension, command] = rest.split(".");
-    const owner = kind === "builtin" ? "surgecast" : (item.extensionId ?? extension);
-    return `surgecast://extensions/${encodeURIComponent(owner)}/${encodeURIComponent(extension)}/${encodeURIComponent(command ?? "")}`;
+    const owner = kind === "builtin" ? "opencast" : (item.extensionId ?? extension);
+    return `opencast://extensions/${encodeURIComponent(owner)}/${encodeURIComponent(extension)}/${encodeURIComponent(command ?? "")}`;
   }
-  return `surgecast://commands/${encodeURIComponent(item.id)}`;
+  return `opencast://commands/${encodeURIComponent(item.id)}`;
 }

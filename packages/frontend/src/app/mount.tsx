@@ -19,7 +19,7 @@ function enableTransitionsSoon(): void {
 }
 
 /**
- * Boot a Surgecast window page: install the native event receiver, set root
+ * Boot an OpenCast window page: install the native event receiver, set root
  * attributes before the first render (no theme flash), and render `app`
  * inside the theme provider and, in a plain browser, the dev backdrop.
  */

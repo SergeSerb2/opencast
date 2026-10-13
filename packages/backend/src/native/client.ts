@@ -9,7 +9,7 @@ import {
   type NativeParams,
   type NativeResult,
   type RpcMessage,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import { RpcError, toRpcErrorObject } from "../util/errors";
 import { createLogger } from "../util/log";
 

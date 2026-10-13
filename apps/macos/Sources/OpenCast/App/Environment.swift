@@ -1,16 +1,25 @@
 import AppKit
+import OpenCastCore
 
 struct Environment {
   static let version =
     Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
   static let major = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
-  static let env = ProcessInfo.processInfo.environment
-  static let dataDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
-    "Library/Application Support/Surgecast")
-  static let logDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
-    "Library/Logs/Surgecast")
+  static let env: [String: String] = {
+    var values = ProcessInfo.processInfo.environment
+    // Keep development overrides from older installs usable.
+    for (key, value) in ProcessInfo.processInfo.environment where key.hasPrefix("SURGECAST_") {
+      let renamed = key.replacingOccurrences(of: "SURGECAST_", with: "OPENCAST_")
+      if values[renamed] == nil { values[renamed] = value }
+    }
+    return values
+  }()
+  static let dataDir = env["OPENCAST_DATA_DIR"].map { URL(fileURLWithPath: $0).standardizedFileURL } ?? AppStorage.directory(
+    home: FileManager.default.homeDirectoryForCurrentUser, parent: "Library/Application Support")
+  static let logDir = env["OPENCAST_LOG_DIR"].map { URL(fileURLWithPath: $0).standardizedFileURL } ?? AppStorage.directory(
+    home: FileManager.default.homeDirectoryForCurrentUser, parent: "Library/Logs")
   static let resources =
-    env["SURGECAST_RESOURCES"].map { URL(fileURLWithPath: $0).standardizedFileURL } ?? Bundle.main
+    env["OPENCAST_RESOURCES"].map { URL(fileURLWithPath: $0).standardizedFileURL } ?? Bundle.main
     .resourceURL!
   static func prepare() throws {
     for dir in [

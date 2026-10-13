@@ -1,4 +1,4 @@
-import type { Note, NoteSummary } from "@surgecast/protocol";
+import type { Note, NoteSummary } from "@opencast/protocol";
 
 /** The backend calls a session needs (injected so the logic is testable). */
 export interface NotesApi {

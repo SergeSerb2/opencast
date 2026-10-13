@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactElement } from "react";
-import { SYNC_CATEGORIES, type SyncDevice, type SyncStatus } from "@surgecast/protocol";
+import { SYNC_CATEGORIES, type SyncDevice, type SyncStatus } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { errorMessage } from "../../bridge/errors";
 import { useBackend, useEvent } from "../../bridge/hooks";
@@ -172,7 +172,7 @@ function SelfHostingInfo() {
   return (
     <Section title="How It Works" card={false}>
       <Callout tone="info" icon="lock-16" title="End-to-end encrypted">
-        Surgecast encrypts your data on this Mac with a key derived from your passphrase. The server stores only ciphertext and can't read your notes, snippets, chats or settings. Your passphrase is
+        OpenCast encrypts your data on this Mac with a key derived from your passphrase. The server stores only ciphertext and can't read your notes, snippets, chats or settings. Your passphrase is
         never stored or sent.
       </Callout>
       <Callout
@@ -253,7 +253,7 @@ function DeviceRow({ device }: { device: SyncDevice }) {
           )}
         </div>
         <div className="sc-s-description">
-          {[device.platform, device.appVersion && `Surgecast ${device.appVersion}`, device.lastSeenAt && `Last seen ${formatRelativeTime(device.lastSeenAt).toLowerCase()}`]
+          {[device.platform, device.appVersion && `OpenCast ${device.appVersion}`, device.lastSeenAt && `Last seen ${formatRelativeTime(device.lastSeenAt).toLowerCase()}`]
             .filter(Boolean)
             .join(" · ")}
         </div>

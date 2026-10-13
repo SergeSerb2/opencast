@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ClipboardSnapshot } from "@surgecast/protocol";
+import type { ClipboardSnapshot } from "@opencast/protocol";
 import {
   classifyClipboard,
   retentionMs,

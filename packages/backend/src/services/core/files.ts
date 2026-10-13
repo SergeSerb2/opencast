@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { stat } from "node:fs/promises";
 import { basename, relative, sep } from "node:path";
 import { promisify } from "node:util";
-import type { FileResult } from "@surgecast/protocol";
+import type { FileResult } from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import { boundedLimit, expandPath } from "./shared";
 import { matchesIgnoreFiles } from "./file-ignores";

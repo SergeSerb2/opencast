@@ -1,4 +1,4 @@
-import type { AppInfo, ImageLike, Quicklink } from "@surgecast/protocol";
+import type { AppInfo, ImageLike, Quicklink } from "@opencast/protocol";
 import { isIconName } from "../../../icons/Icon";
 import { faviconUrl, type FaviconProvider } from "../library/favicon";
 import { glyphTile } from "../library/icons";

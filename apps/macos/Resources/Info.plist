@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>Surgecast</string>
+	<string>OpenCast</string>
 	<key>CFBundleIdentifier</key>
-	<string>app.surgecast.Surgecast</string>
+	<string>app.opencast.OpenCast</string>
 	<key>CFBundleName</key>
-	<string>Surgecast</string>
+	<string>OpenCast</string>
 	<key>CFBundleDisplayName</key>
-	<string>Surgecast</string>
+	<string>OpenCast</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -32,9 +32,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>Surgecast</string>
+			<string>OpenCast</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>opencast</string>
 				<string>surgecast</string>
 			</array>
 		</dict>
@@ -45,28 +46,28 @@
 		<true/>
 	</dict>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Surgecast uses automation to read Finder selections and run requested system actions.</string>
+	<string>OpenCast uses automation to read Finder selections and run requested system actions.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Surgecast reads your calendars to show your schedule.</string>
+	<string>OpenCast reads your calendars to show your schedule.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Surgecast reads events and meeting links to show your schedule.</string>
+	<string>OpenCast reads events and meeting links to show your schedule.</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Surgecast extensions can access reminders when you grant permission.</string>
+	<string>OpenCast extensions can access reminders when you grant permission.</string>
 	<key>NSRemindersUsageDescription</key>
-	<string>Surgecast extensions can access reminders when you grant permission.</string>
+	<string>OpenCast extensions can access reminders when you grant permission.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Surgecast extensions can access contacts when you grant permission.</string>
+	<string>OpenCast extensions can access contacts when you grant permission.</string>
 	<key>NSLocationUsageDescription</key>
-	<string>Surgecast extensions use your location when you grant permission.</string>
+	<string>OpenCast extensions use your location when you grant permission.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Surgecast extensions use your location when you grant permission.</string>
+	<string>OpenCast extensions use your location when you grant permission.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Surgecast extensions use the microphone when you grant permission.</string>
+	<string>OpenCast extensions use the microphone when you grant permission.</string>
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>Surgecast opens files and extension assets you select on your Desktop.</string>
+	<string>OpenCast opens files and extension assets you select on your Desktop.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Surgecast opens files and extension assets you select in Documents.</string>
+	<string>OpenCast opens files and extension assets you select in Documents.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
-	<string>Surgecast opens files and extension assets you select in Downloads.</string>
+	<string>OpenCast opens files and extension assets you select in Downloads.</string>
 </dict>
 </plist>

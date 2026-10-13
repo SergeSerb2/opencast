@@ -1,6 +1,6 @@
 import AppKit
 import CryptoKit
-import SurgecastCore
+import OpenCastCore
 import WebKit
 
 @MainActor final class SchemeHandlers: NSObject, WKURLSchemeHandler {
@@ -47,7 +47,7 @@ import WebKit
         var mime = "application/octet-stream"
         let data: Data
         switch url.scheme {
-        case "surgecast-app":
+        case "opencast-app":
           guard url.host == "app" else { throw RpcError.invalid("Invalid app host") }
           let root = Environment.resources.appendingPathComponent("frontend")
             .resolvingSymlinksInPath()
@@ -59,7 +59,7 @@ import WebKit
           }
           mime = Self.mime(file.pathExtension)
           data = try await Task.detached { try Data(contentsOf: file) }.value
-        case "surgecast-icon":
+        case "opencast-icon", "surgecast-icon":
           let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
           guard let path = query.first(where: { $0.name == "path" })?.value else {
             throw RpcError.invalid("Missing icon path")
@@ -88,9 +88,9 @@ import WebKit
             Task.detached { try? copy.write(to: cache, options: .atomic) }
           }
           mime = "image/png"
-        case "surgecast-file":
+        case "opencast-file", "surgecast-file":
           let raw =
-            url.absoluteString.dropFirst("surgecast-file://".count).split(
+            url.absoluteString.dropFirst((url.scheme! + "://").count).split(
               separator: "?", maxSplits: 1
             ).first.map(String.init) ?? ""
           guard let path = raw.removingPercentEncoding, path.hasPrefix("/") else {

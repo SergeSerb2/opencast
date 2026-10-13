@@ -1,5 +1,5 @@
-import { RpcErrorCode } from "@surgecast/protocol";
-import type { Snippet } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
+import type { Snippet } from "@opencast/protocol";
 import type { AppContext, Service } from "../../context";
 import {
   background,

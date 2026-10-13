@@ -5,7 +5,7 @@ import { AIChatApp } from "./AIChatApp";
 import { parseChatRoute } from "./useChatRoutes";
 beforeEach(() => {
   vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
-  localStorage.setItem("surgecast.ai.sidebarOpen", "false");
+  localStorage.setItem("opencast.ai.sidebarOpen", "false");
 });
 afterEach(() => { cleanup(); localStorage.clear(); vi.unstubAllGlobals(); });
 it("parses a search route separately from a chat ID", () => {

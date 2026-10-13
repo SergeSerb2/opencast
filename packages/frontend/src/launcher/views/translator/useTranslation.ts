@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AIStreamEvent } from "@surgecast/protocol";
+import type { AIStreamEvent } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage, isCancelled } from "../../../bridge/errors";
 import { useEvent } from "../../../bridge/hooks";

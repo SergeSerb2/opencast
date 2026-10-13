@@ -1,4 +1,4 @@
-import type { AIChat, AICommand, ModelRef } from "@surgecast/protocol";
+import type { AIChat, AICommand, ModelRef } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { native } from "../../bridge/native";
 import { applyCommandPrompt, placeholderKinds } from "../model/command-prompt";

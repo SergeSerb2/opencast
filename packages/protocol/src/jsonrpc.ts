@@ -1,5 +1,5 @@
 /**
- * JSON-RPC 2.0 envelopes used on every Surgecast channel:
+ * JSON-RPC 2.0 envelopes used on every OpenCast channel:
  *
  *   frontend (WKWebView) <-> backend (Node)    WebSocket, one JSON message per frame
  *   backend (Node)       <-> native (Swift)    stdio, newline-delimited JSON (NDJSON)

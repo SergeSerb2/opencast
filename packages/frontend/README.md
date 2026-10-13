@@ -1,8 +1,8 @@
-# @surgecast/frontend
+# @opencast/frontend
 
-React 19 + Vite multi-page UI for every Surgecast window: `main.html` (launcher),
+React 19 + Vite multi-page UI for every OpenCast window: `main.html` (launcher),
 `ai-chat.html`, `notes.html`, `settings.html`, plus the dev-only `gallery.html`.
-The design source of truth is the Surgecast design spec (tokens, metrics, motion);
+The design source of truth is the OpenCast design spec (tokens, metrics, motion);
 components reproduce Raycast 2.7.3's launcher look (Liquid Glass, 750×475).
 
 ```
@@ -22,15 +22,15 @@ src/
 ## Running
 
 ```sh
-pnpm --filter @surgecast/frontend dev          # http://localhost:5173/main.html (mock backend)
-pnpm --filter @surgecast/frontend typecheck
-pnpm --filter @surgecast/frontend test
-pnpm --filter @surgecast/frontend build        # dist/*.html, base "./" for surgecast-app://app/
+pnpm --filter @opencast/frontend dev          # http://localhost:5173/main.html (mock backend)
+pnpm --filter @opencast/frontend typecheck
+pnpm --filter @opencast/frontend test
+pnpm --filter @opencast/frontend build        # dist/*.html, base "./" for opencast-app://app/
 node packages/frontend/scripts/screenshot.mjs  # PNGs at 750×475 @2x in packages/frontend/.screenshots/
 ```
 
-Backend selection, in order: `window.__SURGECAST__` (injected by the native host, or by
-the Vite dev server when `SURGECAST_BACKEND_URL` and `SURGECAST_TOKEN` are set), then URL
+Backend selection, in order: `window.__OPENCAST__` (injected by the native host, or by
+the Vite dev server when `OPENCAST_BACKEND_URL` and `OPENCAST_TOKEN` are set), then URL
 parameters `?backend=ws://127.0.0.1:PORT/rpc&token=…`, otherwise the in-browser **mock
 backend** (`?mock=1` forces it). Other dev URL parameters: `?appearance=light|dark`,
 `?macos=26|27`, `?window=<kind>`.
@@ -102,11 +102,11 @@ cuts the content out of the blurred backdrop. Do not animate transforms on glass
 ## Icons (`src/icons`)
 
 - `<Icon name="clipboard-16" size={16} color? />` — Raycast `Icon` enum values (all 471,
-  see `raycast-icons.generated.ts`), short names (`"star"`), `number-NN-16`, and Surgecast
-  glyphs (`surgecast-logo`, `menu-20`). 1.5px strokes in `currentColor`.
+  see `raycast-icons.generated.ts`), short names (`"star"`), `number-NN-16`, and OpenCast
+  glyphs (`opencast-logo`, `menu-20`). 1.5px strokes in `currentColor`.
 - `<Image source={imageLike} size={22} placeholder? tintColor? />` — any `ImageLike`:
-  enum glyphs, emoji, http/data URLs, absolute paths (`surgecast-file://`),
-  `{ fileIcon }` (`surgecast-icon://`), `{ light, dark }`, `{ source, tintColor, mask, fallback }`,
+  enum glyphs, emoji, http/data URLs, absolute paths (`opencast-file://`),
+  `{ fileIcon }` (`opencast-icon://`), `{ light, dark }`, `{ source, tintColor, mask, fallback }`,
   and tiles `{ tile: { glyph, background: [top, bottom] } }` (built-in command icons).
 - Named colors (`raycast-blue`…) resolve to theme contrast colors (`icons/colors.ts`).
 
@@ -225,4 +225,4 @@ search text stays local and is dispatched (debounced with `throttle`); `filterin
   unless the spec gives a literal). Spec metrics are in px at zoom 1.
 - No CSS transitions until `.transitions-ready` (set two frames after boot).
 - Keep Raycast's behavior: selection is instant, hover fades out in 70ms, Esc pops.
-- Protocol types come from `@surgecast/protocol`; additive changes only.
+- Protocol types come from `@opencast/protocol`; additive changes only.

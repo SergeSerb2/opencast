@@ -1,4 +1,4 @@
-import type { ColorLike, NamedColor } from "@surgecast/protocol";
+import type { ColorLike, NamedColor } from "@opencast/protocol";
 
 const NAMED: Record<NamedColor, string> = {
   "raycast-blue": "var(--blue-contrast)",

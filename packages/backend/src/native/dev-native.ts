@@ -11,7 +11,7 @@ import {
   type NativeParams,
   type NativeResult,
   type NativeEvents,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { NativeApi, NativeEventTopic } from "./client";
 import { RpcError } from "../util/errors";
 import { createLogger } from "../util/log";
@@ -99,22 +99,23 @@ export class DevNative implements NativeApi {
         location: "unknown", microphone: "unknown",
       }),
       "keychain.get": async ({ account }) => {
-        try {
-          const { stdout } = await run("security", ["find-generic-password", "-s", "app.surgecast.dev", "-a", account, "-w"]);
-          return stdout.replace(/\n$/, "");
-        } catch {
-          return null;
+        for (const service of ["app.opencast.dev", "app.surgecast.dev"]) {
+          try {
+            const { stdout } = await run("security", ["find-generic-password", "-s", service, "-a", account, "-w"]);
+            return stdout.replace(/\n$/, "");
+          } catch { /* try the legacy service */ }
         }
+        return null;
       },
       "keychain.set": async ({ account, value }) => {
-        try { await run("security", ["add-generic-password", "-U", "-s", "app.surgecast.dev", "-a", account, "-w", value]); }
+        try { await run("security", ["add-generic-password", "-U", "-s", "app.opencast.dev", "-a", account, "-w", value]); }
         catch { throw new Error("Cannot store the credential in Keychain"); }
       },
       "keychain.delete": async ({ account }) => {
-        try {
-          await run("security", ["delete-generic-password", "-s", "app.surgecast.dev", "-a", account]);
-        } catch {
-          /* already gone */
+        for (const service of ["app.opencast.dev", "app.surgecast.dev"]) {
+          try {
+            await run("security", ["delete-generic-password", "-s", service, "-a", account]);
+          } catch { /* already gone */ }
         }
       },
       "files.icon": async ({ path, size }) => ({ pngBase64: await iconPng(path, size) }),
@@ -132,7 +133,7 @@ export class DevNative implements NativeApi {
 
   async call<M extends NativeMethod>(method: M, params: NativeParams<M>): Promise<NativeResult<M>> {
     const fn = this.impl[method] as ((p: NativeParams<M>) => Promise<NativeResult<M>> | NativeResult<M>) | undefined;
-    if (!fn) throw new RpcError(RpcErrorCode.NativeUnavailable, `Native method "${method}" needs the Surgecast app`);
+    if (!fn) throw new RpcError(RpcErrorCode.NativeUnavailable, `Native method "${method}" needs the OpenCast app`);
     return fn(params ?? ({} as NativeParams<M>));
   }
 
@@ -202,7 +203,7 @@ function plistString(xml: string, key: string): string | undefined {
 }
 
 async function iconPng(path: string, size: number): Promise<string> {
-  const cacheDir = join(tmpdir(), "surgecast-dev-icons");
+  const cacheDir = join(tmpdir(), "opencast-dev-icons");
   mkdirSync(cacheDir, { recursive: true });
   let icns: string | undefined;
   if (path.endsWith(".app")) {

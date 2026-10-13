@@ -18,7 +18,8 @@ const derive = (password: string, salt: Buffer): Promise<Buffer> =>
     ),
   );
 const MAX_OUTPUT = 64 * 1024 * 1024;
-export const SURGE_MAGIC = Buffer.from("SURGECFG1\n");
+export const OPENCAST_MAGIC = Buffer.from("OPENCFG1\n");
+const LEGACY_MAGIC = Buffer.from("SURGECFG1\n");
 export const RAY_MAGIC = Buffer.from("RAYCFG3\n");
 interface Encryption {
   salt: string;
@@ -102,7 +103,7 @@ export async function encodeConfig(
   const header: Header = {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
-    app: "Surgecast",
+    app: "OpenCast",
   };
   if (password)
     header.encryption = {
@@ -112,7 +113,7 @@ export async function encodeConfig(
   const bytes = gzipSync(Buffer.from(JSON.stringify(header)));
   const length = Buffer.alloc(4);
   length.writeUInt32LE(bytes.length);
-  const prefix = Buffer.concat([SURGE_MAGIC, length, bytes]);
+  const prefix = Buffer.concat([OPENCAST_MAGIC, length, bytes]);
   const plaintext = Buffer.from(JSON.stringify(payload));
   if (plaintext.length > MAX_OUTPUT)
     throw RpcError.invalidParams(
@@ -142,19 +143,20 @@ export async function encodeConfig(
 export async function decodeConfig(
   bytes: Buffer,
   password?: string,
-  requireSurge = false,
+  requireOpenCast = false,
 ): Promise<{
-  family: "surge" | "ray-v3" | "ray-wrapper" | "ray-classic";
+  family: "opencast" | "ray-v3" | "ray-wrapper" | "ray-classic";
   payload: Record<string, unknown>;
 }> {
   if (bytes.length > MAX_OUTPUT || bytes.length < 2)
     throw RpcError.invalidParams("Configuration file is empty or too large");
-  const surge = bytes.subarray(0, SURGE_MAGIC.length).equals(SURGE_MAGIC);
+  const legacy = bytes.subarray(0, LEGACY_MAGIC.length).equals(LEGACY_MAGIC);
+  const opencast = legacy || bytes.subarray(0, OPENCAST_MAGIC.length).equals(OPENCAST_MAGIC);
   const ray = bytes.subarray(0, RAY_MAGIC.length).equals(RAY_MAGIC);
-  if (requireSurge && !surge)
-    throw RpcError.invalidParams("Expected a Surgecast configuration");
-  if (surge || ray) {
-    const magic = surge ? SURGE_MAGIC : RAY_MAGIC;
+  if (requireOpenCast && !opencast)
+    throw RpcError.invalidParams("Expected an OpenCast configuration");
+  if (opencast || ray) {
+    const magic = legacy ? LEGACY_MAGIC : opencast ? OPENCAST_MAGIC : RAY_MAGIC;
     const prefixSize = magic.length + 4;
     if (bytes.length < prefixSize)
       throw RpcError.invalidParams("Truncated configuration header");
@@ -164,7 +166,7 @@ export async function decodeConfig(
     const header = json(
       unzip(bytes.subarray(prefixSize, prefixSize + length)),
     ) as unknown as Header;
-    if (header.schemaVersion !== (surge ? 1 : 3))
+    if (header.schemaVersion !== (opencast ? 1 : 3))
       throw RpcError.invalidParams("Unsupported configuration schema version");
     let data = bytes.subarray(prefixSize + length);
     if (header.encryption)
@@ -172,9 +174,9 @@ export async function decodeConfig(
         data,
         header.encryption,
         password,
-        surge ? bytes.subarray(0, prefixSize + length) : undefined,
+        opencast ? bytes.subarray(0, prefixSize + length) : undefined,
       );
-    return { family: surge ? "surge" : "ray-v3", payload: json(unzip(data)) };
+    return { family: opencast ? "opencast" : "ray-v3", payload: json(unzip(data)) };
   }
   let plaintext: Buffer;
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) plaintext = unzip(bytes);

@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { native } from "../../bridge/native";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";
@@ -30,7 +30,7 @@ interface FieldBase<T> {
   onFocus?: FocusEventHandler;
   onBlur?: FocusEventHandler;
   autoFocus?: boolean;
-  /** Raycast persists the value between launches; Surgecast stores it per field id. */
+  /** Raycast persists the value between launches; OpenCast stores it per field id. */
   storeValue?: boolean;
 }
 
@@ -75,7 +75,7 @@ export function FormRow({ title, info, error, htmlFor, fieldId, children, compac
 
 function storedDefault<T>(id: string, storeValue: boolean | undefined, fallback: T | undefined): T | undefined {
   if (!storeValue) return fallback;
-  const raw = localStorage.getItem(`surgecast.form.${id}`);
+  const raw = localStorage.getItem(`opencast.form.${id}`);
   if (raw === null) return fallback;
   try {
     return JSON.parse(raw) as T;
@@ -85,7 +85,7 @@ function storedDefault<T>(id: string, storeValue: boolean | undefined, fallback:
 }
 
 function persist(id: string, storeValue: boolean | undefined, value: unknown) {
-  if (storeValue) localStorage.setItem(`surgecast.form.${id}`, JSON.stringify(value));
+  if (storeValue) localStorage.setItem(`opencast.form.${id}`, JSON.stringify(value));
 }
 
 function focusHandlers(id: string, value: unknown, onFocus?: FocusEventHandler, onBlur?: FocusEventHandler) {
@@ -346,7 +346,7 @@ export interface FilePickerProps extends FieldBase<string[]> {
   canChooseDirectories?: boolean;
   canChooseFiles?: boolean;
   showHiddenFiles?: boolean;
-  /** Surgecast: file extensions or UTIs the open panel accepts (e.g. `["rayconfig"]`). */
+  /** OpenCast: file extensions or UTIs the open panel accepts (e.g. `["rayconfig"]`). */
   allowedTypes?: string[];
 }
 

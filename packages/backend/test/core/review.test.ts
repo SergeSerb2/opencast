@@ -9,11 +9,11 @@ it("requires native approval for destructive deeplinks", async () => {
   f = await fixture();
   f.nativeCall.mockImplementation(async (method) => method === "alert.show" ? { index: 0 } : undefined);
   const clear = vi.spyOn(f.ctx.rpc, "invoke");
-  await f.call("deeplink.open", { url: "surgecast://extensions/surgecast/clipboard-history/clearClipboardHistory" });
+  await f.call("deeplink.open", { url: "opencast://extensions/opencast/clipboard-history/clearClipboardHistory" });
   expect(f.nativeCall).toHaveBeenCalledWith("alert.show", expect.objectContaining({ buttons: ["Cancel", "Clear Clipboard History"] }));
   expect(clear.mock.calls.some(([method]) => method === "clipboard.clear")).toBe(false);
   f.nativeCall.mockResolvedValue({ index: 1 });
-  await f.call("deeplink.open", { url: "surgecast://extensions/surgecast/clipboard-history/clearClipboardHistory" });
+  await f.call("deeplink.open", { url: "opencast://extensions/opencast/clipboard-history/clearClipboardHistory" });
   expect(clear.mock.calls.some(([method]) => method === "clipboard.clear")).toBe(true);
 });
 it("opening and moving the caret leave the note content revision clean", async () => {
@@ -114,7 +114,7 @@ it("passes configured outer gap to built-in window commands", async () => {
 
 it.each(["emptyTrash", "quitActiveApplication", "hibernate", "dismissNotifications"])("rejects unapproved external destructive system commands: %s", async action => {
   f = await fixture(); f.nativeCall.mockClear();
-  await f.call("deeplink.open", { url: `surgecast://extensions/surgecast/system/${action}` });
+  await f.call("deeplink.open", { url: `opencast://extensions/opencast/system/${action}` });
   expect(f.nativeCall.mock.calls.some(([method]) => method === "alert.show")).toBe(true);
   expect(f.nativeCall.mock.calls.some(([method]) => method === "system.run")).toBe(false);
 });

@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from "vitest";
-import type { ScreenInfo } from "@surgecast/protocol";
+import type { ScreenInfo } from "@opencast/protocol";
 import type { HostSession } from "../../src/services/extensions/sessions";
 import { harness } from "./helpers";
 let h: ReturnType<typeof harness>;

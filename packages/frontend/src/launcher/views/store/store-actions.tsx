@@ -1,4 +1,4 @@
-import type { CommandInfo, ImageLike, InstalledExtension, StoreExtension } from "@surgecast/protocol";
+import type { CommandInfo, ImageLike, InstalledExtension, StoreExtension } from "@opencast/protocol";
 import { confirmAlert, showFailureToast, type ActionModel, type ActionPanelModel, type ActionSectionModel } from "../../../components";
 import { sc } from "../../../lib/keyboard";
 import { launchCommand } from "../../launch";

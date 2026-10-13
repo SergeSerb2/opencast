@@ -1,4 +1,4 @@
-import type { CommandInfo } from "@surgecast/protocol";
+import type { CommandInfo } from "@opencast/protocol";
 import { builtinCatalog } from "../../src/services/core/builtins";
 
 // A mixed macOS installation: system utilities, developer tools, and common desktop apps.
@@ -23,7 +23,7 @@ export const APP_NAMES = [
   "PDF Expert", "Phone", "Photo Booth", "Photos", "Pixelmator Pro", "Podcasts", "Postman", "Preview",
   "Proton Mail", "Proton VPN", "PyCharm", "QuickTime Player", "Raycast", "Rectangle", "Reminders",
   "Remote Desktop", "Safari", "Screen Sharing", "Script Editor", "SF Symbols", "Shortcuts", "Signal",
-  "Skim", "Skype", "Slack", "Soulver", "Spotify", "Steam", "Stremio", "Sublime Text", "Surgecast",
+  "Skim", "Skype", "Slack", "Soulver", "Spotify", "Steam", "Stremio", "Sublime Text", "OpenCast",
   "System Settings", "TablePlus", "Tailscale", "Telegram", "Terminal", "TextEdit", "Things", "Time Machine",
   "Todoist", "Transmit", "TV", "UTM", "VeraCrypt", "Visual Studio Code", "VLC", "Voice Memos",
   "Warp", "Weather", "WebStorm", "WhatsApp", "Windows App", "Wireshark", "Wispr Flow", "Xcode", "Zoom",

@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { BackendEvents } from "@surgecast/protocol";
+import type { BackendEvents } from "@opencast/protocol";
 
 type Listener = (payload: unknown) => void;
 

@@ -1,6 +1,6 @@
-import type { StoreExtension } from "@surgecast/protocol";
-export const STORE_BASE = process.env.SURGECAST_EXTENSION_STORE_URL ?? "https://backend.raycast.com/api/v1";
-const USER_AGENT = "Surgecast/0.1 (macOS; open-source extension compatibility)";
+import type { StoreExtension } from "@opencast/protocol";
+export const STORE_BASE = (process.env.OPENCAST_EXTENSION_STORE_URL ?? process.env.SURGECAST_EXTENSION_STORE_URL) ?? "https://backend.raycast.com/api/v1";
+const USER_AGENT = "OpenCast/0.1 (macOS; open-source extension compatibility)";
 export async function fetchBytes(url: string, maxBytes = 50 * 1024 * 1024): Promise<Buffer> {
   const response = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(60000) });
   if (!response.ok) throw new Error(`Extension store request failed (${response.status})`);

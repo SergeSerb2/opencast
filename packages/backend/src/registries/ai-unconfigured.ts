@@ -1,4 +1,4 @@
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 import type { AIEngine } from "../context";
 import { RpcError } from "../util/errors";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ProcessInfo } from "@surgecast/protocol";
+import type { ProcessInfo } from "@opencast/protocol";
 import { bundlePath, formatCpu, formatMemory, parseFilter, processIcon, revealPath, searchProcesses, visibleProcesses } from "./process-model";
 
 const MB = 1024 * 1024;

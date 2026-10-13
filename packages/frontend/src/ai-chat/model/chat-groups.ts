@@ -1,4 +1,4 @@
-import type { AIChat, AIChatFolder } from "@surgecast/protocol";
+import type { AIChat, AIChatFolder } from "@opencast/protocol";
 
 export interface TimeGroup {
   /** Undefined for today's chats, which sit directly under "Recent". */

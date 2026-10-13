@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { AIAttachment, AIChat, AIMessage } from "@surgecast/protocol";
+import type { AIAttachment, AIChat, AIMessage } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { errorMessage, isCancelled } from "../../bridge/errors";
 import { useEvent, useLatest } from "../../bridge/hooks";

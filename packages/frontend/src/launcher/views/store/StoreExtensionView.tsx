@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CommandMode, InstalledExtension, StoreExtension } from "@surgecast/protocol";
+import type { CommandMode, InstalledExtension, StoreExtension } from "@opencast/protocol";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
 import {

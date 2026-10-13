@@ -1,4 +1,4 @@
-import type { ImageLike, InstalledExtension } from "@surgecast/protocol";
+import type { ImageLike, InstalledExtension } from "@opencast/protocol";
 import { showFailureToast, type ActionModel, type ActionPanelModel, type ActionSectionModel } from "../../../components";
 import { sc } from "../../../lib/keyboard";
 import { copyText, openUrl, showInFinder } from "./actions-common";

@@ -9,7 +9,7 @@ import AppKit
     if !enabled { stop(); return }
     guard item == nil else { return }
     let divider = NSStatusBar.system.statusItem(withLength: 22)
-    divider.autosaveName = "Surgecast.TidyDivider"
+    divider.autosaveName = "OpenCast.TidyDivider"
     divider.button?.title = "│"
     divider.button?.toolTip = "Command-drag this divider to place the items you want to hide to its left"
     item = divider

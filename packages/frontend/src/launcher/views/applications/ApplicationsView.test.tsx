@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { CommandInfo } from "@surgecast/protocol";
+import type { CommandInfo } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { native } from "../../../bridge/native";
 import { getView } from "../registry";

@@ -1,4 +1,4 @@
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 import { RpcError } from "../../../bridge/errors";
 import { native } from "../../../bridge/native";
 import { localFileUrl } from "../../../icons/image-source";

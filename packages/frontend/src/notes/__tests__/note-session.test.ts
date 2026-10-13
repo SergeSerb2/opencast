@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Note, NoteSummary } from "@surgecast/protocol";
+import type { Note, NoteSummary } from "@opencast/protocol";
 import { NoteSession, type NotesApi } from "../lib/note-session";
 
 /** In-memory backend that, like the real one, stamps `updatedAt` on every write and on `get`. */

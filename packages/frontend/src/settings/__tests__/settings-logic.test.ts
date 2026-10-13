@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CommandInfo, InstalledExtension } from "@surgecast/protocol";
+import type { CommandInfo, InstalledExtension } from "@opencast/protocol";
 import { commandGroup, sidebarIdFor } from "../catalog";
 import { findHotkeyConflict, GLOBAL_HOTKEY_OWNER, hotkeyGlyphs, recordKey, sameHotkey } from "../hotkeys";
 import { formatBytes, formatRelativeTime, moveItem, tildePath } from "../lists";
@@ -65,11 +65,11 @@ describe("hotkey recording", () => {
     expect(hotkeyGlyphs({ modifiers: ["cmd", "opt"], key: "space" })).toEqual(["⌥", "⌘", "Space"]);
   });
 
-  it("finds conflicts with the system, the Surgecast hotkey and other commands", () => {
+  it("finds conflicts with the system, the OpenCast hotkey and other commands", () => {
     const commands = [{ id: "a", title: "Clipboard History", hotkey: { modifiers: ["cmd", "shift"], key: "v" } }] as Pick<CommandInfo, "id" | "title" | "hotkey">[];
     const global = { modifiers: ["opt" as const], key: "space" };
     expect(findHotkeyConflict({ modifiers: ["cmd"], key: "space" }, "b", commands, global)).toBe("Used by Spotlight");
-    expect(findHotkeyConflict(global, "b", commands, global)).toBe("Used by the Surgecast Hotkey");
+    expect(findHotkeyConflict(global, "b", commands, global)).toBe("Used by the OpenCast Hotkey");
     expect(findHotkeyConflict(global, GLOBAL_HOTKEY_OWNER, commands, global)).toBeNull();
     expect(findHotkeyConflict({ modifiers: ["shift", "cmd"], key: "V" }, "b", commands, global)).toBe("Already used by “Clipboard History”");
     expect(findHotkeyConflict({ modifiers: ["cmd", "shift"], key: "v" }, "a", commands, global)).toBeNull();

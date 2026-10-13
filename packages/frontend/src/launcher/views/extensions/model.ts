@@ -1,4 +1,4 @@
-import type { CommandInfo, ExtensionCommandManifest, ImageLike, InstalledExtension } from "@surgecast/protocol";
+import type { CommandInfo, ExtensionCommandManifest, ImageLike, InstalledExtension } from "@opencast/protocol";
 import { errorMessage } from "../../../bridge/errors";
 import { EXTENSION_FALLBACK_ICON } from "../store/model";
 

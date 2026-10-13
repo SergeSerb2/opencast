@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Screenshot Surgecast pages at the launcher's native size (750×475 @2x) with
+ * Screenshot OpenCast pages at the launcher's native size (750×475 @2x) with
  * the mock backend, to compare against reference screenshots.
  *
  *   node scripts/screenshot.mjs                 # every scene
@@ -10,7 +10,7 @@
  *   node scripts/screenshot.mjs --url main.html --steps '[{"type":"store"},{"press":"Enter","wait":600}]' --out store
  *
  * Feature scenes live in scripts/scenes/*.mjs (each default-exports a Scene[]).
- *   node scripts/screenshot.mjs --settings --out-dir /tmp/surgecast-re/ours/fe-settings
+ *   node scripts/screenshot.mjs --settings --out-dir /tmp/opencast-re/ours/fe-settings
  *
  * Output: packages/frontend/.screenshots/<name>.png (gitignored).
  * Uses Playwright 1.64 through npx (no local dependency) and a Vite dev server.

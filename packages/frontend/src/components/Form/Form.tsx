@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import type { ActionsProp } from "../actions/ActionPanel";
 import { ScrollArea } from "../ScrollArea/ScrollArea";
 import { useNavigation } from "../View/contexts";

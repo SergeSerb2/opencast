@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
-import type { ImageLike, SettingsKey, SettingValue } from "@surgecast/protocol";
+import type { ImageLike, SettingsKey, SettingValue } from "@opencast/protocol";
 import { setSetting, useSetting } from "../../bridge/settings";
 import { Dropdown } from "../../components/Dropdown/Dropdown";
 import { Switch } from "../../components/Switch/Switch";

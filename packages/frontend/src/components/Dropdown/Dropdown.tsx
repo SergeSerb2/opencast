@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";
 import { Menu, type MenuSection } from "../Menu/Menu";

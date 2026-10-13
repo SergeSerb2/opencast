@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Editor } from "@tiptap/core";
-import type { Note, NoteSummary } from "@surgecast/protocol";
+import type { Note, NoteSummary } from "@opencast/protocol";
 import { NotesController, type NotesBackend } from "../controller";
 import { createNoteExtensions } from "../editor/extensions";
 import { useNotesStore } from "../store";

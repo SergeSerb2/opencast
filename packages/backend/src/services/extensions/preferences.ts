@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { CommandPrefs, ExtensionPreference, InstalledExtension } from "@surgecast/protocol";
+import type { CommandPrefs, ExtensionPreference, InstalledExtension } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 export type ExtensionRecord = InstalledExtension & { preferenceValues?: Record<string, unknown> };
 export function definitions(extension: InstalledExtension, command?: string): ExtensionPreference[] {

@@ -1,4 +1,4 @@
-import type { AIChat, AIChatFolder, AIModelOption, Creativity, ModelRef } from "@surgecast/protocol";
+import type { AIChat, AIChatFolder, AIModelOption, Creativity, ModelRef } from "@opencast/protocol";
 import type { ActionModel, ActionPanelModel } from "../../components/actions/model";
 import { sc } from "../../lib/keyboard";
 import { groupByProvider } from "../model/models";

@@ -1,6 +1,6 @@
 import AppKit
 import ApplicationServices
-import SurgecastCore
+import OpenCastCore
 
 /// "Paste Sequentially": the backend queues clipboard items; each physical ⌘V in any
 /// app pastes the current item, then the next one is placed on the pasteboard.

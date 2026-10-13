@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { Action, ActionPanel, Form } from "../../../components";
 
 export interface TemplateArgument {

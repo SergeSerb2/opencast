@@ -1,4 +1,4 @@
-import type { ImageLike, ScriptCommand } from "@surgecast/protocol";
+import type { ImageLike, ScriptCommand } from "@opencast/protocol";
 
 /** Section for scripts without `@raycast.packageName`. */
 export const DEFAULT_PACKAGE = "Script Commands";
@@ -105,7 +105,7 @@ export function firstMissingArgument(script: ScriptCommand, values: Record<strin
 
 /** Deeplink the backend resolves by unique title. */
 export function scriptDeeplink(script: Pick<ScriptCommand, "title">): string {
-  return `surgecast://script-commands/${encodeURIComponent(script.title)}`;
+  return `opencast://script-commands/${encodeURIComponent(script.title)}`;
 }
 
 const INTERPRETERS: Record<string, string> = {

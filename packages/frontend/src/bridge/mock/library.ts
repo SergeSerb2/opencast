@@ -12,7 +12,7 @@ import {
   type Note,
   type Quicklink,
   type Snippet,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { Emitter } from "../emitter";
 import { RpcError } from "../errors";
 import { QUICKLINKS, tile } from "./fixtures/commands";
@@ -175,7 +175,7 @@ export const LIBRARY_COMMANDS: CommandInfo[] = [
 
 const MORE_CLIPBOARD: Omit<ClipboardItem, "createdAt" | "lastCopiedAt">[] = [
   { id: "c7", kind: "text", title: "Remember to rotate the staging API keys before Friday's release.", text: "Remember to rotate the staging API keys before Friday's release.", pinned: false, copyCount: 1, characters: 64, words: 10, contentHash: "h7", sourceApp: { name: "Notes", bundleId: "com.apple.Notes", path: "/System/Applications/Notes.app" } },
-  { id: "c8", kind: "text", title: "pnpm --filter @surgecast/frontend build", text: "pnpm --filter @surgecast/frontend build", pinned: false, copyCount: 4, characters: 39, words: 4, contentHash: "h8", sourceApp: { name: "Terminal", bundleId: "com.apple.Terminal", path: "/System/Applications/Utilities/Terminal.app" } },
+  { id: "c8", kind: "text", title: "pnpm --filter @opencast/frontend build", text: "pnpm --filter @opencast/frontend build", pinned: false, copyCount: 4, characters: 39, words: 4, contentHash: "h8", sourceApp: { name: "Terminal", bundleId: "com.apple.Terminal", path: "/System/Applications/Utilities/Terminal.app" } },
 ];
 
 /**

@@ -1,5 +1,5 @@
 import { forwardRef, memo, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import type { AIChat, AIChatFolder } from "@surgecast/protocol";
+import type { AIChat, AIChatFolder } from "@opencast/protocol";
 import { Spinner } from "../../components/Spinner/Spinner";
 import { Icon } from "../../icons/Icon";
 import type { SidebarGroups } from "../model/chat-groups";
@@ -26,7 +26,7 @@ export interface SidebarProps {
   onSearchKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
 }
 
-const COLLAPSED_KEY = "surgecast.ai.collapsedSections";
+const COLLAPSED_KEY = "opencast.ai.collapsedSections";
 
 function loadCollapsed(): Set<string> {
   try {

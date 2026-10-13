@@ -30,7 +30,7 @@ describe("theme generation", () => {
   });
 
   it("falls back to the default palette for unknown ids or mismatched appearance", () => {
-    expect(resolvePalette("nope", "dark").id).toBe("surgecast-dark");
-    expect(resolvePalette("sky", "light").id).toBe("surgecast-light");
+    expect(resolvePalette("nope", "dark").id).toBe("opencast-dark");
+    expect(resolvePalette("sky", "light").id).toBe("opencast-light");
   });
 });

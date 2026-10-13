@@ -21,15 +21,15 @@ import WebKit
     hub.web = { [weak self] topic, payload in self?.broadcast(topic, payload) }
   }
   static func trusted(_ url: URL) -> Bool {
-    if url.scheme == "surgecast-app" { return url.host == "app" }
-    guard let dev = Environment.env["SURGECAST_DEV_URL"].flatMap(URL.init(string:)) else {
+    if url.scheme == "opencast-app" { return url.host == "app" }
+    guard let dev = Environment.env["OPENCAST_DEV_URL"].flatMap(URL.init(string:)) else {
       return false
     }
     return url.scheme == dev.scheme && url.host == dev.host && url.port == dev.port
   }
   func create(_ kind: String) -> WKWebView {
     let configuration = WKWebViewConfiguration()
-    for name in ["surgecast-app", "surgecast-icon", "surgecast-file"] {
+    for name in ["opencast-app", "opencast-icon", "opencast-file", "surgecast-icon", "surgecast-file"] {
       configuration.setURLSchemeHandler(schemes, forURLScheme: name)
     }
     if let router {
@@ -60,7 +60,7 @@ import WebKit
       "backendUrl": "ws://127.0.0.1:\(ready?["port"] as? Int ?? 0)/rpc",
       "token": ready?["token"] ?? "", "window": kind, "platform": "macos",
       "macOSMajor": Environment.major, "appVersion": Environment.version,
-      "dev": Environment.env["SURGECAST_DEV_URL"] != nil,
+      "dev": Environment.env["OPENCAST_DEV_URL"] != nil,
     ]
   }
   private func installScripts(_ web: WKWebView, kind: String) {
@@ -68,7 +68,7 @@ import WebKit
     c.removeAllUserScripts()
     c.addUserScript(
       WKUserScript(
-        source: "window.__SURGECAST__ = \(json(config(kind)));\n" + WebViewBridge.listeners + "\n"
+        source: "window.__OPENCAST__ = \(json(config(kind)));\n" + WebViewBridge.listeners + "\n"
           + appearanceScript(web), injectionTime: .atDocumentStart, forMainFrameOnly: true))
   }
   private func appearance(_ web: WKWebView) -> String {
@@ -81,7 +81,7 @@ import WebKit
     web.evaluateJavaScript(appearanceScript(web), completionHandler: nil)
   }
   private func load(_ web: WKWebView, kind: String) {
-    let base = Environment.env["SURGECAST_DEV_URL"] ?? "surgecast-app://app"
+    let base = Environment.env["OPENCAST_DEV_URL"] ?? "opencast-app://app"
     if let url = URL(
       string: base.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         + "/\(kind == "main" ? "main" : kind).html")
@@ -99,19 +99,19 @@ import WebKit
   func route(_ kind: String, _ payload: [String: Any]) {
     routes[kind] = payload
     views[kind]?.evaluateJavaScript(
-      "window.__surgecastNative?.emit('window.route', \(json(payload)))", completionHandler: nil)
+      "window.__opencastNative?.emit('window.route', \(json(payload)))", completionHandler: nil)
   }
   private func broadcast(_ topic: String, _ payload: Any) {
     for web in views.values {
       web.evaluateJavaScript(
-        "window.__surgecastNative?.emit(\(json(topic)), \(json(payload)))", completionHandler: nil)
+        "window.__opencastNative?.emit(\(json(topic)), \(json(payload)))", completionHandler: nil)
     }
   }
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
     updateAppearance(webView as! AppearanceWebView)
     if let kind = views.first(where: { $0.value === webView })?.key, let route = routes[kind] {
       webView.evaluateJavaScript(
-        "window.__surgecastNative.emit('window.route', \(json(route)))", completionHandler: nil)
+        "window.__opencastNative.emit('window.route', \(json(route)))", completionHandler: nil)
     }
   }
   func webView(

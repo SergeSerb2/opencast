@@ -1,4 +1,4 @@
-import type { AIProvider, AIProviderApi, BackendParams, BackendResult } from "@surgecast/protocol";
+import type { AIProvider, AIProviderApi, BackendParams, BackendResult } from "@opencast/protocol";
 
 export type ProviderTemplate = BackendResult<"ai.providers.templates">[number];
 
@@ -37,7 +37,7 @@ export interface ProviderDraftErrors {
 
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 const CREDENTIAL_PARAM = /^(key|api[-_]?key|token|access[-_]?token|password|secret|authorization)$/i;
-const HOSTED_AI = /(^|\.)(raycast\.(com|st)|surgecast\.(com|app))$/;
+const HOSTED_AI = /(^|\.)(raycast\.(com|st)|(?:opencast|surgecast)\.(com|app))$/;
 
 export const API_LABELS: Record<AIProviderApi, string> = {
   openai: "Chat Completions",
@@ -106,7 +106,7 @@ export function validateBaseUrl(value: string): string | null {
   if (url.protocol !== "http:" && url.protocol !== "https:") return "Use an http:// or https:// URL";
   if (url.username || url.password) return "Remove the user name and password from the URL";
   if ([...url.searchParams.keys()].some((name) => CREDENTIAL_PARAM.test(name))) return "Keep credentials out of the URL — use the API key field or a header";
-  if (HOSTED_AI.test(url.hostname)) return "Surgecast only talks to your own providers — enter your provider's URL";
+  if (HOSTED_AI.test(url.hostname)) return "OpenCast only talks to your own providers — enter your provider's URL";
   if (/YOUR-(RESOURCE|DEPLOYMENT)/.test(text)) return "Replace YOUR-RESOURCE and YOUR-DEPLOYMENT with your Azure values";
   return null;
 }

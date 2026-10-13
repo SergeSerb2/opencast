@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ImageLike } from "@surgecast/protocol";
+import type { ImageLike } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { getEnv } from "../../../bridge/env";
 import { errorMessage } from "../../../bridge/errors";
@@ -14,22 +14,22 @@ export interface ImportAICommandsProps {
   onImported?: () => void;
 }
 
-/** Reads a picked file through the native host, which serves local files at surgecast-file://. */
+/** Reads a picked file through the native host, which serves local files at opencast-file://. */
 async function readLocalFile(path: string): Promise<string> {
-  if (!getEnv().native) throw new Error("Files can only be read in the Surgecast app. Paste the JSON instead.");
+  if (!getEnv().native) throw new Error("Files can only be read in the OpenCast app. Paste the JSON instead.");
   let response: Response;
   try {
     response = await fetch(localFileUrl(path));
   } catch {
-    throw new Error("Surgecast can't read this file. Choose a file in your home folder or paste the JSON.");
+    throw new Error("OpenCast can't read this file. Choose a file in your home folder or paste the JSON.");
   }
-  if (!response.ok) throw new Error(`Surgecast can't read this file (${response.status}).`);
+  if (!response.ok) throw new Error(`OpenCast can't read this file (${response.status}).`);
   return response.text();
 }
 
 const plural = (count: number) => `${count} AI ${count === 1 ? "command" : "commands"}`;
 
-/** Import AI commands exported from Surgecast or Raycast: a JSON file or pasted JSON. */
+/** Import AI commands exported from OpenCast or Raycast: a JSON file or pasted JSON. */
 export function ImportAICommands({ navigationTitle, navigationIcon, onImported }: ImportAICommandsProps) {
   const navigation = useNavigation();
   const [errors, setErrors] = useState<ImportErrors>({});
@@ -74,7 +74,7 @@ export function ImportAICommands({ navigationTitle, navigationIcon, onImported }
         </ActionPanel>
       }
     >
-      <Form.Description text="Bring in AI commands exported from Surgecast or Raycast. Choose the exported JSON file, or paste its contents below." />
+      <Form.Description text="Bring in AI commands exported from OpenCast or Raycast. Choose the exported JSON file, or paste its contents below." />
       <Form.FilePicker id="file" title="JSON File" allowMultipleSelection={false} canChooseDirectories={false} error={errors.file} onChange={() => setErrors((e) => ({ ...e, file: undefined }))} />
       <Form.TextArea
         id="json"

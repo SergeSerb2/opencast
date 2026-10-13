@@ -1,7 +1,7 @@
 import AppKit
 import CryptoKit
 import Vision
-import SurgecastCore
+import OpenCastCore
 
 @MainActor final class Pasteboard {
   private var timer: Timer?

@@ -1,11 +1,12 @@
-import type { Theme } from "@surgecast/protocol";
+import type { Theme } from "@opencast/protocol";
 import type { Service } from "../../context";
 import { list, nonempty, observeCollection, save, stamp } from "./shared";
 import { RpcError } from "../../util/errors";
+import { currentThemeId } from "../../util/legacy-branding";
 const palettes: [string, string, "dark" | "light", string[]][] = [
   [
-    "surgecast-dark",
-    "Surgecast Dark",
+    "opencast-dark",
+    "OpenCast Dark",
     "dark",
     [
       "#000000",
@@ -24,8 +25,8 @@ const palettes: [string, string, "dark" | "light", string[]][] = [
     ],
   ],
   [
-    "surgecast-light",
-    "Surgecast Light",
+    "opencast-light",
+    "OpenCast Light",
     "light",
     [
       "#FFFFFF",
@@ -44,7 +45,7 @@ const palettes: [string, string, "dark" | "light", string[]][] = [
     ],
   ],
   [
-    "surgecast-sky",
+    "opencast-sky",
     "Sky",
     "dark",
     [
@@ -64,7 +65,7 @@ const palettes: [string, string, "dark" | "light", string[]][] = [
     ],
   ],
   [
-    "surgecast-midnight",
+    "opencast-midnight",
     "Midnight",
     "dark",
     [
@@ -84,7 +85,7 @@ const palettes: [string, string, "dark" | "light", string[]][] = [
     ],
   ],
   [
-    "surgecast-dawn",
+    "opencast-dawn",
     "Dawn",
     "light",
     [
@@ -173,7 +174,7 @@ export const themesService: Service = {
       ctx.events.emit("themes.changed", {}),
     );
     ctx.rpc.handleAll({
-      "themes.list": () => list<Theme>(ctx, "themes"),
+      "themes.list": () => list<Theme>(ctx, "themes").filter(theme => !theme.builtin || currentThemeId(theme.id) === theme.id),
       "themes.upsert": (params) => {
         const old = params.id
           ? ctx.entities.get<Theme>("themes", params.id)?.data

@@ -6,7 +6,7 @@ import type {
   BackendMethods,
   NativeEvents,
   BackendForNativeMethods,
-} from "@surgecast/protocol";
+} from "@opencast/protocol";
 import type { AppContext } from "../../src/context";
 import { Database } from "../../src/db/database";
 import { EntityStore, entitiesMigration } from "../../src/db/entities";
@@ -23,7 +23,7 @@ import { unconfiguredAI } from "../../src/registries/ai-unconfigured";
 import type { NativeApi } from "../../src/native/client";
 import { coreServices } from "../../src/services/core";
 export async function fixture() {
-  const dataDir = await mkdtemp(join(tmpdir(), "surgecast-core-test-"));
+  const dataDir = await mkdtemp(join(tmpdir(), "opencast-core-test-"));
   const db = new Database(":memory:");
   db.addMigrations(entitiesMigration, settingsMigration);
   const entities = new EntityStore(db);

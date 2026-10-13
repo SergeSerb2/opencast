@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AIModelOption, AIPreset, AIToolInfo } from "@surgecast/protocol";
+import type { AIModelOption, AIPreset, AIToolInfo } from "@opencast/protocol";
 import { DEFAULT_AI_ICON } from "../ai-shared/options";
 import { emptyPresetDraft, presetDraft, presetMetadata, presetSections, presetUpsertParams, toolsetOptions, toolsetTitles, validatePresetDraft } from "./preset-form";
 

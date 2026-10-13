@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { create } from "zustand";
-import { defaultSettings, isSettingsKey, type SettingsKey, type SettingsValues, type SettingValue } from "@surgecast/protocol";
+import { defaultSettings, isSettingsKey, type SettingsKey, type SettingsValues, type SettingValue } from "@opencast/protocol";
 import { backend } from "./backend";
 import { onReconnect } from "./hooks";
 

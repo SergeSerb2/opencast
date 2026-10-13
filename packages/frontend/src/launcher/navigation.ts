@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { create } from "zustand";
-import type { BuiltinView, ImageLike } from "@surgecast/protocol";
+import type { BuiltinView, ImageLike } from "@opencast/protocol";
 import { backend } from "../bridge/backend";
 
 interface EntryBase {

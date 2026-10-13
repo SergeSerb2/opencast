@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { RpcErrorCode } from "@surgecast/protocol";
+import { RpcErrorCode } from "@opencast/protocol";
 import { RpcError } from "../../bridge/errors";
 import { native } from "../../bridge/native";
 import { saveTextFile } from "../lib/output";

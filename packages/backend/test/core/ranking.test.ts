@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CommandInfo } from "@surgecast/protocol";
+import type { CommandInfo } from "@opencast/protocol";
 import {
   fuzzyMatch,
   frecency,

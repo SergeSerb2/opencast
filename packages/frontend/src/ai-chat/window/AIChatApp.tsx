@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import type { AIChat, AIChatFolder, AIMessage, BackendParams, ModelRef } from "@surgecast/protocol";
+import type { AIChat, AIChatFolder, AIMessage, BackendParams, ModelRef } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { getEnv } from "../../bridge/env";
 import { useBackend, useLatest, useNativeEvent } from "../../bridge/hooks";
@@ -13,7 +13,7 @@ import { showFailureToast, showToast } from "../../components/feedback/toast-sto
 import type { PopoverAnchor } from "../../components/Popover/Popover";
 import { ProgressiveBlur } from "../../components/SearchBar/ProgressiveBlur";
 import { FloatingToastHost } from "../../components/Toast/InlineToast";
-import { SurgecastLogo } from "../../icons/glyphs";
+import { OpenCastLogo } from "../../icons/glyphs";
 import { matchesShortcut, sc } from "../../lib/keyboard";
 import { AddMenu } from "../composer/AddMenu";
 import { attachmentFromPath, textAttachment } from "../composer/attachments";
@@ -40,7 +40,7 @@ const SIDEBAR_WIDTH = 280;
 const SETTINGS_WIDTH = 300;
 /** Width kept for the conversation before sidebars switch to overlays (§6.2). */
 const MIN_CHAT_WIDTH = 400;
-const SIDEBAR_KEY = "surgecast.ai.sidebarOpen";
+const SIDEBAR_KEY = "opencast.ai.sidebarOpen";
 const NEW_KEY = "new";
 
 type ActionsTarget = { anchor: PopoverAnchor; side: "top" | "bottom"; align: "start" | "end"; chat: AIChat | null; model?: ActionPanelModel };
@@ -543,7 +543,7 @@ export function AIChatApp() {
               models={models}
               toolsets={toolsets}
               readOnly={readOnly || noProvider}
-              empty={<SurgecastLogo size={70} className="sc-ai-watermark" />}
+              empty={<OpenCastLogo size={70} className="sc-ai-watermark" />}
               onCopy={(message) => void copyMessage(message)}
               onEdit={edit}
               onRegenerate={regenerate}

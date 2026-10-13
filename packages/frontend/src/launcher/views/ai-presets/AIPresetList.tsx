@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { AIPreset, ImageLike } from "@surgecast/protocol";
+import type { AIPreset, ImageLike } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";

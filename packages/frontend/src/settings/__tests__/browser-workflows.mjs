@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "vite";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const output = "/tmp/surgecast-re/ours/fe-settings";
+const output = "/tmp/opencast-re/ours/fe-settings";
 mkdirSync(output, { recursive: true });
 const npmPath = execFileSync("npm", ["exec", "--yes", "--package=playwright@1.64.0", "--", "node", "-e", "process.stdout.write(process.env.PATH)"], { cwd: "/tmp", encoding: "utf8" });
 const bin = npmPath.split(":").find((entry) => entry.includes("_npx") && entry.endsWith("node_modules/.bin"));
@@ -35,7 +35,7 @@ async function call(page, method, params) {
   }, { method, params });
 }
 async function route(page, target) {
-  await page.evaluate((route) => window.__surgecastNative.emit("window.route", { kind: "settings", route }), target);
+  await page.evaluate((route) => window.__opencastNative.emit("window.route", { kind: "settings", route }), target);
   await page.waitForTimeout(100);
 }
 async function scenario(name, initialRoute, work) {

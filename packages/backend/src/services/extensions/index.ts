@@ -1,7 +1,7 @@
 import { watch, type FSWatcher } from "node:fs";
 import { join } from "node:path";
 import Ajv from "ajv";
-import type { AIToolInfo, CommandInfo, CommandPrefs, InstalledExtension, LaunchResult } from "@surgecast/protocol";
+import type { AIToolInfo, CommandInfo, CommandPrefs, InstalledExtension, LaunchResult } from "@opencast/protocol";
 import type { AppContext, LaunchRequest, Service } from "../../context";
 import { ExtensionInstaller } from "./install";
 import { ExtensionPreferences, definitions } from "./preferences";
@@ -43,7 +43,7 @@ export class ExtensionsHost {
       "extensions.getPreferences": ({ name, command }) => this.preferences.get(this.installer.get(name), command),
       "extensions.setPreferences": async ({ name, command, values }) => { await this.preferences.set(this.installer.get(name), command, values); this.installer.changed(); },
       "extensions.develop": async ({ path }) => { const extension = await this.installer.install({ source: "development", path }); this.startWatch(extension.name, path); this.refreshScheduler();
-        if (this.ctx.settings.get("developer.openSurgecastInDevelopmentMode")) await this.ctx.native.call("window.show", { kind: "main" });
+        if (this.ctx.settings.get("developer.openOpenCastInDevelopmentMode")) await this.ctx.native.call("window.show", { kind: "main" });
         return extension; },
       "extensions.update": async ({ name }) => {
         const updated: string[] = [];

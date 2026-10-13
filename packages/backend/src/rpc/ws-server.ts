@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { randomUUID } from "node:crypto";
 import type { AddressInfo } from "node:net";
 import { WebSocketServer, type WebSocket } from "ws";
-import { EVENT_METHOD, RpcErrorCode, type RpcMessage } from "@surgecast/protocol";
+import { EVENT_METHOD, RpcErrorCode, type RpcMessage } from "@opencast/protocol";
 import type { RpcRegistry, MethodSpec } from "./registry";
 import type { EventBus } from "../events";
 import { toRpcErrorObject } from "../util/errors";
@@ -23,7 +23,7 @@ export interface WsServerOptions {
   host?: string;
   port?: number;
   token: string;
-  /** Extra origins allowed besides surgecast-app:// and localhost dev servers. */
+  /** Extra origins allowed besides opencast-app:// and localhost dev servers. */
   allowedOrigins?: string[];
 }
 

@@ -3,14 +3,14 @@ import type { LucideIcon } from "lucide-react";
 import { AppWindow } from "lucide-react";
 import { FILLED_ALIASES, ICON_ALIASES } from "./icon-aliases";
 import { FILLED_ICONS, RAYCAST_ICONS } from "./raycast-icons.generated";
-import { MenuGlyph, NumberGlyph, SurgecastLogo } from "./glyphs";
+import { MenuGlyph, NumberGlyph, OpenCastLogo } from "./glyphs";
 import "./icons.css";
 
-/** Glyphs drawn by Surgecast itself rather than lucide. */
+/** Glyphs drawn by OpenCast itself rather than lucide. */
 const CUSTOM: Record<string, (props: { size: number; style?: CSSProperties; className?: string }) => ReactElement> = {
-  "surgecast-logo": (p) => <SurgecastLogo {...p} />,
-  "raycast-logo-neg-16": (p) => <SurgecastLogo {...p} />,
-  "raycast-logo-pos-16": (p) => <SurgecastLogo {...p} />,
+  "opencast-logo": (p) => <OpenCastLogo {...p} />,
+  "raycast-logo-neg-16": (p) => <OpenCastLogo {...p} />,
+  "raycast-logo-pos-16": (p) => <OpenCastLogo {...p} />,
   "menu-20": (p) => <MenuGlyph {...p} />,
 };
 
@@ -31,7 +31,7 @@ export function isIconName(name: string): boolean {
 }
 
 export interface IconProps {
-  /** Raycast `Icon` value ("clipboard-16"), a short name ("clipboard"), or a Surgecast glyph. */
+  /** Raycast `Icon` value ("clipboard-16"), a short name ("clipboard"), or an OpenCast glyph. */
   name: string;
   size?: number;
   /** Any CSS color; defaults to currentColor. */

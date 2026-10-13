@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ClipboardItem, ImageLike } from "@surgecast/protocol";
+import type { ClipboardItem, ImageLike } from "@opencast/protocol";
 import { ItemDetail, Metadata } from "../../../components";
 import { Image } from "../../../icons/Image";
 import { localFileUrl } from "../../../icons/image-source";
@@ -9,7 +9,7 @@ import { entryText, KIND_LABEL, textPreview } from "./clipboard-model";
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|heic|tiff?|bmp|svg|avif)$/i;
 
 function imageUrl(path: string): string {
-  return /^(data|https?|blob|surgecast-file):/i.test(path) ? path : localFileUrl(path);
+  return /^(data|https?|blob|opencast-file):/i.test(path) ? path : localFileUrl(path);
 }
 
 /** Bordered monospace text (Raycast's text/link preview), first 15 lines with a remainder note. */

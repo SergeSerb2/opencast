@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AppInfo, ClipboardItem, ImageLike } from "@surgecast/protocol";
+import type { AppInfo, ClipboardItem, ImageLike } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
 import type { RefetchRule } from "../../../bridge/refetch";

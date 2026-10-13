@@ -27,7 +27,7 @@ const FAVICON_PROVIDERS = [
   { value: "none", title: "None" },
 ] as const;
 
-type ActiveDialog = { kind: "import"; path: string; format: "rayconfig" | "surgecast" } | { kind: "export"; directory: string } | null;
+type ActiveDialog = { kind: "import"; path: string; format: "rayconfig" | "opencast" } | { kind: "export"; directory: string } | null;
 
 async function pick(params: Parameters<typeof chooseFiles>[0]): Promise<string | null> {
   try {
@@ -45,7 +45,7 @@ function StorageSection() {
     if (info?.dataDir) native.call("open.path", { path: info.dataDir }).catch((err: unknown) => showFailureToast("Could not open the data folder", err));
   };
   return (
-    <Section title="Storage" description="Everything Surgecast stores lives on this Mac until you turn on Cloud Sync.">
+    <Section title="Storage" description="Everything OpenCast stores lives on this Mac until you turn on Cloud Sync.">
       <Row title="Database" description={storage ? `${Object.values(storage.entities).reduce((a, b) => a + b, 0)} items: notes, snippets, quicklinks, AI chats and more` : undefined}>
         <span className="sc-s-value">{storage ? formatBytes(storage.databaseBytes) : error ? "Unavailable" : "…"}</span>
       </Row>
@@ -68,12 +68,12 @@ export function AdvancedPage() {
   const backupLocation = useSetting("advanced.backupLocation");
   const [certificates, setCertificates] = useSettingState("advanced.additionalCertificateAuthorities");
 
-  const importFrom = async (format: "rayconfig" | "surgecast") => {
+  const importFrom = async (format: "rayconfig" | "opencast") => {
     const path = await pick({
       canChooseFiles: true,
       canChooseDirectories: false,
-      allowedTypes: format === "rayconfig" ? ["rayconfig"] : ["surgeconfig"],
-      title: format === "rayconfig" ? "Choose a Raycast Export" : "Choose a Surgecast Export",
+      allowedTypes: format === "rayconfig" ? ["rayconfig"] : ["openconfig", "surgeconfig"],
+      title: format === "rayconfig" ? "Choose a Raycast Export" : "Choose an OpenCast Export",
       prompt: "Import",
     });
     if (path) setDialog({ kind: "import", path, format });
@@ -103,8 +103,8 @@ export function AdvancedPage() {
             Import…
           </Button>
         </Row>
-        <Row title="Import Surgecast Data" description="Restore an export made with Surgecast on this or another Mac.">
-          <Button size="small" onClick={() => void importFrom("surgecast")}>
+        <Row title="Import OpenCast Data" description="Restore an export made with OpenCast on this or another Mac.">
+          <Button size="small" onClick={() => void importFrom("opencast")}>
             Import…
           </Button>
         </Row>

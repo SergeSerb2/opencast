@@ -40,11 +40,11 @@ Unit tests cover trees, branches, stream ordering, mentions, routes, file limits
 send shortcuts, cancellation, permissions and navigation during pending sends.
 The mock supports reasoning, errors, queued follow-ups, tools, branches and AI
 commands in root search. Browser validation and screenshots live outside the
-repository at `/tmp/surgecast-re/ours/fe-ai/`.
+repository at `/tmp/opencast-re/ours/fe-ai/`.
 
 The AI backend is implemented and the merged frontend contracts are wired. See
 [the integration audit](../../../../../docs/FRONTEND-INTEGRATION.md) for registered
 RPC tests, attachments, settings and host wiring. Real vendor requests and physical
 native actions still require manual acceptance; automated tests use local/fake providers.
-Browser glass approximates the system material; the Surgecast logo is reused
+Browser glass approximates the system material; the OpenCast logo is reused
 instead of proprietary reference artwork. Math rendering is optional and absent.

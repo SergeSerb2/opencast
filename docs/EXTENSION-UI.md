@@ -1,7 +1,7 @@
 # Extension UI tree contract
 
 Raycast-compatible extensions render React elements from `@raycast/api` inside a worker
-thread. Surgecast's runtime (`packages/raycast-api`) runs a React reconciler and sends the
+thread. OpenCast's runtime (`packages/raycast-api`) runs a React reconciler and sends the
 resulting tree to the frontend as `UINode` objects (`packages/protocol/src/ui.ts`). The
 frontend renders built-in views and extension views with the same components.
 
