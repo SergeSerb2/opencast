@@ -98,3 +98,30 @@ expect(publicImage["path"] as? String == clipboardFile.path, "Public clipboard i
 let storedPNG = try Data(contentsOf: clipboardFile)
 expect(storedPNG == clipboardPNG, "Public clipboard image is persisted")
 print("PASS: clipboard privacy markers prevent persistence and explicit reads return image bytes")
+func stubbornChild() throws -> Process {
+  let child = Process()
+  let ready = Pipe()
+  child.executableURL = URL(fileURLWithPath: "/bin/sh")
+  child.arguments = ["-c", "trap '' TERM; echo ready; while :; do :; done"]
+  child.standardOutput = ready
+  try child.run()
+  _ = ready.fileHandleForReading.availableData
+  return child
+}
+func pumpRunLoop(_ interval: TimeInterval) {
+  let deadline = Date().addingTimeInterval(interval)
+  while Date() < deadline { _ = RunLoop.main.run(mode: .default, before: deadline) }
+}
+let stalledChild = try stubbornChild()
+ProcessRecovery.terminate(stalledChild, gracePeriod: 0.05, isCurrent: { true })
+pumpRunLoop(0.2)
+expect(!stalledChild.isRunning, "Recovery kills a child that ignores SIGTERM")
+let staleChild = try stubbornChild()
+var currentLaunch = true
+ProcessRecovery.terminate(staleChild, gracePeriod: 0.05, isCurrent: { currentLaunch })
+currentLaunch = false
+pumpRunLoop(0.15)
+expect(staleChild.isRunning, "A stale launch cannot escalate to SIGKILL")
+kill(staleChild.processIdentifier, SIGKILL)
+staleChild.waitUntilExit()
+print("PASS: stalled-child recovery escalates and stale launch callbacks cannot kill")
