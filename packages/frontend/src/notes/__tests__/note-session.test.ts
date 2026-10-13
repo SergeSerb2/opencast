@@ -139,6 +139,43 @@ describe("NoteSession autosave", () => {
     await vi.advanceTimersByTimeAsync(300);
     expect(api.update).not.toHaveBeenCalled();
   });
+
+  it("persists the caret when a flush creates the first note", async () => {
+    const { api, session } = setup();
+    session.edit("Idea", 3);
+    expect(await session.flush()).toBe(true);
+    expect(api.notes.get("n1")?.caret).toBe(3);
+  });
+
+  it("drains edits typed during an in-flight save before navigation", async () => {
+    const { api, session } = setup();
+    session.attach(await api.create("a"));
+    const update = api.update.getMockImplementation()!;
+    let release!: () => void;
+    api.update.mockImplementationOnce(async (params) => {
+      await new Promise<void>((resolve) => { release = resolve; });
+      return update(params);
+    });
+    session.edit("ab", 2);
+    const flushed = session.flush();
+    session.edit("abc", 3);
+    release();
+    expect(await flushed).toBe(true);
+    expect(api.notes.get("n1")).toMatchObject({ content: "abc", caret: 3 });
+    expect(session.dirty).toBe(false);
+  });
+
+  it("returns false on flush failure and keeps unsaved text for retry", async () => {
+    const { api, session } = setup();
+    session.attach(await api.create("a"));
+    api.update.mockRejectedValueOnce(new Error("offline"));
+    session.edit("ab", 2);
+    expect(await session.flush()).toBe(false);
+    expect(session.content).toBe("ab");
+    expect(session.dirty).toBe(true);
+    expect(await session.flush()).toBe(true);
+    expect(api.notes.get("n1")?.content).toBe("ab");
+  });
 });
 
 describe("NoteSession remote changes", () => {
@@ -190,5 +227,56 @@ describe("NoteSession remote changes", () => {
     await session.editingEnded();
     expect(api.notes.get(note.id)?.content).toBe("local");
     expect(callbacks.onRemoteContent).not.toHaveBeenCalled();
+  });
+
+  it("keeps failed local writes when a remote change arrives", async () => {
+    const { api, callbacks, session } = setup();
+    session.attach(await api.create("before"));
+    session.edit("local", 5);
+    api.update.mockRejectedValueOnce(new Error("offline"));
+    await session.flush();
+    api.external("n1", "remote");
+    await session.reconcile();
+    expect(callbacks.onRemoteContent).not.toHaveBeenCalled();
+    expect(session.content).toBe("local");
+  });
+
+  it("retries a remote merge after focus returns during the fetch", async () => {
+    const { api, callbacks, session, state } = setup();
+    session.attach(await api.create("before"));
+    api.external("n1", "remote");
+    const get = api.get.getMockImplementation()!;
+    api.get.mockImplementationOnce(async (id) => {
+      state.editing = true;
+      return get(id);
+    });
+    await session.reconcile();
+    expect(session.content).toBe("before");
+    expect(callbacks.onRemoteContent).not.toHaveBeenCalled();
+    state.editing = false;
+    await session.editingEnded();
+    expect(session.content).toBe("remote");
+  });
+
+  it("merges remote content returned by a caret-only write on blur", async () => {
+    const { api, callbacks, session, state } = setup(true);
+    session.attach(await api.create("before"));
+    session.select(2);
+    api.external("n1", "remote");
+    await session.reconcile();
+    state.editing = false;
+    await session.editingEnded();
+    expect(session.content).toBe("remote");
+    expect(callbacks.onRemoteContent).toHaveBeenCalledWith(expect.objectContaining({ content: "remote" }));
+  });
+
+  it("does not consume remote content when pin metadata is adopted", async () => {
+    const { api, session, state } = setup(true);
+    session.attach(await api.create("before"));
+    api.external("n1", "remote");
+    session.adopt({ ...api.notes.get("n1")!, pinned: true });
+    state.editing = false;
+    await session.editingEnded();
+    expect(session.content).toBe("remote");
   });
 });

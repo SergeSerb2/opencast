@@ -17,13 +17,13 @@ export interface NotesBackend extends NotesApi {
 }
 
 const backendNotes: NotesBackend = {
-  get: (id) => backend.call("notes.get", { id }),
-  create: (content) => backend.call("notes.create", { content }),
-  update: (params) => backend.call("notes.update", params),
+  get: (id) => backend.call("notes.get", { id }).then((note) => note ? { ...note } : null),
+  create: (content) => backend.call("notes.create", { content }).then((note) => ({ ...note })),
+  update: (params) => backend.call("notes.update", params).then((note) => ({ ...note })),
   list: () => backend.call("notes.list", {}),
   remove: (id) => backend.call("notes.delete", { id }).then(() => undefined),
-  setPinned: (id, pinned) => backend.call("notes.update", { id, pinned }),
-  recent: () => backend.call("notes.recent"),
+  setPinned: (id, pinned) => backend.call("notes.update", { id, pinned }).then((note) => ({ ...note })),
+  recent: () => backend.call("notes.recent").then((note) => note ? { ...note } : null),
 };
 
 const EMPTY_DOC: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
@@ -74,6 +74,7 @@ export class NotesController {
           useNotesStore.setState({ note });
         },
         onSaveError: (error) => showFailureToast("Could not save note", error),
+        onSyncError: (error) => showFailureToast("Could not refresh note", error),
       },
       { isEditing: () => this.isEditing() },
     );
@@ -147,7 +148,7 @@ export class NotesController {
       title: titleFromText(first ? doc.textBetween(0, first.nodeSize, "\n", " ") : ""),
       characters: countCharacters(text),
       words: countWords(text),
-      empty: !text.trim(),
+      empty: editor.isEmpty,
     });
   }
 
@@ -158,7 +159,7 @@ export class NotesController {
       return;
     }
     replaceDocument(editor, markdown, caret);
-    useNotesStore.setState((state) => ({ docVersion: state.docVersion + 1 }));
+    useNotesStore.setState((state) => ({ docVersion: state.docVersion + 1, linkEditing: false }));
     this.refreshStats();
   }
 
@@ -183,7 +184,9 @@ export class NotesController {
     this.booted = true;
     if (route.kind === "open" && (await this.open(route.id))) return;
     if (route.kind === "new") return this.startNew(route.text);
+    const sequence = this.openSequence;
     const recent = await this.api.recent().catch(() => null);
+    if (sequence !== this.openSequence) return;
     if (recent && (await this.open(recent.id))) return;
     this.show(null, true);
   }
@@ -197,12 +200,13 @@ export class NotesController {
   /** Open a note; false when it does not exist or could not be loaded (a newer open taking over counts as success). */
   async open(id: string, options: { recordHistory?: boolean; focus?: boolean } = {}): Promise<boolean> {
     const { recordHistory = true, focus = true } = options;
+    const sequence = ++this.openSequence;
     if (id === this.session.noteId) {
       if (focus) this.focus();
       return true;
     }
-    const sequence = ++this.openSequence;
-    await this.session.flush();
+    if (!(await this.session.flush())) return false;
+    if (sequence !== this.openSequence) return true;
     let note: Note | null;
     try {
       note = await this.api.get(id);
@@ -237,22 +241,27 @@ export class NotesController {
 
   /** New Note (⌘N): an empty draft, reusing an existing blank note instead of piling them up. */
   async newNote(): Promise<void> {
+    const sequence = ++this.openSequence;
     if (useNotesStore.getState().empty) {
       this.focus();
       return;
     }
-    ++this.openSequence;
-    await this.session.flush();
+    if (!(await this.session.flush())) return;
+    if (sequence !== this.openSequence) return;
     const blank = (await this.api.list().catch(() => [])).find((summary) => summary.characters === 0);
+    if (sequence !== this.openSequence) return;
     if (blank && (await this.open(blank.id))) return;
     this.show(null, true);
   }
 
   private async startNew(text?: string): Promise<void> {
     if (!text?.trim()) return this.newNote();
-    await this.session.flush();
+    const sequence = ++this.openSequence;
+    if (!(await this.session.flush())) return;
+    if (sequence !== this.openSequence) return;
     try {
       const note = await this.api.create(text);
+      if (sequence !== this.openSequence) return;
       await this.open(note.id);
     } catch (error) {
       showFailureToast("Could not create note", error);
@@ -267,7 +276,7 @@ export class NotesController {
       if (!id || id === this.session.noteId) content = this.currentMarkdown();
       else content = (await this.api.get(id))?.content ?? "";
       if (!content.trim()) return;
-      await this.session.flush();
+      if (!(await this.session.flush())) return;
       const copy = await this.api.create(content);
       await this.open(copy.id);
       showToast({ style: "success", title: "Note duplicated" });
@@ -279,7 +288,7 @@ export class NotesController {
   async togglePin(id: string | null = this.session.noteId, pinned?: boolean): Promise<void> {
     if (!id) {
       // Pinning a draft stores it first.
-      await this.session.flush();
+      if (!(await this.session.flush())) return;
       id = this.session.noteId;
       if (!id) return;
     }
@@ -311,8 +320,8 @@ export class NotesController {
     });
     if (!confirmed) return;
     const isCurrent = id === this.session.noteId;
+    if (isCurrent && !(await this.session.flush())) return;
     this.deleting.add(id);
-    if (isCurrent) this.session.discard();
     try {
       await this.api.remove(id);
     } catch (error) {
@@ -322,7 +331,11 @@ export class NotesController {
     }
     this.history.remove(id);
     this.syncHistory();
-    if (isCurrent) await this.openFallback();
+    if (id === this.session.noteId) {
+      this.session.discard();
+      await this.openFallback();
+    }
+    this.deleting.delete(id);
     showToast({ style: "success", title: "Note deleted" });
   }
 
@@ -333,23 +346,32 @@ export class NotesController {
       primaryAction: { title: "Delete", style: "destructive" },
     });
     if (!confirmed) return;
-    this.session.discard();
+    if (!(await this.session.flush())) return;
+    const removed = new Set<string>();
     try {
       const notes = await this.api.list();
       for (const note of notes) this.deleting.add(note.id);
       for (const note of notes) {
         await this.api.remove(note.id);
+        removed.add(note.id);
         this.history.remove(note.id);
       }
       this.syncHistory();
+      this.session.discard();
       this.show(null, true);
       showToast({ style: "success", title: "All notes deleted" });
     } catch (error) {
+      this.syncHistory();
+      this.deleting.clear();
+      if (this.session.noteId && removed.has(this.session.noteId)) await this.openFallback();
       showFailureToast("Could not delete all notes", error);
+    } finally {
+      this.deleting.clear();
     }
   }
 
   private async openFallback(): Promise<void> {
+    this.show(null, false);
     const recent = await this.api.recent().catch(() => null);
     if (recent && !this.deleting.has(recent.id) && (await this.open(recent.id))) return;
     this.show(null, true);
@@ -365,14 +387,23 @@ export class NotesController {
     if (unsaved?.trim()) {
       // Deleted elsewhere while edited here: keep the text as a new note.
       this.session.attach(null);
+      useNotesStore.setState({ note: null });
       this.session.edit(unsaved, this.editor?.state.selection.head ?? 0);
-      await this.session.flush();
+      if (!(await this.session.flush())) return;
       useNotesStore.setState({ note: this.session.current });
       showToast({ style: "success", title: "Note restored", message: "It was deleted on another device while you were editing." });
       return;
     }
     showToast({ style: "failure", title: "Note was deleted" });
     await this.openFallback();
+  }
+
+  /** Sync emits collection changes even when no notes.changed event is sent. */
+  async handleCollectionChange(ids: string[]): Promise<void> {
+    const id = this.session.noteId;
+    if (!id || !ids.includes(id) || this.deleting.has(id)) return;
+    const exists = (await this.api.list()).some((note) => note.id === id);
+    if (this.session.noteId === id) await this.handleRemoteChange(id, !exists);
   }
 
   /** The window was hidden or lost focus. */
@@ -382,6 +413,7 @@ export class NotesController {
 
   /** The window became visible or key again. */
   async windowActivated(): Promise<void> {
-    if (!this.isEditing()) await this.session.reconcile();
+    if (this.session.dirty && !(await this.session.flush())) return;
+    await this.session.reconcile();
   }
 }

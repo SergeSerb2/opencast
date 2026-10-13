@@ -14,6 +14,7 @@ export interface NoteSessionCallbacks {
   /** Server state of the open note changed (created, saved, pinned, …). */
   onNoteChange(note: Note | null): void;
   onSaveError(error: unknown): void;
+  onSyncError?(error: unknown): void;
 }
 
 export interface NoteSessionOptions {
@@ -91,7 +92,12 @@ export class NoteSession {
   /** Adopt metadata the caller changed directly (e.g. pinning) without touching content. */
   adopt(note: Note): void {
     if (note.id !== this.note?.id) return;
-    this.note = { ...note, content: this.savedContent };
+    const changedElsewhere = note.content !== this.savedContent;
+    this.note = { ...note, content: this.savedContent, ...(changedElsewhere ? { updatedAt: this.note.updatedAt } : {}) };
+    if (changedElsewhere) {
+      this.reconcileQueued = true;
+      if (!this.busy()) void this.reconcile();
+    }
   }
 
   /** The editor content changed; pass a function to defer serializing until the save. */
@@ -116,9 +122,15 @@ export class NoteSession {
   }
 
   /** Write pending content (and a moved caret) now. */
-  async flush(): Promise<void> {
+  async flush(): Promise<boolean> {
     this.cancelTimer();
-    await this.save(true);
+    // Edits may arrive while a request is in flight. Drain them before a caller
+    // replaces the document, and keep the current note on a failed write.
+    do {
+      if (!(await this.save(true))) return false;
+      this.cancelTimer();
+    } while ((this.content !== this.savedContent && (this.note !== null || this.content.trim())) || (this.note !== null && this.caret !== this.savedCaret));
+    return true;
   }
 
   /** Forget unsaved edits (the note is being deleted). */
@@ -130,7 +142,7 @@ export class NoteSession {
 
   /** The user stopped editing (blur, window hidden): save, then merge queued remote changes. */
   async editingEnded(): Promise<void> {
-    await this.flush();
+    if (!(await this.flush())) return;
     if (this.reconcileQueued) await this.reconcile();
   }
 
@@ -146,7 +158,7 @@ export class NoteSession {
       return this.reconciling;
     }
     this.reconcileQueued = false;
-    this.reconciling = this.pullRemote().finally(() => {
+    this.reconciling = this.pullRemote().catch((error: unknown) => this.callbacks.onSyncError?.(error)).finally(() => {
       this.reconciling = null;
       if (this.reconcileQueued && !this.busy()) void this.reconcile();
     });
@@ -154,7 +166,7 @@ export class NoteSession {
   }
 
   private busy(): boolean {
-    return this.options.isEditing() || this.timer !== null || this.saving !== null;
+    return this.options.isEditing() || this.dirty;
   }
 
   private async pullRemote(): Promise<void> {
@@ -165,8 +177,9 @@ export class NoteSession {
     const fresh = await this.api.get(id);
     if (!fresh || this.note?.id !== id) return;
     if (this.busy()) {
-      // The user started typing meanwhile; their next save wins.
-      this.note = { ...fresh, content: this.savedContent };
+      // Focus may return while fetching. Keep the old timestamp so the remote
+      // content is fetched again after blur if there was no intervening edit.
+      this.reconcileQueued = true;
       return;
     }
     this.note = fresh;
@@ -189,25 +202,36 @@ export class NoteSession {
     this.timer = null;
   }
 
-  private async save(includeCaret: boolean): Promise<void> {
+  private async save(includeCaret: boolean): Promise<boolean> {
     while (this.saving) await this.saving;
     const content = this.content;
     const caret = this.caret;
     const note = this.note;
     const contentChanged = content !== this.savedContent;
     const caretChanged = includeCaret && caret !== this.savedCaret && note !== null;
-    if (!contentChanged && !caretChanged) return;
+    if (!contentChanged && !caretChanged) return true;
     // Drafts become notes on their first non-empty edit; empty drafts are never stored.
-    if (!note && !content.trim()) return;
+    if (!note && !content.trim()) return true;
     this.saving = (async () => {
       try {
         const result = note ? await this.api.update({ id: note.id, ...(contentChanged ? { content } : {}), caret }) : await this.api.create(content);
         if (this.note !== note) return; // switched notes while saving
         this.note = result;
-        this.savedContent = content;
-        this.savedCaret = caret;
+        if (!contentChanged && result.content !== this.savedContent) {
+          // A caret-only write can return newer content from another device.
+          // Do not consume its timestamp while leaving the editor stale.
+          if (!this.options.isEditing() && !this.pendingContent && this.editorContent === content) {
+            this.editorContent = this.savedContent = result.content;
+            this.callbacks.onRemoteContent(result);
+          } else {
+            this.note = { ...result, content: this.savedContent, updatedAt: note!.updatedAt };
+            this.reconcileQueued = true;
+          }
+        } else this.savedContent = content;
+        // notes.create has no caret parameter; persist it on the next flush.
+        this.savedCaret = result.caret ?? 0;
         this.failed = false;
-        this.callbacks.onNoteChange(result);
+        this.callbacks.onNoteChange(this.note);
       } catch (error) {
         if (!this.failed) this.callbacks.onSaveError(error);
         this.failed = true;
@@ -218,8 +242,9 @@ export class NoteSession {
     } finally {
       this.saving = null;
     }
-    if (this.failed) return;
+    if (this.failed) return false;
     if (this.pendingContent !== null || this.editorContent !== this.savedContent) this.schedule();
     else if (this.reconcileQueued && !this.busy()) void this.reconcile();
+    return true;
   }
 }
