@@ -45,10 +45,26 @@ check_tag() {
 }
 check_tag
 load_release() {
-    RELEASE_EXISTS=0
-    if gh api "repos/$REPO/releases/tags/$TAG" \
-        --jq '{id, draft, target_commitish, assets: [.assets[].name]}' >"$TEMP/release.json" 2>"$TEMP/release-error"; then
-        RELEASE_EXISTS=1
+    # The by-tag endpoint returns published releases only. List releases with
+    # write access to include drafts, and fail closed on any pagination error.
+    gh api "repos/$REPO/releases?per_page=100" --paginate --slurp >"$TEMP/releases.json"
+    RELEASE_EXISTS="$(node --input-type=module - "$TEMP/releases.json" "$TAG" "$TEMP/release.json" <<'JS'
+import { readFileSync, writeFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const [list, tag, output] = process.argv.slice(2);
+const pages = JSON.parse(readFileSync(list, 'utf8'));
+assert(Array.isArray(pages) && pages.every(Array.isArray), 'Invalid paginated release list');
+const matches = pages.flat().filter(r => r.tag_name === tag);
+assert(matches.length <= 1, 'Multiple releases use the same tag');
+if (matches.length) {
+  const r = matches[0];
+  writeFileSync(output, JSON.stringify({ id: r.id, draft: r.draft,
+    target_commitish: r.target_commitish, assets: r.assets.map(a => a.name) }));
+}
+console.log(matches.length);
+JS
+)"
+    if [ "$RELEASE_EXISTS" = 1 ]; then
         METADATA="$(node --input-type=module - "$TEMP/release.json" <<'JS'
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
@@ -62,9 +78,6 @@ JS
 )"
         read -r RELEASE_ID DRAFT TARGET <<< "$METADATA"
         ASSETS="$(node -p 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).assets.join("\n")' "$TEMP/release.json")"
-    elif ! grep -Fq '(HTTP 404)' "$TEMP/release-error"; then
-        cat "$TEMP/release-error" >&2
-        exit 1
     fi
 }
 check_draft() {

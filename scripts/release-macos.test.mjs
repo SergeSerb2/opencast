@@ -17,6 +17,7 @@ const value = key => a[a.indexOf(key) + 1];
 const save = () => fs.writeFileSync(stateFile, JSON.stringify(s));
 const fail = message => { console.error(message); process.exit(1); };
 s.calls.push(a); save();
+if (a.includes('--slurp') && a.includes('--jq')) fail('unsupported flag combination');
 if (a[0] === 'api') {
   const endpoint = a[1];
   if (endpoint.includes('/compare/')) console.log('ahead');
@@ -26,10 +27,19 @@ if (a[0] === 'api') {
     console.log((s.annotated ? 'tag' : 'commit') + '\\t' + s.tag);
   } else if (endpoint.includes('/git/tags/')) console.log('commit\\t' + s.target);
   else if (endpoint.includes('/releases/tags/')) {
+    // GitHub's by-tag endpoint excludes drafts, even for a writer.
+    if (s.release === 'draft') fail('gh: Not Found (HTTP 404)');
     if (s.releaseError) fail(s.releaseError);
     if (!s.release) fail('gh: Not Found (HTTP 404)');
     console.log(JSON.stringify({ id: s.id, draft: s.release === 'draft',
       target_commitish: s.target || s.revision, assets: s.assets }));
+  }
+  else if (endpoint.includes('/releases?')) {
+    if (s.releaseError) fail(s.releaseError);
+    const release = { id: s.id, draft: s.release === 'draft',
+      tag_name: 'v0.1.0-build.1', target_commitish: s.target || s.revision, assets: s.assets.map(name => ({ name })) };
+    const rows = s.release ? (s.duplicateRelease ? [release, release] : [release]) : [];
+    console.log(JSON.stringify(s.draftOnLaterPage ? [[], rows] : [rows]));
   }
   else if (endpoint.endsWith('/git/refs')) {
     if (s.tag || s.tagRace) fail('gh: Reference already exists (HTTP 422)');
@@ -197,4 +207,16 @@ test('resumes a partial draft by comparing present files and uploading missing o
   const uploads = f.calls().filter(a => a[0] === 'release' && a[1] === 'upload');
   assert.equal(uploads.length, 2);
   assert.ok(!uploads.some(a => a.includes('--clobber')));
+});
+test('finds an existing draft through the paginated release list', t => {
+  const f = fixture(t, { tag: true, release: 'draft', assets: [], draftOnLaterPage: true });
+  const result = f.run();
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(f.calls().some(a => a[0] === 'api' && a.includes('--paginate') && a.includes('--slurp')));
+  assert.ok(!f.calls().some(a => a[0] === 'release' && a[1] === 'create'));
+});
+test('rejects an ambiguous release list without writing', t => {
+  const f = fixture(t, { tag: true, release: 'draft', duplicateRelease: true });
+  assert.notEqual(f.run().status, 0);
+  assert.deepEqual(f.writes(), []);
 });
