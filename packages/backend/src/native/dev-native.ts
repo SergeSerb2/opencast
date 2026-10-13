@@ -51,7 +51,7 @@ export class DevNative implements NativeApi {
         bundlePath: "",
         dataDir: this.dataDir,
       }),
-      "apps.list": async ({ refresh } = {}) => {
+      "apps.list": async ({ refresh }: { refresh?: boolean } = {}) => {
         if (!this.appsCache || refresh) this.appsCache = await scanApps();
         return this.appsCache;
       },
