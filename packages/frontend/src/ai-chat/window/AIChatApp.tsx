@@ -386,6 +386,12 @@ export function AIChatApp() {
   const panelOpen = Boolean(actionsTarget || modelAnchor || addAnchor);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented && getSetting("keyboard.escapeKeyClosesWindow") &&
+        !document.querySelector(".sc-popover, [role=dialog]") && !event.isComposing) {
+        event.preventDefault();
+        void native.call("window.hide", { kind: "ai-chat" }).catch(() => undefined);
+        return;
+      }
       if (event.defaultPrevented || event.isComposing) return;
       if (matchesShortcut(event, sc("cmd", "k"))) {
         event.preventDefault();

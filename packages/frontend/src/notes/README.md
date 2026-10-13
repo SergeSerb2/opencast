@@ -22,5 +22,5 @@ The 396×500 mock screenshots use the foundation's `scripts/screenshot.mjs` scen
 Native export uses the additive `dialog.saveFile` protocol method: an NSSavePanel
 that writes the supplied UTF-8 content and returns a path or null on cancellation.
 Browser export downloads a Blob. An unsupported native host gets an explicit
-error instead of a success toast. The Swift implementation belongs to the host
-team. Attachments and Recently Deleted are not exposed by the current notes RPCs.
+error instead of a success toast. The Swift implementation is in `Services/FileDialog.swift`, routed alongside
+`dialog.openFiles`. Attachments and Recently Deleted are not exposed by the current notes RPCs.

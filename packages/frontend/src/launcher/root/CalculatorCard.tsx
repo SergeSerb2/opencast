@@ -1,5 +1,6 @@
 import { memo, type ReactNode } from "react";
 import type { CalculatorResult } from "@surgecast/protocol";
+import { useSetting } from "../../bridge/settings";
 import "./calculator-card.css";
 
 const OPERATOR = /(\s+(?:in|to|as|of)\s+|[+\-−×÷*/^%=]|\s+)/;
@@ -23,12 +24,13 @@ function Question({ text }: { text: string }): ReactNode {
 
 /** Root search calculator card: question → answer halves with label pills (124px row). */
 export const CalculatorCard = memo(function CalculatorCard({ result }: { result: CalculatorResult }) {
+  const highlight = useSetting("calculator.syntaxHighlighting");
   return (
     <div className="sc-calc" data-kind={result.kind}>
       <div className="sc-calc__half">
         <div className="sc-calc__value sc-truncate" title={result.input}>
           <span className="sc-calc__text">
-            <Question text={result.interpreted} />
+            {highlight ? <Question text={result.interpreted} /> : result.interpreted}
           </span>
         </div>
         <span className="sc-calc__pill">{result.inputLabel ?? "Expression"}</span>

@@ -114,8 +114,8 @@ export function SnippetsPage() {
         <Row title="Completion Sound" description="Play a sound when a snippet expands." disabled={!expansion}>
           <SettingSelect setting="snippets.completionSound" options={[{ value: "", title: "None" }, ...["Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero", "Morse", "Ping", "Pop", "Purr", "Sosumi", "Submarine", "Tink"].map((value) => ({ value, title: value }))]} label="Completion Sound" disabled={!expansion} />
         </Row>
-        <Row title="Override System Snippets" description="Expand Surgecast snippets before matching macOS text replacements (experimental).">
-          <SettingSwitch setting="snippets.overrideSystemSnippets" label="Override System Snippets" />
+        <Row title="Override System Snippets" description="Unavailable: macOS does not expose a per-application API to override another app’s text replacements.">
+          <SettingSwitch setting="snippets.overrideSystemSnippets" disabled label="Override System Snippets" />
         </Row>
         <PermissionRow kind="accessibility" title="Accessibility Permission" description="Needed to watch for keywords and type the expanded text." />
       </Section>
@@ -210,8 +210,8 @@ export function WindowManagementPage() {
         <Row title="Cycling" description="Run a half command again to cycle through these sizes.">
           <SettingSelect setting="windowManagement.cycling" options={CYCLING} label="Cycling" />
         </Row>
-        <Row title="Auto Close Empty Desktops" description="Remove empty desktops after switching away.">
-          <SettingSwitch setting="windowManagement.autoCloseEmptyDesktops" label="Auto Close Empty Desktops" />
+        <Row title="Auto Close Empty Desktops" description="Unavailable: public macOS APIs do not support removing another app’s empty Spaces.">
+          <SettingSwitch setting="windowManagement.autoCloseEmptyDesktops" disabled label="Auto Close Empty Desktops" />
         </Row>
         <Row title="Respect Stage Manager" description="Keep windows clear of the Stage Manager strip.">
           <SettingSwitch setting="windowManagement.respectStageManager" label="Respect Stage Manager" />
@@ -236,8 +236,8 @@ export function CalculatorPage() {
         <Row title="Enable Color Conversion" description="Preview and convert color values such as #FF6363 or rgb(255 99 99) in root search.">
           <SettingSwitch setting="calculator.colorConversion" label="Enable Color Conversion" />
         </Row>
-        <Row title="Enable Flight Tracker" description="Detect flight numbers in root search.">
-          <SettingSwitch setting="calculator.flightTracker" label="Enable Flight Tracker" />
+        <Row title="Enable Flight Tracker" description="Unavailable: no flight-data provider is configured for Surgecast.">
+          <SettingSwitch setting="calculator.flightTracker" disabled label="Enable Flight Tracker" />
         </Row>
         <Row title="Enable Weather" description="Show weather forecasts and calculations in root search.">
           <SettingSwitch setting="calculator.weather" label="Enable Weather" />
@@ -299,8 +299,8 @@ export function EmojiPage() {
         <Row title="Primary Action">
           <SettingSelect setting="emoji.primaryAction" options={PASTE_OR_COPY} label="Primary Action" />
         </Row>
-        <Row title="Save AI-generated Custom Keywords" description="Remember the search term on the emoji you copy or paste.">
-          <SettingSwitch setting="emoji.saveAiCustomKeyword" label="Save AI-generated Custom Keywords" />
+        <Row title="Save AI-generated Custom Keywords" description="Unavailable: AI emoji keyword generation is not implemented yet.">
+          <SettingSwitch setting="emoji.saveAiCustomKeyword" disabled label="Save AI-generated Custom Keywords" />
         </Row>
         <Row title="Emoji Skin Tone" description="Default skin tone for emoji that have variants.">
           <SkinTonePicker />

@@ -99,7 +99,7 @@ export function useLauncherBehavior(setVisible: (visible: boolean) => void): voi
     if (event.kind !== kind) return;
     const since = hiddenAt.current;
     hiddenAt.current = null;
-    if (since !== null && shouldPopToRoot(getSetting("launcher.popToRootTimeout"), Date.now() - since)) useNavigationStore.getState().popToRoot({ clearSearch: true });
+    if (!getSetting("developer.disablePopToRootSearch") && since !== null && shouldPopToRoot(getSetting("launcher.popToRootTimeout"), Date.now() - since)) useNavigationStore.getState().popToRoot({ clearSearch: true });
     else {
       // Kept text is selected so typing replaces it.
       requestAnimationFrame(() => document.querySelector<HTMLInputElement>(".sc-launcher-entry[data-active] .sc-search-bar__input")?.select());

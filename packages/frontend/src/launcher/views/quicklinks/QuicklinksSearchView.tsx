@@ -25,6 +25,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
   const [tag, setTag] = useState(ALL_TAGS);
   const [apps, setApps] = useState<AppInfo[]>([]);
   const { data: quicklinks, isLoading } = useBackend("quicklinks.list", {}, undefined, { onError: (error) => showFailureToast("Failed to load quicklinks", error) });
+  const showPreviews = useSetting("quicklinks.showLinkPreviews");
   const faviconProvider = useSetting("advanced.faviconProvider");
   const navigation = useNavigation();
   const navTitle = title ?? "Search Quicklinks";
@@ -135,7 +136,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
       onSearchTextChange={setQuery}
       filtering
       isLoading={isLoading}
-      isShowingDetail={!empty}
+      isShowingDetail={!empty && showPreviews}
       keepAccessoriesInDetail
       searchBarPlaceholder="Search for Quicklinks…"
       navigationTitle={navTitle}
@@ -171,7 +172,7 @@ export function QuicklinksSearchView({ props, title, icon }: LauncherViewProps<{
               icon={rowIcon}
               keywords={[quicklink.link, ...(quicklink.tags ?? [])]}
               accessories={quicklink.pinned ? [{ icon: "tack-16", tooltip: "Pinned" }] : undefined}
-              detail={<QuicklinkDetail quicklink={quicklink} application={appName(quicklink.openWith)} />}
+              detail={showPreviews ? <QuicklinkDetail quicklink={quicklink} application={appName(quicklink.openWith)} /> : undefined}
               actions={actionsFor(quicklink, rowIcon)}
             />
           );

@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import type { AIAttachment, AICommand, AIPreset } from "@surgecast/protocol";
+import { useSetting } from "../../bridge/settings";
 import { showFailureToast } from "../../components/feedback/toast-store";
 import { Icon } from "../../icons/Icon";
 import { Image } from "../../icons/Image";
@@ -60,6 +61,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   { variant, draft, onDraftChange, onSubmit, onStop, isGenerating, disabled, placeholder = "Ask anything, @ tools, or / for commands…", toolsets, commands, presets, onPickPreset, sendKey, onUnhandledKey, leading, autoFocus },
   ref,
 ) {
+  const runningAction = useSetting("ai.runningSendAction");
+  const sendLabel = isGenerating ? runningAction === "steer" ? "Steer Response" : "Queue Message" : "Send Message";
   const editor = useRef<HTMLTextAreaElement>(null);
   const mirror = useRef<HTMLDivElement>(null);
   const capsule = useRef<HTMLDivElement>(null);
@@ -307,7 +310,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             </button>
           ) : (
             canSend && (
-              <button type="button" className="sc-ai-composer__button" data-kind="send" aria-label={isGenerating ? "Queue Message" : "Send Message"} title={isGenerating ? "Queue Message" : "Send Message"} onClick={submit}>
+              <button type="button" className="sc-ai-composer__button" data-kind="send" aria-label={sendLabel} title={sendLabel} onClick={submit}>
                 <Icon name="arrow-up-thick-16" size={16} />
               </button>
             )

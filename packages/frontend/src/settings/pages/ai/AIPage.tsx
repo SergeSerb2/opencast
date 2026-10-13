@@ -297,7 +297,7 @@ export function AIPage() {
         <Row title="Start New Chat" description="Start a new chat after this long when you open Quick AI or AI Chat.">
           <SettingSelect setting="ai.startNewChat" options={START_NEW_CHAT} label="Start New Chat" />
         </Row>
-        <Row title="Follow-up Behavior" description="Queue follow-ups while AI runs, or steer the current run. The alternate send shortcut does the opposite for one message.">
+        <Row title="Follow-up Behavior" description="Queue follow-ups while AI runs, or stop the current response and continue with the follow-up.">
           <SettingSelect setting="ai.runningSendAction" options={[{ value: "queue", title: "Queue" }, { value: "steer", title: "Steer" }]} label="Follow-up Behavior" />
         </Row>
         <Row title="Conversation History" description="Show Quick AI and AI Chat conversations together or keep them apart.">

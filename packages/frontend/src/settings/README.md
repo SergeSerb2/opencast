@@ -100,13 +100,9 @@ connected sync. Compare only with `specs/design.md` and `ref/share/settings-reda
 
 ## Integration boundary
 
-This checkout contains empty backend AI/extensions/sync/core service registrations.
-The settings UI and mocks are implemented; those backend/native teams must provide the
-RPC implementations and consume the added setting keys. Typechecking the backend does
-not prove provider network requests, disk export/backup, encrypted sync, extension
-installation or macOS permissions/hotkeys. The mock imports/exports simulate results,
-not real file operations. Theme Studio, the extension Store and sync deployment/docs
-are owned by their respective teams; Store is disabled when no Store command is
-registered. Native Keychain storage, encrypted Worker sync and real macOS execution
-remain unverified in this branch. No backend/native files or root configuration were
-changed by this team.
+Settings now use the registered backend services and live Swift preference consumers.
+See [the integration audit](../../../../../docs/FRONTEND-INTEGRATION.md) for the
+contract mapping, all 39 settings, required validation and native acceptance limits.
+Flight tracking, AI emoji keyword saving, overriding another app's system snippets,
+and automatic empty-Space removal remain unavailable; their controls are disabled
+with explanations. Credentials use the backend secrets service and native Keychain.

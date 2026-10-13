@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ImageLike } from "@surgecast/protocol";
 import { useBackend } from "../../../bridge/hooks";
 import { native } from "../../../bridge/native";
-import { useSettings } from "../../../bridge/settings";
+import { getSetting, useSettings } from "../../../bridge/settings";
 import { Action, ActionPanel, Dropdown, EmptyView, IconButton, ScrollArea, showFailureToast, showHUD, showToast, useNavigation, useRegisterActions, useViewController, ViewFrame } from "../../../components";
 import { sc } from "../../../lib/keyboard";
 import type { LauncherViewProps } from "../registry";
@@ -158,6 +158,7 @@ function TranslatorBody({ text, setText, pair, setPair, translation, setupProble
   const navigation = useNavigation();
   const view = useViewController();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const primary = getSetting("translator.primaryAction");
   const output = translation.text;
   const fresh = translation.forText === text && translation.forSource === pair.source && translation.forTarget === pair.target;
   const ready = fresh && translation.status === "done" && Boolean(output.trim());
@@ -196,8 +197,13 @@ function TranslatorBody({ text, setText, pair, setPair, translation, setupProble
     </ActionPanel>
   ) : (
     <ActionPanel title="Translator">
-      <Action title="Copy Translation" icon="copy-clipboard-16" shortcut={sc("cmd", "return")} disabled={!ready} onAction={() => copy(output, "translation")} />
-      <Action title="Paste to Active App" icon="clipboard-16" shortcut={sc("opt", "cmd", "return")} disabled={!ready} onAction={() => paste(output)} />
+      {primary === "paste" ? [
+        <Action key="paste" title="Paste to Active App" icon="clipboard-16" disabled={!ready} onAction={() => paste(output)} />,
+        <Action key="copy" title="Copy Translation" icon="copy-clipboard-16" shortcut={sc("cmd", "return")} disabled={!ready} onAction={() => copy(output, "translation")} />,
+      ] : [
+        <Action key="copy" title="Copy Translation" icon="copy-clipboard-16" shortcut={sc("cmd", "return")} disabled={!ready} onAction={() => copy(output, "translation")} />,
+        <Action key="paste" title="Paste to Active App" icon="clipboard-16" shortcut={sc("opt", "cmd", "return")} disabled={!ready} onAction={() => paste(output)} />,
+      ]}
       <Action title="Copy Source Text" icon="copy-clipboard-16" shortcut={sc("opt", "return")} onAction={() => copy(text, "text")} />
       <ActionPanel.Section>
         <Action title="Swap Languages" icon="arrow-left-right-16" shortcut={sc("cmd", "s")} disabled={!swapped} onAction={swap} />

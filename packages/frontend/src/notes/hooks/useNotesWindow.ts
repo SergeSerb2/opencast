@@ -132,7 +132,7 @@ export function useNotesKeyboard(controller: NotesController, model: ActionPanel
           useNotesStore.setState({ linkEditing: false });
         } else if (getSetting("notes.escapeKeyLosesFocus")) {
           void loseFocus(controller);
-        } else {
+        } else if (getSetting("keyboard.escapeKeyClosesWindow")) {
           void controller.windowDeactivated();
           void native.call("window.hide", { kind: "notes", restoreFocus: true }).catch(() => undefined);
         }
