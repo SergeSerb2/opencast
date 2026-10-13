@@ -28,6 +28,8 @@ first. This is single-user/small-team self-hosting, not an enterprise identity s
 
 ## Cryptography (format v1)
 
+The v1 labels below retain their original bytes for compatibility with encrypted vaults.
+
 All binary fields are canonical unpadded base64url. All strings use UTF-8. Timestamps and
 server sequences are nonnegative safe JavaScript integers in milliseconds and integers,
 respectively. Cryptography runs client-side using `node:crypto`; compression uses gzip.
@@ -37,7 +39,7 @@ respectively. Cryptography runs client-side using `node:crypto`; compression use
    16-byte salt, and a 256 MiB maximum memory allowance. Passphrases are used exactly as
    entered, with no Unicode normalization (1–4096 characters).
 3. Wrap the VMK with AES-256-GCM and a fresh 12-byte nonce. AAD is
-   `opencast-vault-v1|<vaultId>|<keyEpoch>`. `wrapped.ct` concatenates ciphertext and
+   `surgecast-vault-v1|<vaultId>|<keyEpoch>`. `wrapped.ct` concatenates ciphertext and
    the 16-byte authentication tag. The server vault contains only:
 
    ```json
@@ -49,13 +51,13 @@ respectively. Cryptography runs client-side using `node:crypto`; compression use
    ```
 
 4. Derive two 32-byte keys with HKDF-SHA256 using VMK as input and UTF-8 `vaultId` as salt:
-   info `opencast/record/v1` gives `encKey`; info `opencast/rid/v1` gives `ridKey`.
+   info `surgecast/record/v1` gives `encKey`; info `surgecast/rid/v1` gives `ridKey`.
 5. `rid = base64url(HMAC-SHA256(ridKey, UTF8(collection + "\u0000" + id)))`.
    Collection/ID strings must not contain NUL.
 6. Serialize `{ v: 1, collection, id, createdAt, updatedAt, deleted, data }` as JSON.
    Prefix byte `0x00` for uncompressed JSON, or `0x01` followed by gzip if the JSON
    exceeds 1024 bytes. Encrypt this entire prefixed payload with AES-256-GCM, a fresh
-   12-byte nonce per write, and AAD `opencast-record-v1|<vaultId>|<rid>|<keyEpoch>`.
+   12-byte nonce per write, and AAD `surgecast-record-v1|<vaultId>|<rid>|<keyEpoch>`.
    `ct` includes the 16-byte tag. Clients also verify the decrypted identity, deletion
    flag, version, bounded timestamps and gzip output size before applying it.
 

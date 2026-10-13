@@ -13,8 +13,8 @@ if ! identity=$(wrangler whoami 2>&1) || [[ "$identity" == *"not authenticated"*
   echo "  pnpm --filter @opencast/sync-worker exec wrangler login"
   exit 1
 fi
-read -r -p "D1 database name [opencast-sync]: " database_name
-database_name=${database_name:-opencast-sync}
+read -r -p "D1 database name [surgecast-sync]: " database_name
+database_name=${database_name:-surgecast-sync}
 if [[ ! "$database_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then echo "Invalid database name"; exit 1; fi
 read -r -p "Create this database? [y/N] (choose N to use an existing one): " create_database
 if [[ "$create_database" == "y" || "$create_database" == "Y" ]]; then wrangler d1 create "$database_name"; fi

@@ -7,11 +7,29 @@ import { databasePath, defaultDataDirectory } from "../../src/util/app-storage";
 import { SyncHttp } from "../../src/services/sync/http";
 import { fixture } from "./fixture";
 import type { CommandPrefs } from "@opencast/protocol";
+import { migrateVersionCommandState } from "../../src/util/legacy-branding";
 
 let f: Awaited<ReturnType<typeof fixture>> | undefined;
 afterEach(async () => { await f?.close(); f = undefined; });
 
 describe("OpenCast upgrade compatibility", () => {
+  it.each([false, true])("keeps ranking without custom preferences; current visits=%s", async hasCurrent => {
+    f = await fixture();
+    const id = "builtin:core.copyOpenCastVersion", oldId = "builtin:core.copySurgecastVersion";
+    f.ctx.db.run("INSERT INTO command_frecency VALUES (?, ?, ?)", oldId, 7, 1000);
+    if (hasCurrent) f.ctx.db.run("INSERT INTO command_frecency VALUES (?, ?, ?)", id, 3, 2000);
+    migrateVersionCommandState(f.ctx);
+    const expected = { count: hasCurrent ? 10 : 7, last_used: hasCurrent ? 2000 : 1000 };
+    const read = () => f!.ctx.db.get("SELECT count, last_used FROM command_frecency WHERE id = ?", id);
+    expect(read()).toEqual(expected);
+    expect(f.ctx.db.get("SELECT * FROM command_frecency WHERE id = ?", oldId)).toBeUndefined();
+    expect(f.ctx.entities.get("commandPrefs", id)).toBeUndefined();
+    migrateVersionCommandState(f.ctx);
+    expect(read()).toEqual(expected);
+    await f.call("commands.resetRanking", { id });
+    migrateVersionCommandState(f.ctx);
+    expect(read()).toBeUndefined();
+  });
   it("opens the existing SQLite database and keeps production and dev data separate", async () => {
     const home = await mkdtemp(join(tmpdir(), "opencast-upgrade-"));
     try {

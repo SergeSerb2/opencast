@@ -19,11 +19,15 @@ and deploys. Review the prompts before proceeding. It does not store your token 
 
 Manual steps:
 
+The private Worker and D1 names stay `surgecast-sync` so upgrades update the existing
+service and keep its URL. Keep your existing custom names and database ID if you
+changed them; the OpenCast rename does not require new cloud resources.
+
 ```sh
 pnpm --filter @opencast/sync-worker exec wrangler whoami
-pnpm --filter @opencast/sync-worker exec wrangler d1 create opencast-sync
+pnpm --filter @opencast/sync-worker exec wrangler d1 create surgecast-sync
 # Set database_id in packages/sync-worker/wrangler.toml to the printed UUID.
-pnpm --filter @opencast/sync-worker exec wrangler d1 migrations apply opencast-sync --remote
+pnpm --filter @opencast/sync-worker exec wrangler d1 migrations apply surgecast-sync --remote
 pnpm --filter @opencast/sync-worker exec wrangler secret put SYNC_TOKEN
 pnpm --filter @opencast/sync-worker deploy
 ```
@@ -45,7 +49,7 @@ Never remove an existing class migration casually from an already deployed Worke
 ```sh
 pnpm --filter @opencast/sync-worker typecheck
 pnpm --filter @opencast/sync-worker test
-pnpm --filter @opencast/sync-worker exec wrangler d1 migrations apply opencast-sync --local
+pnpm --filter @opencast/sync-worker exec wrangler d1 migrations apply surgecast-sync --local
 pnpm --filter @opencast/sync-worker exec wrangler dev --local --port 18787 --var SYNC_TOKEN:local-test
 # In another terminal; uses and wipes ONLY the dedicated localhost account:
 node packages/sync-worker/test/local-smoke.mjs
