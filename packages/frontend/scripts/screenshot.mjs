@@ -75,6 +75,14 @@ const SCENES = [
   { name: "emoji-actions", url: "main.html", steps: [{ type: "search emoji" }, { press: "Enter", wait: 600 }, { press: "Meta+k", wait: 350 }] },
   { name: "calculator-live", url: "main.html", steps: [{ type: "calculator history" }, { press: "Enter", wait: 600 }, { type: "2+2*10" }, { wait: 300 }] },
   { name: "gallery", url: "gallery.html", size: [1500, 1000], fullPage: true },
+  // Notes window at Raycast's saved 396×500 frame; hovering reveals the header and footer controls.
+  { name: "notes", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-empty", url: "notes.html#new", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-format", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { press: "Alt+Meta+Comma" }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-browse", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }, { press: "Meta+p", wait: 400 }] },
+  { name: "notes-actions", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }, { press: "Meta+k", wait: 400 }] },
+  { name: "notes-find", url: "notes.html", size: [396, 500], steps: [{ wait: 300 }, { press: "Meta+f" }, { type: "the" }, { hover: ".sc-notes__editor-area" }] },
+  { name: "notes-light", url: "notes.html?appearance=light", size: [396, 500], steps: [{ wait: 300 }, { hover: ".sc-notes__editor-area" }] },
 ];
 
 /** Scenes contributed by feature modules in scripts/scenes/. */

@@ -18,6 +18,8 @@ export interface ActionPanelPopoverProps {
   align?: "start" | "end";
   /** Show the ↵ / ⌘↵ keycaps the frame binds to the first two actions ("cmd-enter": forms, ⌘↵ only). */
   primaryShortcut?: "enter" | "cmd-enter" | null;
+  /** Open upward from a footer (default; search field at the bottom) or downward from a header (search on top). */
+  side?: "top" | "bottom";
 }
 
 interface Level {
@@ -60,7 +62,7 @@ function toMenuSections(sections: ActionSectionModel[], implicit: Map<ActionMode
 }
 
 /** The ⌘K panel: 350×≤280 glass card opening upward from the footer's right pill, search at the bottom. */
-export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, anchor = BOTTOM_RIGHT, align = "end", primaryShortcut = null }: ActionPanelPopoverProps) {
+export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, anchor = BOTTOM_RIGHT, align = "end", primaryShortcut = null, side = "top" }: ActionPanelPopoverProps) {
   const [path, setPath] = useState<string[]>([]);
 
   // Reset only when the panel opens; model updates while open keep the submenu path.
@@ -96,13 +98,13 @@ export function ActionPanelPopover({ model, open, onClose, onRun, initialPath, a
   };
 
   return (
-    <Popover open={open && Boolean(level)} onClose={onClose} anchor={anchor} side="top" align={align} offset={0} width={350} flip={false} className="sc-action-panel" aria-label="Actions" role="dialog">
+    <Popover open={open && Boolean(level)} onClose={onClose} anchor={anchor} side={side} align={align} offset={0} width={350} flip={false} className="sc-action-panel" aria-label="Actions" role="dialog">
       {level && (
         <Menu
           key={levels.length}
           sections={menu}
           title={level.title}
-          layout="up"
+          layout={side === "top" ? "up" : "down"}
           searchPlaceholder={level.submenu?.searchPlaceholder ?? "Search for actions…"}
           filtering={level.submenu?.filtering ?? true}
           isLoading={level.submenu?.isLoading}
