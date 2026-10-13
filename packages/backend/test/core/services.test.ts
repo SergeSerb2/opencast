@@ -327,6 +327,7 @@ describe("registered core services", () => {
     });
     await f.call("windows.layouts.apply", { id: layout.id });
     expect(f.nativeCall).toHaveBeenCalledWith("windows.applyLayout", {
+      outerGap: 0,
       rect: layout.rect,
       gap: 0,
     });
@@ -401,7 +402,7 @@ describe("edge cases and persistence", () => {
     });
     f.emit("apps.changed", { reason: "installed" });
     await f.call("commands.list", {});
-    expect(f.nativeCall).toHaveBeenCalledWith("apps.list", { refresh: true });
+    expect(f.nativeCall).toHaveBeenCalledWith("apps.list", { refresh: true, directories: [], recursive: false });
   });
   it("prunes unpinned historical clipboard images and respects disabled applications", async () => {
     f = await fixture();

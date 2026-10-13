@@ -48,7 +48,9 @@ export class ExtensionBroker {
       case "showAlert": return this.alert(session, p);
       case "showHUD": session.closeWindow = true; await ctx.launcher.hud(p.title); return;
       case "closeMainRaycastWindow": session.closeWindow = true; ctx.launcher.navigate({ action: "close", clearSearchBar: p.clearRootSearch }); await ctx.native.call("window.hide", { kind: "main", restoreFocus: true }).catch((error) => { if (ctx.native.available) throw error; }); return;
-      case "popToRoot": ctx.launcher.navigate({ action: "popToRoot", clearSearchBar: p.clearSearchBar }); return;
+      case "popToRoot":
+        if (session.extension.source === "development" && ctx.settings.get("developer.disablePopToRootSearch")) return;
+        ctx.launcher.navigate({ action: "popToRoot", clearSearchBar: p.clearSearchBar }); return;
       case "clearSearchBar": ctx.events.emit("ext.ui.control", { sessionId: session.id, action: "clearSearchBar" }); return;
       case "getFormPassword": return ctx.secrets.get(`ext:${extension}:form:${session.commandName}:${p.itemId}`);
       case "setFormPassword": {

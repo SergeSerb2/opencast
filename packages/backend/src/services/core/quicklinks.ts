@@ -128,7 +128,8 @@ export async function openQuicklink(
     }
     if (["javascript:", "data:"].includes(url.protocol))
       throw RpcError.invalidParams("This URL scheme cannot be opened");
-    await ctx.native.call("open.url", { url: url.href, app: link.openWith });
+    await ctx.native.call("open.url", { url: url.href, app: link.openWith,
+      ...(ctx.settings.get("quicklinks.preferExistingTabs") ? { preferExistingTabs: true } : {}) });
   }
   save(ctx, "quicklinks", { ...link, openCount: (link.openCount ?? 0) + 1 });
 }

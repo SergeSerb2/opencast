@@ -105,6 +105,12 @@ export const snippetsService: Service = {
           enabled: ctx.settings.get("snippets.autoExpansionEnabled") && items.length > 0,
           ignoredBundleIds: ctx.settings.get("snippets.disabledApplications"),
           keywords: items,
+          expandWithinWords: ctx.settings.get("snippets.expandWithinWords"),
+          expansionMode: ctx.settings.get("snippets.expansionMode"),
+          injectionDelay: ctx.settings.get("snippets.injectionDelay"),
+          responseTime: ctx.settings.get("snippets.responseTime"),
+          completionSound: ctx.settings.get("snippets.completionSound"),
+          overrideSystemSnippets: ctx.settings.get("snippets.overrideSystemSnippets"),
         });
       } catch (error) {
         if (error instanceof RpcError && error.code === RpcErrorCode.PermissionDenied) {

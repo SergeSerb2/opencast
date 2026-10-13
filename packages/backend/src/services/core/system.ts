@@ -17,6 +17,7 @@ export const systemService: Service = {
       ctx.native.call("windows.applyLayout", {
         rect: requireEntity<WindowLayout>(ctx, "windowLayouts", id).rect,
         gap: ctx.settings.get("windowManagement.innerGap"),
+        outerGap: ctx.settings.get("windowManagement.outerGap"),
       });
     observeCollection(ctx, "windowLayouts", () =>
       ctx.commands.invalidate("window-layouts"),
@@ -72,6 +73,7 @@ export const systemService: Service = {
         await ctx.native.call("windows.run", {
           command,
           gap: ctx.settings.get("windowManagement.innerGap"),
+        outerGap: ctx.settings.get("windowManagement.outerGap"),
         });
       },
       "windows.layouts.list": () => list<WindowLayout>(ctx, "windowLayouts"),

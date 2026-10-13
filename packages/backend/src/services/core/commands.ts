@@ -14,6 +14,7 @@ import { calculator } from "./calculator";
 import { rankCommands } from "./ranking";
 import { appSuggestionPriority, emptyRootItems } from "./root-search";
 import { background, list, observeCollection } from "./shared";
+import { builtinHotkey } from "./hotkey-presets";
 import { RpcError } from "../../util/errors";
 
 interface Visit {
@@ -176,7 +177,7 @@ export const commandsService: Service = {
     const byId = new Map(catalog.map((b) => [b.command.id, b]));
     ctx.commands.registerProvider({
       id: "builtin",
-      list: () => catalog.map((b) => b.command),
+      list: () => catalog.map((b) => ({ ...b.command, hotkey: builtinHotkey(b.command.id, ctx.settings.get("keyboard.builtinHotkeysPreset")) })),
       launch: (command, request) => byId.get(command.id)!.launch(ctx, request),
     });
     const rootFiles = new Map<string, FileResult>();
@@ -218,13 +219,18 @@ export const commandsService: Service = {
         return { kind: "done", closeWindow: true };
       },
     });
+    ctx.onShutdown(ctx.settings.onChange(key => {
+      if (key === "applications.directories" || key === "applications.recursiveSearch") {
+        apps = undefined; refreshApps = true; ctx.commands.invalidate("apps");
+      }
+    }));
     let apps: AppInfo[] | undefined;
     let refreshApps = false;
     ctx.commands.registerProvider({
       id: "apps",
       list: async () => {
         if (!apps) {
-          apps = await ctx.native.call("apps.list", { refresh: refreshApps });
+          apps = await ctx.native.call("apps.list", { refresh: refreshApps, directories: ctx.settings.get("applications.directories"), recursive: ctx.settings.get("applications.recursiveSearch") });
           refreshApps = false;
         }
         return [
@@ -344,7 +350,8 @@ export const commandsService: Service = {
     ctx.onShutdown(ctx.events.on("commands.changed", scheduleHotkeys));
     ctx.onShutdown(
       ctx.settings.onChange((key) => {
-        if (key === "general.globalHotkey") scheduleHotkeys();
+        if (key === "keyboard.builtinHotkeysPreset") ctx.commands.invalidate("builtin");
+        if (key === "general.globalHotkey" || key === "keyboard.builtinHotkeysPreset") scheduleHotkeys();
       }),
     );
     ctx.onShutdown(async () => {

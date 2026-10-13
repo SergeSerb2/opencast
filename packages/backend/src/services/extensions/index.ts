@@ -42,7 +42,9 @@ export class ExtensionsHost {
       },
       "extensions.getPreferences": ({ name, command }) => this.preferences.get(this.installer.get(name), command),
       "extensions.setPreferences": async ({ name, command, values }) => { await this.preferences.set(this.installer.get(name), command, values); this.installer.changed(); },
-      "extensions.develop": async ({ path }) => { const extension = await this.installer.install({ source: "development", path }); this.startWatch(extension.name, path); this.refreshScheduler(); return extension; },
+      "extensions.develop": async ({ path }) => { const extension = await this.installer.install({ source: "development", path }); this.startWatch(extension.name, path); this.refreshScheduler();
+        if (this.ctx.settings.get("developer.openSurgecastInDevelopmentMode")) await this.ctx.native.call("window.show", { kind: "main" });
+        return extension; },
       "extensions.update": async ({ name }) => {
         const updated: string[] = [];
         const extensions = name ? [this.installer.get(name)] : this.installer.list();
@@ -216,6 +218,7 @@ export class ExtensionsHost {
     const active = [...this.sessions.sessions.values()].filter((x) => x.extension.name === name && x.state.mode !== "no-view").map((x) => ({ commandName: x.commandName, id: x.id, launch: x.launch }));
     await this.installer.install({ source: "development", path });
     if (!this.watchers.has(name)) return;
+    if (!this.ctx.settings.get("developer.autoReloadOnSave")) { this.refreshScheduler(); return; }
     for (const session of active) { await this.sessions.close(session.id, "completed", undefined, false); const command = (await this.commands()).find((x) => x.id === `ext:${name}.${session.commandName}`); if (command) { const result = await this.launch(command, session.launch); this.ctx.launcher.navigate({ action: "launch", result }); } }
     this.refreshScheduler();
   }

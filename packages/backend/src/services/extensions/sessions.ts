@@ -38,7 +38,7 @@ export class ExtensionSessions {
     const id = randomUUID();
     const worker = new Worker(runtime, {
       resourceLimits: { maxOldGenerationSizeMb: 512 }, stdout: true, stderr: true,
-      env: Object.fromEntries(Object.entries({ PATH: process.env.PATH ?? "", HOME: process.env.HOME, TMPDIR: process.env.TMPDIR, TEMP: process.env.TEMP, LANG: process.env.LANG, LC_ALL: process.env.LC_ALL, TZ: process.env.TZ, NODE_ENV: extension.source === "development" ? "development" : "production" }).filter((entry): entry is [string, string] => entry[1] !== undefined)),
+      env: Object.fromEntries(Object.entries({ PATH: process.env.PATH ?? "", HOME: process.env.HOME, TMPDIR: process.env.TMPDIR, TEMP: process.env.TEMP, LANG: process.env.LANG, LC_ALL: process.env.LC_ALL, TZ: process.env.TZ, NODE_ENV: extension.source === "development" && !this.ctx.settings.get("developer.useNodeProductionEnvironment") ? "development" : "production" }).filter((entry): entry is [string, string] => entry[1] !== undefined)),
       workerData: {
         sessionId: id, extensionName: extension.name, commandName, ownerOrAuthorName: extension.owner ?? extension.author,
         entryPointType: options.tool ? "tool" : "command", mode, entryPath, assetsPath: join(extension.path, "assets"), supportPath,

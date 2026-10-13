@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import type { CalculatorResult } from "@surgecast/protocol";
 import type { AppContext, Service } from "../../context";
 import { boundedLimit } from "./shared";
+import { weatherPlace, weatherResult } from "./weather";
 import { parseColor } from "./colors";
 
 import {
@@ -465,8 +466,20 @@ export class Calculator {
       /* Use stale rates when offline. */
     }
   }
+  private weatherCache = new Map<string, { at: number; value: CalculatorResult | null; pending?: Promise<CalculatorResult | null> }>();
   async evaluate(expression: string): Promise<CalculatorResult | null> {
     if (typeof expression !== "string" || expression.length > 512) return null;
+    if (weatherPlace(expression)) {
+      if (!this.ctx.settings.get("calculator.weather")) return null;
+      const key = expression.trim().toLowerCase();
+      const old = this.weatherCache.get(key);
+      if (old && Date.now() - old.at < 600000) return old.pending ?? old.value;
+      if (this.weatherCache.size >= 100) this.weatherCache.clear();
+      const entry = { at: Date.now(), value: null as CalculatorResult | null, pending: undefined as Promise<CalculatorResult | null> | undefined };
+      entry.pending = weatherResult(expression).then(value => { entry.value = value; entry.pending = undefined; return value; });
+      this.weatherCache.set(key, entry);
+      return entry.pending;
+    }
     const conversion = /^(.*?)\s*([a-z]{3})\s+(?:in|to)\s+([a-z]{3})\s*$/i.exec(
       expression.trim(),
     );

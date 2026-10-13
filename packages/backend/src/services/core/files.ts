@@ -5,13 +5,15 @@ import { promisify } from "node:util";
 import type { FileResult } from "@surgecast/protocol";
 import type { AppContext, Service } from "../../context";
 import { boundedLimit, expandPath } from "./shared";
+import { matchesIgnoreFiles } from "./file-ignores";
 import { RpcError } from "../../util/errors";
 const exec = promisify(execFile);
-export function spotlightQuery(query: string): string {
+export function spotlightQuery(query: string, content = false): string {
   const escaped = query
     .replace(/[\\"*?]/g, (ch) => `\\${ch}`)
     .replace(/[\r\n\x00]/g, " ");
-  return `kMDItemDisplayName == "*${escaped}*"cd`;
+  const name = `kMDItemDisplayName == "*${escaped}*"cd`;
+  return content ? `(${name}) || (kMDItemTextContent == "*${escaped}*"cd)` : name;
 }
 export function ignoredPath(
   path: string,
@@ -49,18 +51,18 @@ export async function searchFiles(
     throw RpcError.invalidParams("Spotlight file search requires macOS");
   const roots = (scopes ?? ctx.settings.get("files.directories")).map(
     expandPath,
-  );
+  ).filter(root => ctx.settings.get("files.indexNetworkAndRemovableVolumes") || !root.startsWith("/Volumes/"));
   if (!roots.length || (!query.trim() && !recent)) return [];
   const predicate = recent
     ? "kMDItemLastUsedDate >= $time.today(-30)"
-    : spotlightQuery(query);
+    : spotlightQuery(query, ctx.settings.get("files.contentSearch"));
   const outputs = await Promise.all(
-    roots.map((root) =>
-      exec("/usr/bin/mdfind", ["-0", "-onlyin", root, predicate], {
+    roots.map(async (root) =>
+      (await stat(root).catch(() => null)) ? exec("/usr/bin/mdfind", ["-0", "-onlyin", root, predicate], {
         signal,
         maxBuffer: 16 * 1024 * 1024,
         timeout: 10000,
-      }),
+      }) : { stdout: "" },
     ),
   );
   const stdout = outputs.map((output) => output.stdout).join("\0");
@@ -79,14 +81,19 @@ export async function searchFiles(
         ctx.settings.get("files.includeHiddenFiles"),
       ),
   );
+  const ignoreCache = new Map<string, Promise<string[]>>();
+  const eligible = ctx.settings.get("files.useIgnoreFiles") ? (await Promise.all(paths.map(async path => {
+    const root = roots.filter(r => !relative(r, path).startsWith("..")).sort((a, b) => a.length - b.length)[0];
+    return root && await matchesIgnoreFiles(path, root, ignoreCache) ? null : path;
+  }))).filter((path): path is string => !!path) : paths;
   const results = await Promise.all(
-    paths.slice(0, recent ? 500 : boundedLimit(limit)).map(async (path) => {
+    eligible.slice(0, recent ? 500 : boundedLimit(limit)).map(async (path) => {
       try {
         const info = await stat(path);
         const meta = recent
           ? await ctx.native.call("files.metadata", { path }).catch(() => null)
           : null;
-        return {
+        const file = {
           path,
           name: basename(path),
           kind: info.isDirectory() ? "Folder" : "File",
@@ -94,11 +101,23 @@ export async function searchFiles(
           size: info.size,
           lastUsed: meta?.lastOpened ? Date.parse(meta.lastOpened) : 0,
         };
+        if (path.startsWith("/Volumes/")) ctx.db.run("INSERT OR REPLACE INTO file_volume_cache (path,data) VALUES (?,?)", path, JSON.stringify(file));
+        return file;
       } catch {
         return null;
       }
     }),
   );
+  if (ctx.settings.get("files.keepRemovedVolumeFiles") && ctx.settings.get("files.indexNetworkAndRemovableVolumes")) {
+    for (const row of ctx.db.all<{ data: string }>("SELECT data FROM file_volume_cache")) {
+      const file = JSON.parse(row.data) as NonNullable<typeof results[number]>;
+      const volume = file.path.split("/").slice(0, 3).join("/");
+      if (!roots.some(root => { const rel = relative(root, file.path); return rel === "" || (!rel.startsWith("..") && !rel.startsWith(sep)); }) ||
+        ignoredPath(file.path, ctx.settings.get("files.ignorePatterns"), ctx.settings.get("files.includeHiddenFiles")) ||
+        (!recent && !file.name.toLowerCase().includes(query.toLowerCase())) || await stat(volume).catch(() => null)) continue;
+      results.push(file);
+    }
+  }
   return results
     .filter((r): r is NonNullable<typeof r> => !!r)
     .sort((a, b) =>
@@ -110,6 +129,7 @@ export async function searchFiles(
 export const filesService: Service = {
   name: "core.files",
   register(ctx) {
+    ctx.db.addMigrations({ id: "core-files-volume-cache-001", up: "CREATE TABLE file_volume_cache (path TEXT PRIMARY KEY, data TEXT NOT NULL)" });
     const pending = new Map<string, AbortController>();
     ctx.onShutdown(() => {
       for (const controller of pending.values()) controller.abort();

@@ -42,6 +42,8 @@ export class DevNative implements NativeApi {
 
   constructor(private readonly dataDir: string) {
     this.impl = {
+      "app.configure": () => undefined,
+      "system.onBattery": async () => /Battery Power/.test((await run("/usr/bin/pmset", ["-g", "batt"])).stdout),
       "app.info": () => ({
         version: "0.0.0-dev",
         build: "dev",
@@ -51,8 +53,8 @@ export class DevNative implements NativeApi {
         bundlePath: "",
         dataDir: this.dataDir,
       }),
-      "apps.list": async ({ refresh }: { refresh?: boolean } = {}) => {
-        if (!this.appsCache || refresh) this.appsCache = await scanApps();
+      "apps.list": async ({ refresh, directories, recursive }: NativeParams<"apps.list"> = {}) => {
+        if (!this.appsCache || refresh) this.appsCache = await scanApps(directories, recursive);
         return this.appsCache;
       },
       "apps.frontmost": () => null,
@@ -104,8 +106,10 @@ export class DevNative implements NativeApi {
           return null;
         }
       },
-      "keychain.set": async ({ account, value }) =>
-        void (await run("security", ["add-generic-password", "-U", "-s", "app.surgecast.dev", "-a", account, "-w", value])),
+      "keychain.set": async ({ account, value }) => {
+        try { await run("security", ["add-generic-password", "-U", "-s", "app.surgecast.dev", "-a", account, "-w", value]); }
+        catch { throw new Error("Cannot store the credential in Keychain"); }
+      },
       "keychain.delete": async ({ account }) => {
         try {
           await run("security", ["delete-generic-password", "-s", "app.surgecast.dev", "-a", account]);
@@ -146,7 +150,7 @@ export class DevNative implements NativeApi {
   }
 }
 
-async function scanApps(): Promise<AppInfo[]> {
+async function scanApps(directories: string[] = [], recursive = false): Promise<AppInfo[]> {
   const apps: AppInfo[] = [];
   const seen = new Set<string>();
   const visit = (dir: string, depth: number) => {
@@ -171,7 +175,7 @@ async function scanApps(): Promise<AppInfo[]> {
       }
     }
   };
-  for (const dir of APP_DIRS) visit(dir, 1);
+  for (const dir of [...APP_DIRS, ...directories.map(d => d.replace(/^~(?=\/|$)/, homedir()))]) visit(dir, recursive ? 32 : 1);
   if (existsSync("/System/Library/CoreServices/Finder.app")) apps.push(readApp("/System/Library/CoreServices/Finder.app"));
   return apps.sort((a, b) => a.name.localeCompare(b.name));
 }
