@@ -35,16 +35,25 @@ export function KeyboardPage() {
         <Row title="Escape Key Behavior" description="What pressing Escape does in the launcher.">
           <SettingSelect setting="keyboard.escapeKeyBehavior" options={ESCAPE} label="Escape Key Behavior" />
         </Row>
+        <Row title="Escape Key Closes Window" description="Dismiss AI Chat, Notes and Settings by pressing Escape.">
+          <SettingSwitch setting="keyboard.escapeKeyClosesWindow" label="Escape Key Closes Window" />
+        </Row>
         <Row title="Navigation Bindings" description="Extra key bindings for moving through lists, grids and menus.">
           <SettingSelect setting="keyboard.navigationBindings" options={BINDINGS} label="Navigation Bindings" />
         </Row>
         <Row title="Page Navigation Keys" description="Keys that go to the previous or next page in paginated views.">
           <SettingSelect setting="keyboard.pageNavigationKeys" options={PAGE_KEYS} label="Page Navigation Keys" />
         </Row>
+        <Row title="Built-in Hotkeys Preset" description="Choose the default shortcuts for built-in commands. Custom shortcuts take precedence.">
+          <SettingSelect setting="keyboard.builtinHotkeysPreset" options={[{ value: "improved", title: "Improved" }, { value: "original", title: "Original" }]} label="Built-in Hotkeys Preset" />
+        </Row>
       </Section>
       <Section title="Hyper Key" description="Turn a key you rarely use into ⌃⌥⇧⌘ — a modifier no app claims, so hotkeys built on it never conflict.">
         <Row title="Hyper Key">
           <SettingSelect setting="keyboard.hyperKey" options={HYPER} label="Hyper Key" />
+        </Row>
+        <Row title="Display Hyper Key Shortcut" description="Show the combined modifiers when displaying a Hyper Key shortcut." disabled={hyperKey === "none"}>
+          <SettingSwitch setting="keyboard.hyperKeyDisplayShortcut" disabled={hyperKey === "none"} label="Display Hyper Key Shortcut" />
         </Row>
         <Row title="Include Shift in Hyper Key" description="Turn off to make the Hyper Key ⌃⌥⌘, leaving ⇧ free to combine with it." disabled={hyperKey === "none"}>
           <SettingSwitch setting="keyboard.hyperKeyIncludeShift" disabled={hyperKey === "none"} label="Include Shift in Hyper Key" />

@@ -9,7 +9,10 @@ import { saveSetting, SettingSelect, SettingSwitch } from "../ui/controls";
 import { Controls, Row, Section } from "../ui/layout";
 import { PageFrame } from "../ui/PageFrame";
 import { chooseFiles } from "../ui/prompt";
+import { PathListEditor } from "../ui/paths";
+import { useSettingState } from "../ui/controls";
 import { ExportDialog, ImportDialog } from "./DataDialogs";
+import { BackupPassphraseRow } from "./BackupPassphrase";
 
 const BACKUP_FREQUENCY = [
   { value: "never", title: "Never" },
@@ -63,6 +66,7 @@ export function AdvancedPage() {
   const [dialog, setDialog] = useState<ActiveDialog>(null);
   const backupFrequency = useSetting("advanced.backupFrequency");
   const backupLocation = useSetting("advanced.backupLocation");
+  const [certificates, setCertificates] = useSettingState("advanced.additionalCertificateAuthorities");
 
   const importFrom = async (format: "rayconfig" | "surgecast") => {
     const path = await pick({
@@ -85,6 +89,14 @@ export function AdvancedPage() {
 
   return (
     <PageFrame title="Advanced">
+      <Section anchor="window-behavior">
+        <Row title="Window Activation Behavior" description="Bring windows to your current Space or switch to the Space where they are open.">
+          <SettingSelect setting="advanced.windowActivationBehavior" options={[{ value: "move-to-active-space", title: "Move to Active Space" }, { value: "switch-space", title: "Switch Space" }]} label="Window Activation Behavior" />
+        </Row>
+        <Row title="Tidy Menu Bar" description="Hide menu bar items to the left of the divider when you are not hovering over the menu bar.">
+          <SettingSwitch setting="advanced.tidyMenuBar" label="Tidy Menu Bar" />
+        </Row>
+      </Section>
       <Section title="Import">
         <Row title="Import from Raycast" description="Bring snippets, quicklinks, notes, themes, AI commands and settings over from a Raycast export (.rayconfig).">
           <Button size="small" onClick={() => void importFrom("rayconfig")}>
@@ -98,6 +110,7 @@ export function AdvancedPage() {
         </Row>
       </Section>
       <Section title="Export">
+        <BackupPassphraseRow />
         <Row title="Export Data" description="Save your settings and content to a password-protected file.">
           <Button size="small" onClick={() => void exportTo()}>
             Export…
@@ -118,6 +131,12 @@ export function AdvancedPage() {
             </Button>
           </Controls>
         </Row>
+        <Row title="Auto-Delete" description="Automatically delete old backups to save disk space." disabled={backupFrequency === "never"}>
+          <SettingSelect setting="advanced.backupAutoDelete" options={[{ value: "never", title: "Never" }, { value: 1, title: "Keep Latest" }, { value: 5, title: "Keep Last 5" }, { value: 10, title: "Keep Last 10" }]} label="Auto-Delete" disabled={backupFrequency === "never"} />
+        </Row>
+        <Row title="Skip on Battery" description="Run scheduled backups after this Mac returns to AC power." disabled={backupFrequency === "never"}>
+          <SettingSwitch setting="advanced.backupSkipOnBattery" label="Skip on Battery" disabled={backupFrequency === "never"} />
+        </Row>
       </Section>
       <StorageSection />
       <Section title="Connection">
@@ -126,6 +145,9 @@ export function AdvancedPage() {
         </Row>
         <Row title="Favicon Provider" description="The service used to fetch website icons for quicklinks and links, or None to turn favicon fetching off.">
           <SettingSelect setting="advanced.faviconProvider" options={FAVICON_PROVIDERS} label="Favicon Provider" />
+        </Row>
+        <Row title="Additional Certificate Authority" description="Choose certificate files (.crt, .cer, .pem) to trust for network connections." layout="stacked">
+          <PathListEditor value={certificates} onAdd={(paths) => setCertificates([...new Set([...certificates, ...paths])])} onRemove={(path) => setCertificates(certificates.filter((p) => p !== path))} emptyTitle="No additional certificates" addTitle="Add Certificate…" canChooseFiles allowedTypes={["crt", "cer", "pem"]} />
         </Row>
       </Section>
       {dialog?.kind === "import" && <ImportDialog path={dialog.path} format={dialog.format} onClose={() => setDialog(null)} />}

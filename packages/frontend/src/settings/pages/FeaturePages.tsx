@@ -18,6 +18,7 @@ const PASTE_OR_COPY = [
 ] as const;
 
 const KEEP_HISTORY = [
+  { value: "5m", title: "5 Minutes" },
   { value: "1h", title: "1 Hour" },
   { value: "1d", title: "1 Day" },
   { value: "7d", title: "7 Days" },
@@ -60,6 +61,12 @@ export function ClipboardHistoryPage() {
         <Row title="Text Recognition" description="Text inside copied images is recognized so you can search for it.">
           <SettingSwitch setting="clipboard.textRecognitionEnabled" label="Text Recognition" />
         </Row>
+        <Row title="Recognition Mode" description="Fast uses less CPU; Accurate recognizes more text.">
+          <SettingSelect setting="clipboard.recognitionMode" options={[{ value: "fast", title: "Fast" }, { value: "accurate", title: "Accurate" }]} label="Recognition Mode" />
+        </Row>
+        <Row title="Save Universal Clipboard Items Immediately" description="Save items copied on your iPhone, iPad or other Mac as soon as they arrive.">
+          <SettingSwitch setting="clipboard.captureUniversalClipboard" label="Save Universal Clipboard Items Immediately" />
+        </Row>
         <Row title="Primary Action" description="What ↵ does in Clipboard History.">
           <SettingSelect setting="clipboard.primaryAction" options={PASTE_OR_COPY} label="Primary Action" />
         </Row>
@@ -95,6 +102,21 @@ export function SnippetsPage() {
         <Row title="Expand within Words" description="When off, a keyword expands only when typed as a separate word. When on, it also expands inside a longer word." disabled={!expansion}>
           <SettingSwitch setting="snippets.expandWithinWords" disabled={!expansion} label="Expand within Words" />
         </Row>
+        <Row title="Expansion Mode" disabled={!expansion}>
+          <SettingSelect setting="snippets.expansionMode" options={[{ value: "immediately", title: "Immediately" }, { value: "after-delimiter-keeping", title: "After Delimiter (keeping)" }, { value: "after-delimiter-discarding", title: "After Delimiter (discarding)" }]} label="Expansion Mode" disabled={!expansion} />
+        </Row>
+        <Row title="Injection Delay" description="Wait briefly so overlapping keywords and words containing a keyword can be typed." disabled={!expansion}>
+          <SettingSelect setting="snippets.injectionDelay" options={[{ value: "none", title: "None" }, { value: "short", title: "Short" }, { value: "regular", title: "Regular" }, { value: "long", title: "Long" }, { value: "extra-long", title: "Extra Long" }]} label="Injection Delay" disabled={!expansion} />
+        </Row>
+        <Row title="Response Time" description="Slower response times may help if snippets do not expand correctly." disabled={!expansion}>
+          <SettingSelect setting="snippets.responseTime" options={[{ value: "instant", title: "Instant" }, { value: "quick", title: "Quick" }, { value: "default", title: "Default" }, { value: "delayed", title: "Delayed" }, { value: "extended", title: "Extended" }]} label="Response Time" disabled={!expansion} />
+        </Row>
+        <Row title="Completion Sound" description="Play a sound when a snippet expands." disabled={!expansion}>
+          <SettingSelect setting="snippets.completionSound" options={[{ value: "", title: "None" }, ...["Basso", "Blow", "Bottle", "Frog", "Funk", "Glass", "Hero", "Morse", "Ping", "Pop", "Purr", "Sosumi", "Submarine", "Tink"].map((value) => ({ value, title: value }))]} label="Completion Sound" disabled={!expansion} />
+        </Row>
+        <Row title="Override System Snippets" description="Expand Surgecast snippets before matching macOS text replacements (experimental).">
+          <SettingSwitch setting="snippets.overrideSystemSnippets" label="Override System Snippets" />
+        </Row>
         <PermissionRow kind="accessibility" title="Accessibility Permission" description="Needed to watch for keywords and type the expanded text." />
       </Section>
       <Section title="Disabled Applications" description="Snippets don't expand in these apps.">
@@ -120,6 +142,12 @@ export function QuicklinksPage() {
   return (
     <BuiltinPage id="quicklinks">
       <Section anchor="quicklinks">
+        <Row title="Show Link Previews">
+          <SettingSwitch setting="quicklinks.showLinkPreviews" label="Show Link Previews" />
+        </Row>
+        <Row title="Prefer Existing Tabs" description="Activate an existing browser tab for a quicklink URL when available.">
+          <SettingSwitch setting="quicklinks.preferExistingTabs" label="Prefer Existing Tabs" />
+        </Row>
         <Row title="Pass Selected Text as Argument" description="When a quicklink with one argument runs from its hotkey, fill the argument with the text selected in the frontmost app.">
           <SettingSwitch setting="quicklinks.passSelectedTextAsArgument" label="Pass Selected Text as Argument" />
         </Row>
@@ -156,11 +184,11 @@ export function NotesPage() {
 
 const GAPS = [
   { value: 0, title: "None" },
-  { value: 4, title: "Tiny" },
-  { value: 8, title: "Small" },
-  { value: 16, title: "Medium" },
-  { value: 32, title: "Large" },
-  { value: 64, title: "Extra Large" },
+  { value: 8, title: "Tiny" },
+  { value: 16, title: "Small" },
+  { value: 32, title: "Medium" },
+  { value: 64, title: "Large" },
+  { value: 128, title: "Extra Large" },
 ];
 
 const CYCLING = [
@@ -182,6 +210,12 @@ export function WindowManagementPage() {
         <Row title="Cycling" description="Run a half command again to cycle through these sizes.">
           <SettingSelect setting="windowManagement.cycling" options={CYCLING} label="Cycling" />
         </Row>
+        <Row title="Auto Close Empty Desktops" description="Remove empty desktops after switching away.">
+          <SettingSwitch setting="windowManagement.autoCloseEmptyDesktops" label="Auto Close Empty Desktops" />
+        </Row>
+        <Row title="Respect Stage Manager" description="Keep windows clear of the Stage Manager strip.">
+          <SettingSwitch setting="windowManagement.respectStageManager" label="Respect Stage Manager" />
+        </Row>
         <PermissionRow kind="accessibility" title="Accessibility Permission" description="Needed to move and resize the windows of other apps." />
       </Section>
     </BuiltinPage>
@@ -201,6 +235,15 @@ export function CalculatorPage() {
       <Section anchor="calculator">
         <Row title="Enable Color Conversion" description="Preview and convert color values such as #FF6363 or rgb(255 99 99) in root search.">
           <SettingSwitch setting="calculator.colorConversion" label="Enable Color Conversion" />
+        </Row>
+        <Row title="Enable Flight Tracker" description="Detect flight numbers in root search.">
+          <SettingSwitch setting="calculator.flightTracker" label="Enable Flight Tracker" />
+        </Row>
+        <Row title="Enable Weather" description="Show weather forecasts and calculations in root search.">
+          <SettingSwitch setting="calculator.weather" label="Enable Weather" />
+        </Row>
+        <Row title="Syntax Highlighting">
+          <SettingSwitch setting="calculator.syntaxHighlighting" label="Syntax Highlighting" />
         </Row>
         <Row title="REM/EM to Pixel Conversion" description="How many pixels 1 rem or em equals.">
           <CommitTextField
@@ -256,6 +299,9 @@ export function EmojiPage() {
         <Row title="Primary Action">
           <SettingSelect setting="emoji.primaryAction" options={PASTE_OR_COPY} label="Primary Action" />
         </Row>
+        <Row title="Save AI-generated Custom Keywords" description="Remember the search term on the emoji you copy or paste.">
+          <SettingSwitch setting="emoji.saveAiCustomKeyword" label="Save AI-generated Custom Keywords" />
+        </Row>
         <Row title="Emoji Skin Tone" description="Default skin tone for emoji that have variants.">
           <SkinTonePicker />
         </Row>
@@ -298,6 +344,18 @@ export function FileSearchPage() {
         <Row title="Include Hidden Files" description="Also find files and folders whose names start with a dot.">
           <SettingSwitch setting="files.includeHiddenFiles" label="Include Hidden Files" />
         </Row>
+        <Row title="Content Search" description="Search text inside files as well as their names.">
+          <SettingSwitch setting="files.contentSearch" label="Content Search" />
+        </Row>
+        <Row title="Use Ignore Files" description="Respect .gitignore, .ignore and .rayignore files while indexing.">
+          <SettingSwitch setting="files.useIgnoreFiles" label="Use Ignore Files" />
+        </Row>
+        <Row title="Index Network & Removable Drives" description="Include network shares and removable volumes mounted inside your search scopes.">
+          <SettingSwitch setting="files.indexNetworkAndRemovableVolumes" label="Index Network & Removable Drives" />
+        </Row>
+        <Row title="Keep Files from Removed Volumes" description="Keep indexed results when their volume is disconnected.">
+          <SettingSwitch setting="files.keepRemovedVolumeFiles" label="Keep Files from Removed Volumes" />
+        </Row>
         <PermissionRow kind="fullDiskAccess" title="Full Disk Access" description="Lets File Search index folders macOS protects, such as Mail and Messages data." />
       </Section>
     </BuiltinPage>
@@ -310,11 +368,18 @@ const HOTKEY_BEHAVIOR = [
 ] as const;
 
 export function ApplicationsPage() {
+  const [directories, setDirectories] = useSettingState("applications.directories");
   return (
     <BuiltinPage id="applications">
       <Section anchor="applications">
         <Row title="Hotkey Action" description="What an application hotkey does when the app is already in front.">
           <SettingSelect setting="applications.hotkeyBehavior" options={HOTKEY_BEHAVIOR} label="Hotkey Action" />
+        </Row>
+        <Row title="Search Scopes" description="Additional folders searched for applications." layout="stacked">
+          <PathListEditor value={directories} onAdd={(paths) => setDirectories([...directories, ...paths])} onRemove={(path) => setDirectories(directories.filter((d) => d !== path))} emptyTitle="Only default application folders are searched" />
+        </Row>
+        <Row title="Deep Search" description="Search up to three levels deep inside added folders.">
+          <SettingSwitch setting="applications.recursiveSearch" label="Deep Search" />
         </Row>
       </Section>
     </BuiltinPage>
@@ -371,6 +436,9 @@ export function TranslatorPage() {
         <Row title="Default Target Language" description="Language to translate to.">
           <SettingSelect setting="translator.defaultTargetLanguage" options={LANGUAGES} label="Default Target Language" />
         </Row>
+        <Row title="Primary Action" description="What ↵ does after a translation.">
+          <SettingSelect setting="translator.primaryAction" options={PASTE_OR_COPY} label="Primary Action" />
+        </Row>
         <Row title="Use Selected Text as Source" description="Fill in the text selected in the frontmost app when Translator opens.">
           <SettingSwitch setting="translator.prefillFromSelectedText" label="Use Selected Text as Source" />
         </Row>
@@ -404,6 +472,15 @@ export function DeveloperPage() {
         </Row>
         <Row title="Keep Window Always Visible During Development" description="The launcher stays open while an extension is in development.">
           <SettingSwitch setting="developer.keepWindowVisibleDuringDevelopment" label="Keep Window Always Visible During Development" />
+        </Row>
+        <Row title="Disable Pop to Root Search" description="Keep the current command open while developing.">
+          <SettingSwitch setting="developer.disablePopToRootSearch" label="Disable Pop to Root Search" />
+        </Row>
+        <Row title="Open Surgecast in Development Mode" description="Open Surgecast after the first successful build.">
+          <SettingSwitch setting="developer.openSurgecastInDevelopmentMode" label="Open Surgecast in Development Mode" />
+        </Row>
+        <Row title="Use Node Production Environment" description="Set NODE_ENV to production in development workers.">
+          <SettingSwitch setting="developer.useNodeProductionEnvironment" label="Use Node Production Environment" />
         </Row>
       </Section>
     </BuiltinPage>

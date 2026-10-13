@@ -1,6 +1,6 @@
 import { defaultSettings, type Hotkey } from "@surgecast/protocol";
 import { native } from "../../bridge/native";
-import { useSetting } from "../../bridge/settings";
+import { setSetting, useSetting } from "../../bridge/settings";
 import { Button, IconButton } from "../../components/Button/Button";
 import { Switch } from "../../components/Switch/Switch";
 import { Tooltip } from "../../components/Tooltip/Tooltip";
@@ -169,7 +169,7 @@ function SurgecastHotkey() {
   const fallback = defaultSettings()["general.globalHotkey"];
   const save = async (next: Hotkey | null) => {
     if (!next) throw new Error("Surgecast needs a hotkey to open");
-    await saveSetting("general.globalHotkey", next);
+    await setSetting("general.globalHotkey", next);
   };
   return (
     <Controls>

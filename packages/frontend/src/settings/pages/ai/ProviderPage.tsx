@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AIModel, AIProvider } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
@@ -27,6 +27,7 @@ import {
   hasErrors,
   supportedApis,
   validateProviderDraft,
+  reconcileProviderDraft,
   type ProviderDraft,
   type ProviderDraftErrors,
   type ProviderTemplate,
@@ -140,7 +141,7 @@ function HeadersRow({ draft, setDraft, errors }: { draft: ProviderDraft; setDraf
                 <TextField
                   size="small"
                   value={header.name}
-                  onChange={(name) => update(index, { name })}
+                  onChange={(name) => update(index, { name, stored: name === header.name && header.stored })}
                   placeholder="Header-Name"
                   validation={errors?.[index] ? "error" : undefined}
                   aria-label="Header name"
@@ -259,7 +260,7 @@ function TestConnection({ provider, dirty }: { provider: ProviderRow; dirty: boo
     );
   return (
     <Row title="Test Connection" description={description}>
-      <Button size="small" onClick={() => void test()} disabled={state.kind === "testing"}>
+      <Button size="small" onClick={() => void test()} disabled={dirty || state.kind === "testing"}>
         {state.kind === "testing" ? <Spinner size={12} /> : null}
         {state.kind === "testing" ? "Testing…" : "Test"}
       </Button>
@@ -317,10 +318,10 @@ function AddModelDialog({ existing, onClose, onAdd }: { existing: readonly AIMod
   );
 }
 
-function ModelRow({ model, onChange, onRemove }: { model: AIModel; onChange: (model: AIModel) => void; onRemove?: () => void }) {
+function ModelRow({ model, onChange, onRemove, saving }: { model: AIModel; onChange: (model: AIModel) => void; onRemove?: () => void; saving: boolean }) {
   return (
     <div className="sc-s-item sc-s-model-row" data-disabled={!model.enabled || undefined}>
-      <Switch checked={model.enabled} onChange={(enabled) => onChange({ ...model, enabled })} label={`Use ${model.name}`} />
+      <Switch checked={model.enabled} onChange={(enabled) => onChange({ ...model, enabled })} label={`Use ${model.name}`} disabled={saving} />
       <span className="sc-s-row__label">
         <span className="sc-s-row__title sc-truncate">{model.name}</span>
         {model.name !== model.id && <span className="sc-s-navrow__description sc-truncate">{model.id}</span>}
@@ -333,6 +334,7 @@ function ModelRow({ model, onChange, onRemove }: { model: AIModel; onChange: (mo
             className="sc-s-capability"
             data-on={model.capabilities[c.key] || undefined}
             aria-pressed={Boolean(model.capabilities[c.key])}
+            disabled={saving}
             title={`${c.title}: ${model.capabilities[c.key] ? "on" : "off"} — click to change`}
             onClick={() => onChange({ ...model, capabilities: { ...model.capabilities, [c.key]: !model.capabilities[c.key] } })}
           >
@@ -342,7 +344,7 @@ function ModelRow({ model, onChange, onRemove }: { model: AIModel; onChange: (mo
         ))}
       </span>
       <span className="sc-s-model-row__context">{formatContext(model.contextWindow) ?? ""}</span>
-      {onRemove ? <IconButton icon="minus-circle-16" label={`Remove ${model.name}`} onClick={onRemove} /> : <span className="sc-s-model-row__spacer" />}
+      {onRemove ? <IconButton icon="minus-circle-16" label={`Remove ${model.name}`} onClick={onRemove} disabled={saving} /> : <span className="sc-s-model-row__spacer" />}
     </div>
   );
 }
@@ -352,17 +354,20 @@ function ModelsSection({ provider }: { provider: ProviderRow }) {
   const [query, setQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
   useEffect(() => setModels(provider.models), [provider.models]);
 
   const save = async (next: AIModel[]) => {
+    if (saving) return;
     const previous = models;
+    setSaving(true);
     setModels(next);
     try {
       await backend.call("ai.providers.upsert", { provider: { id: provider.id, name: provider.name, template: provider.template, api: provider.api, baseUrl: provider.baseUrl, models: next } });
     } catch (error) {
       setModels(previous);
       showFailureToast("Could not update models", error);
-    }
+    } finally { setSaving(false); }
   };
   const refresh = async () => {
     setRefreshing(true);
@@ -397,6 +402,7 @@ function ModelsSection({ provider }: { provider: ProviderRow }) {
           <MenuButton
             icon="ellipsis-16"
             label="Model Actions"
+            disabled={saving || refreshing}
             width={210}
             sections={[
               {
@@ -442,6 +448,7 @@ function ModelsSection({ provider }: { provider: ProviderRow }) {
             <ModelRow
               key={model.id}
               model={model}
+              saving={saving || refreshing}
               onChange={(next) => void save(models.map((m) => (m.id === next.id ? next : m)))}
               onRemove={model.manual ? () => void save(models.filter((m) => m.id !== model.id)) : undefined}
             />
@@ -491,8 +498,10 @@ async function deleteProvider(provider: ProviderRow) {
 
 /** Add (route `ai/providers/new/<template>`) or edit (`ai/providers/<id>`) one AI provider. */
 export function ProviderPage({ id, templateId }: { id?: string; templateId?: string }) {
-  const { data: providers, isLoading } = useBackend("ai.providers.list", undefined);
-  const { data: templates } = useBackend("ai.providers.templates", undefined);
+  const { data: providers, isLoading: providersLoading, error: providersError } = useBackend("ai.providers.list", undefined);
+  const { data: templates, isLoading: templatesLoading, error: templatesError } = useBackend("ai.providers.templates", undefined);
+  const isLoading = providersLoading || templatesLoading;
+  const loadError = providersError ?? templatesError;
   const provider = id ? providers?.find((p) => p.id === id) : undefined;
   const template = templates?.find((t) => t.id === (provider?.template ?? templateId));
   const [draft, setDraftState] = useState<ProviderDraft | null>(null);
@@ -500,10 +509,14 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const isNew = !id;
+  const previousBaseline = useRef<ProviderDraft | null>(null);
 
   const baseline = useMemo(() => (provider ? draftFromProvider(provider) : template ? draftFromTemplate(template) : null), [provider, template]);
   useEffect(() => {
-    if (baseline) setDraftState((current) => (current && current.id === baseline.id && current.template === baseline.template ? current : baseline));
+    if (!baseline) return;
+    const previous = previousBaseline.current;
+    setDraftState((current) => reconcileProviderDraft(current, previous, baseline));
+    previousBaseline.current = baseline;
   }, [baseline]);
 
   const setDraft = (patch: Partial<ProviderDraft>) => {
@@ -518,8 +531,8 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
       <PageFrame title="Provider" titleMode="always">
         <div className="sc-s-card">
           <CardEmpty
-            title={isLoading ? "Loading…" : isNew ? "Unknown Provider Template" : "Provider Not Found"}
-            description={isLoading ? undefined : "It may have been deleted on another Mac."}
+            title={loadError ? "Couldn't Load Provider" : isLoading ? "Loading…" : isNew ? "Unknown Provider Template" : "Provider Not Found"}
+            description={loadError ? errorMessage(loadError) : isLoading ? undefined : "It may have been deleted on another Mac."}
             action={
               !isLoading && (
                 <Button size="small" onClick={() => navigate("ai/models", { replace: true })}>

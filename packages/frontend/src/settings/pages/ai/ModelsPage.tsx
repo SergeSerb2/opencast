@@ -1,6 +1,8 @@
 import type { AIProvider } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
+import { errorMessage } from "../../../bridge/errors";
+import { Button } from "../../../components/Button/Button";
 import { Switch } from "../../../components/Switch/Switch";
 import { showFailureToast } from "../../../components/feedback/toast-store";
 import { Icon } from "../../../icons/Icon";
@@ -94,17 +96,17 @@ function EnabledModels() {
 
 /** Settings → AI → Models & Providers. */
 export function ModelsPage() {
-  const { data: providers, isLoading } = useBackend("ai.providers.list", undefined);
+  const { data: providers, isLoading, error, refetch } = useBackend("ai.providers.list", undefined);
   const { data: templates } = useBackend("ai.providers.templates", undefined);
   const needsKey = (template: string) => templates?.find((t) => t.id === template)?.needsApiKey ?? false;
   return (
     <PageFrame title="Models & Providers" titleMode="always">
-      {!isLoading && !providers?.length && <OnboardingCard />}
+      {!isLoading && !error && !providers?.length && <OnboardingCard />}
       <Section title="Providers" description="Surgecast sends prompts straight to these providers with your own keys." actions={<AddProviderButton />}>
         {providers?.length ? (
           providers.map((provider) => <ProviderListRow key={provider.id} provider={provider} needsKey={needsKey(provider.template)} />)
         ) : (
-          <CardEmpty title={isLoading ? "Loading Providers…" : "No Providers Yet"} description={isLoading ? undefined : "Add a provider to use Quick AI, AI Chat and AI Commands."} />
+          <CardEmpty title={error ? "Couldn't Load Providers" : isLoading ? "Loading Providers…" : "No Providers Yet"} description={error ? errorMessage(error) : isLoading ? undefined : "Add a provider to use Quick AI, AI Chat and AI Commands."} action={Boolean(error) && <Button size="small" onClick={refetch}>Try Again</Button>} />
         )}
       </Section>
       <EnabledModels />

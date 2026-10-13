@@ -8,6 +8,7 @@ export interface ShortcutFilter {
   query: string;
   category: ShortcutCategoryId | "all";
   state: ShortcutStateFilter;
+  type?: "all" | CommandInfo["mode"];
 }
 
 export interface ShortcutGroup {
@@ -106,7 +107,7 @@ const byTitle = (a: { title: string }, b: { title: string }) => a.title.localeCo
  * are dropped; everything is sorted by title.
  */
 export function buildShortcutTree(commands: readonly CommandInfo[], extensions: readonly InstalledExtension[], filter: ShortcutFilter): ShortcutCategory[] {
-  const visible = commands.filter((c) => (filter.category === "all" || categoryOf(c) === filter.category) && matchesState(c, filter.state) && matchesQuery(c, filter.query));
+  const visible = commands.filter((c) => (filter.category === "all" || categoryOf(c) === filter.category) && (!filter.type || filter.type === "all" || c.mode === filter.type) && matchesState(c, filter.state) && matchesQuery(c, filter.query));
   const categories: ShortcutCategory[] = [];
   for (const id of CATEGORY_ORDER) {
     const members = visible.filter((c) => categoryOf(c) === id).sort(byTitle);

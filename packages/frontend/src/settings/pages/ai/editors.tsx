@@ -73,17 +73,9 @@ function iconValue(icon: ImageLike | undefined): string {
   return typeof icon === "string" && ICONS.includes(icon) ? icon : "stars-16";
 }
 
-/** Unbalanced `{`/`}` would leave a placeholder unexpanded; report the first problem. */
+/** Prompts may contain JSON or code braces as well as placeholders. */
 export function promptProblem(prompt: string): string | null {
-  if (!prompt.trim()) return "Write the prompt";
-  let depth = 0;
-  for (const char of prompt) {
-    if (char === "{") depth++;
-    if (char === "}") depth--;
-    if (depth < 0) return "A “}” has no matching “{”";
-    if (depth > 1) return "Placeholders can't be nested";
-  }
-  return depth === 0 ? null : "A “{” is never closed";
+  return prompt.trim() ? null : "Write the prompt";
 }
 
 /** Create or edit an AI Command. */
@@ -169,6 +161,7 @@ export function CommandEditor({ command, onClose }: { command: AICommand | null;
         </DialogField>
       </div>
       <Checkbox checked={Boolean(draft.webSearch)} onChange={(webSearch) => update({ webSearch })} label="Allow web search" />
+      {draft.output === "replace" && <Checkbox checked={Boolean(draft.highlightEdits)} onChange={(highlightEdits) => update({ highlightEdits })} label="Highlight edits in the response" />}
     </Dialog>
   );
 }

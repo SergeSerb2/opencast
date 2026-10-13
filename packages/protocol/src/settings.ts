@@ -60,12 +60,20 @@ export const SETTINGS = {
   "keyboard.pageNavigationKeys": synced<"square-brackets" | "page-keys">("square-brackets"),
   "keyboard.hyperKey": device<"none" | "caps-lock" | "right-cmd" | "right-opt">("none"),
   "keyboard.hyperKeyIncludeShift": device(true),
+  "keyboard.escapeKeyClosesWindow": synced(true),
+  "keyboard.builtinHotkeysPreset": synced<"improved" | "original">("improved"),
+  "keyboard.hyperKeyDisplayShortcut": device(true),
 
   // ---- Advanced ------------------------------------------------------------------
   "advanced.faviconProvider": synced<"google" | "duckduckgo" | "none">("google"),
   "advanced.useSystemProxySettings": device(false),
   "advanced.backupFrequency": device<"never" | "daily" | "weekly" | "monthly">("never"),
   "advanced.backupLocation": device<string | null>(null),
+  "advanced.backupAutoDelete": device<"never" | 1 | 5 | 10>("never"),
+  "advanced.backupSkipOnBattery": device(true),
+  "advanced.additionalCertificateAuthorities": device<string[]>([]),
+  "advanced.windowActivationBehavior": synced<"move-to-active-space" | "switch-space">("move-to-active-space"),
+  "advanced.tidyMenuBar": device(false),
 
   // ---- AI ------------------------------------------------------------------------
   /** "<providerId>/<modelId>" or null = first enabled model. */
@@ -81,9 +89,14 @@ export const SETTINGS = {
   "ai.sendMessage": synced<"enter" | "cmd-enter">("enter"),
   "ai.zoom": synced(1),
   "ai.autoArchiveChats": synced<Duration>("never"),
+  "ai.runningSendAction": synced<"queue" | "steer">("queue"),
+  "ai.backgroundNotifications": device(false),
+  "ai.preventIdleSleep": device(false),
   "ai.toolConfirmationMode": synced<"ask" | "auto-read-only" | "always-allow">("ask"),
   "ai.alwaysAllowedTools": synced<string[]>([]),
   "ai.deleteChatWarning": synced(true),
+  "ai.deleteAgentWarning": synced(true),
+  "ai.deleteAiCommandWarning": synced(true),
   "ai.editMessageWarning": synced(true),
   /** Show saved agents in root search (Raycast Search Agents). */
   "ai.searchAgents": synced(false),
@@ -105,16 +118,25 @@ export const SETTINGS = {
   "clipboard.saveImages": synced(true),
   "clipboard.saveFiles": synced(true),
   "clipboard.textRecognitionEnabled": synced(true),
+  "clipboard.recognitionMode": synced<"fast" | "accurate">("accurate"),
+  "clipboard.captureUniversalClipboard": device(false),
   "clipboard.primaryAction": synced<"paste" | "copy">("paste"),
 
   // ---- Snippets ---------------------------------------------------------------
   "snippets.autoExpansionEnabled": device(true),
   "snippets.expandWithinWords": synced(true),
+  "snippets.expansionMode": synced<"immediately" | "after-delimiter-keeping" | "after-delimiter-discarding">("immediately"),
+  "snippets.overrideSystemSnippets": device(false),
+  "snippets.injectionDelay": synced<"none" | "short" | "regular" | "long" | "extra-long">("none"),
+  "snippets.responseTime": device<"instant" | "quick" | "default" | "delayed" | "extended">("default"),
+  "snippets.completionSound": synced(""),
   "snippets.disabledApplications": synced<string[]>([]),
   "snippets.deleteSnippetWarning": synced(true),
 
   // ---- Quicklinks -------------------------------------------------------------
   "quicklinks.passSelectedTextAsArgument": synced(false),
+  "quicklinks.showLinkPreviews": synced(true),
+  "quicklinks.preferExistingTabs": synced(false),
   "quicklinks.deleteQuicklinkWarning": synced(true),
 
   // ---- Notes ------------------------------------------------------------------
@@ -126,25 +148,37 @@ export const SETTINGS = {
   // ---- Window Management ------------------------------------------------------
   "windowManagement.innerGap": synced(0),
   "windowManagement.outerGap": synced(0),
+  "windowManagement.autoCloseEmptyDesktops": device(false),
+  "windowManagement.respectStageManager": device(true),
   "windowManagement.cycling": synced<"off" | "halves-thirds" | "halves-thirds-quarters">("halves-thirds"),
 
   // ---- Calculator -------------------------------------------------------------
   "calculator.colorConversion": synced(true),
+  "calculator.flightTracker": synced(true),
+  "calculator.weather": synced(true),
+  "calculator.syntaxHighlighting": synced(true),
   "calculator.remToPxRate": synced(16),
   "calculator.decimalSeparator": synced<"auto" | "." | ",">("auto"),
 
   // ---- Emoji ------------------------------------------------------------------
   "emoji.columns": synced(8),
   "emoji.primaryAction": synced<"paste" | "copy">("paste"),
+  "emoji.saveAiCustomKeyword": synced(true),
   "emoji.skinTone": synced<0 | 1 | 2 | 3 | 4 | 5>(0),
 
   // ---- File Search ------------------------------------------------------------
   "files.directories": device<string[]>(["~"]),
   "files.ignorePatterns": synced<string[]>(["node_modules", ".git", "Library"]),
   "files.includeHiddenFiles": synced(false),
+  "files.contentSearch": synced(false),
+  "files.useIgnoreFiles": synced(true),
+  "files.indexNetworkAndRemovableVolumes": device(false),
+  "files.keepRemovedVolumeFiles": device(false),
 
   // ---- Applications -----------------------------------------------------------
   "applications.hotkeyBehavior": synced<"open" | "toggle">("toggle"),
+  "applications.directories": device<string[]>([]),
+  "applications.recursiveSearch": device(false),
 
   // ---- Script Commands ---------------------------------------------------------
   "scripts.directories": device<string[]>([]),
@@ -153,10 +187,14 @@ export const SETTINGS = {
   "translator.defaultSourceLanguage": synced("auto"),
   "translator.defaultTargetLanguage": synced("en"),
   "translator.prefillFromSelectedText": synced(true),
+  "translator.primaryAction": synced<"copy" | "paste">("copy"),
 
   // ---- Developer ---------------------------------------------------------------
   "developer.autoReloadOnSave": device(true),
   "developer.keepWindowVisibleDuringDevelopment": device(false),
+  "developer.disablePopToRootSearch": device(false),
+  "developer.openSurgecastInDevelopmentMode": device(true),
+  "developer.useNodeProductionEnvironment": device(false),
 
   // ---- Cloud Sync (device-local configuration; secrets are in the Keychain) -----
   "sync.enabled": device(false),

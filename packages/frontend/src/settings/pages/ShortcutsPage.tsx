@@ -3,6 +3,7 @@ import type { CommandInfo, InstalledExtension } from "@surgecast/protocol";
 import { backend } from "../../bridge/backend";
 import { useBackend } from "../../bridge/hooks";
 import { Checkbox } from "../../components/Checkbox/Checkbox";
+import { Button } from "../../components/Button/Button";
 import { TextField } from "../../components/TextField/TextField";
 import { confirmAlert } from "../../components/feedback/alert-store";
 import { showFailureToast, showToast } from "../../components/feedback/toast-store";
@@ -40,8 +41,10 @@ const STATE_OPTIONS: { value: ShortcutStateFilter; title: string }[] = [
   { value: "disabled", title: "Disabled" },
 ];
 
+const TYPE_OPTIONS = [{ value: "all", title: "All Types" }, { value: "view", title: "View" }, { value: "no-view", title: "No View" }, { value: "menu-bar", title: "Menu Bar" }] as const;
+
 function filterLabel(filter: ShortcutFilter): string {
-  const parts = [filter.category === "all" ? null : CATEGORY_TITLES[filter.category], filter.state === "all" ? null : STATE_OPTIONS.find((o) => o.value === filter.state)?.title].filter(Boolean);
+  const parts = [filter.category === "all" ? null : CATEGORY_TITLES[filter.category], filter.state === "all" ? null : STATE_OPTIONS.find((o) => o.value === filter.state)?.title, !filter.type || filter.type === "all" ? null : TYPE_OPTIONS.find((o) => o.value === filter.type)?.title].filter(Boolean);
   return parts.length ? parts.join(" · ") : "Filter";
 }
 
@@ -88,7 +91,7 @@ function CommandRow({ command, allCommands, nested, extension }: { command: Comm
           <AliasInput command={command} />
         </span>
         <CommandHotkey command={command} commands={allCommands} />
-        <Checkbox checked={command.enabled} onChange={(enabled) => void setEnabled([command], enabled)} />
+        <Checkbox checked={command.enabled} onChange={(enabled) => void setEnabled([command], enabled)} aria-label={`Enable ${command.title}`} />
       </div>
       {open && (
         <CommandDetail
@@ -134,7 +137,7 @@ function GroupRows({ group, allCommands, extension, forceOpen }: { group: Shortc
             />
           )}
         </span>
-        <Checkbox checked={collectiveState(group.commands)} onChange={(enabled) => void setEnabled(group.commands, enabled)} />
+        <Checkbox checked={collectiveState(group.commands)} onChange={(enabled) => void setEnabled(group.commands, enabled)} aria-label={`Enable ${group.title} commands`} />
       </div>
       {expanded && group.commands.map((command) => <CommandRow key={command.id} command={command} allCommands={allCommands} nested extension={extension} />)}
     </>
@@ -160,7 +163,7 @@ function CategoryCard({
           <span>{category.title}</span>
           <Disclosure open={open} duration={300} />
         </button>
-        <Checkbox checked={collectiveState(category.commands)} onChange={(enabled) => void setEnabled(category.commands, enabled)} />
+        <Checkbox checked={collectiveState(category.commands)} onChange={(enabled) => void setEnabled(category.commands, enabled)} aria-label={`Enable all ${category.title}`} />
       </div>
       {open && (
         <>
@@ -203,7 +206,7 @@ export function ShortcutsPage() {
   const [filter, setFilter] = useState<ShortcutFilter>({ query: "", category: "all", state: "all" });
   const tree = useMemo(() => buildShortcutTree(commands ?? [], extensions ?? [], filter), [commands, extensions, filter]);
   const storeCommand = commands?.find((c) => c.kind === "builtin" && c.mode === "view" && /store/i.test(c.id));
-  const filtering = Boolean(filter.query.trim()) || filter.state !== "all";
+  const filtering = Boolean(filter.query.trim()) || filter.state !== "all" || Boolean(filter.type && filter.type !== "all");
 
   const actions = (
     <>
@@ -226,10 +229,12 @@ export function ShortcutsPage() {
         sections={[
           { title: "Category", items: CATEGORY_OPTIONS.map((o) => ({ id: `category:${o.value}`, title: o.title, checked: filter.category === o.value })) },
           { title: "Show", items: STATE_OPTIONS.map((o) => ({ id: `state:${o.value}`, title: o.title, checked: filter.state === o.value })) },
+          { title: "Type", items: TYPE_OPTIONS.map((o) => ({ id: `type:${o.value}`, title: o.title, checked: (filter.type ?? "all") === o.value })) },
         ]}
         onSelect={(item) => {
           const [kind, value] = item.id.split(":");
           if (kind === "category") setFilter({ ...filter, category: value as ShortcutFilter["category"] });
+          else if (kind === "type") setFilter({ ...filter, type: value as ShortcutFilter["type"] });
           else setFilter({ ...filter, state: value as ShortcutStateFilter });
         }}
       >
@@ -249,6 +254,7 @@ export function ShortcutsPage() {
           if (item.id === "local") void installLocalExtension();
         }}
       />
+      <Button size="small" variant="ghost" onClick={() => storeCommand && openWindow("main", `command:${storeCommand.id}`)} disabled={!storeCommand} title={storeCommand ? "Browse the Extension Store" : "The Extension Store command is not registered by this backend"}>Store</Button>
     </>
   );
 

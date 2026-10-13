@@ -97,6 +97,7 @@ export function ImportDialog({ path, format, onClose }: { path: string; format: 
   const [results, setResults] = useState<ImportResult[] | null>(null);
 
   const run = async () => {
+    if (busy || (format === "rayconfig" && !selected.size)) return;
     setBusy(true);
     setError(null);
     try {
@@ -104,6 +105,7 @@ export function ImportDialog({ path, format, onClose }: { path: string; format: 
         format === "rayconfig"
           ? await backend.call("data.importRayconfig", { path, password: password || undefined, categories: [...selected] })
           : await backend.call("data.import", { path, password: password || undefined });
+      setPassword("");
       setResults(response.results);
     } catch (err) {
       setError(errorMessage(err));
@@ -180,7 +182,7 @@ export function ExportDialog({ directory, onClose, onExported }: { directory: st
   const tooShort = password.length > 0 && password.length < 8;
 
   const run = async () => {
-    if (mismatch || tooShort) return;
+    if (busy || !selected.size || password !== confirm || tooShort) return;
     setBusy(true);
     setError(null);
     try {

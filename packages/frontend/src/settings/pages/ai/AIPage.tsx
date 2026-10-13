@@ -301,6 +301,9 @@ export function AIPage() {
         <Row title="Start New Chat" description="Start a new chat after this long when you open Quick AI or AI Chat.">
           <SettingSelect setting="ai.startNewChat" options={START_NEW_CHAT} label="Start New Chat" />
         </Row>
+        <Row title="Follow-up Behavior" description="Queue follow-ups while AI runs, or steer the current run. The alternate send shortcut does the opposite for one message.">
+          <SettingSelect setting="ai.runningSendAction" options={[{ value: "queue", title: "Queue" }, { value: "steer", title: "Steer" }]} label="Follow-up Behavior" />
+        </Row>
         <Row title="Conversation History" description="Show Quick AI and AI Chat conversations together or keep them apart.">
           <SettingSelect setting="ai.conversationHistory" options={HISTORY} label="Conversation History" />
         </Row>
@@ -309,6 +312,12 @@ export function AIPage() {
         </Row>
         <Row title="Zoom" description="Text size of AI conversations.">
           <SettingSelect setting="ai.zoom" options={ZOOM} label="Zoom" />
+        </Row>
+        <Row title="Background Notifications" description="Show a system notification when a chat finishes in the background.">
+          <SettingSwitch setting="ai.backgroundNotifications" label="Background Notifications" />
+        </Row>
+        <Row title="Prevent Sleep During AI Runs" description="Keep this Mac awake while AI is working.">
+          <SettingSwitch setting="ai.preventIdleSleep" label="Prevent Sleep During AI Runs" />
         </Row>
       </Section>
       <Section title="Personalization">
@@ -324,6 +333,12 @@ export function AIPage() {
         </Row>
         <Row title="Show Warning Before Editing Messages">
           <SettingSwitch setting="ai.editMessageWarning" label="Show Warning Before Editing Messages" />
+        </Row>
+        <Row title="Show Warning Before Deleting Agents">
+          <SettingSwitch setting="ai.deleteAgentWarning" label="Show Warning Before Deleting Agents" />
+        </Row>
+        <Row title="Show Warning Before Deleting AI Commands">
+          <SettingSwitch setting="ai.deleteAiCommandWarning" label="Show Warning Before Deleting AI Commands" />
         </Row>
       </Section>
     </BuiltinPage>

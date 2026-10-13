@@ -81,6 +81,18 @@ export function draftFromProvider(provider: AIProvider): ProviderDraft {
   };
 }
 
+/** Apply external updates to untouched fields while preserving edits in progress. */
+export function reconcileProviderDraft(current: ProviderDraft | null, previous: ProviderDraft | null, next: ProviderDraft): ProviderDraft {
+  if (!current || !previous || current.id !== next.id || current.template !== next.template) return next;
+  const merged = { ...current };
+  for (const key of Object.keys(next) as (keyof ProviderDraft)[]) {
+    if (JSON.stringify(current[key]) === JSON.stringify(previous[key])) {
+      Object.assign(merged, { [key]: next[key] });
+    }
+  }
+  return merged;
+}
+
 /** Validation message for a base URL, or null when the backend will accept it. */
 export function validateBaseUrl(value: string): string | null {
   const text = value.trim();
@@ -115,7 +127,7 @@ export function validateProviderDraft(draft: ProviderDraft, template: Pick<Provi
   const key = draft.apiKey.trim();
   const willHaveKey = key.length > 0 || (hasSavedKey && !draft.removeApiKey);
   if (key && /\s/.test(key)) errors.apiKey = "API keys can't contain spaces or line breaks";
-  else if (template?.needsApiKey && !willHaveKey) errors.apiKey = `${template.name} needs an API key`;
+  else if (template?.needsApiKey && !willHaveKey && !draft.id) errors.apiKey = `${template.name} needs an API key`;
 
   const headerErrors: Record<number, string> = {};
   const seen = new Set<string>();

@@ -16,7 +16,7 @@ import { CardEmpty, Controls, Section } from "../../ui/layout";
 import { MenuButton } from "../../ui/MenuButton";
 import { promptForm } from "../../ui/prompt";
 import { BuiltinPage } from "../BuiltinPage";
-import { buildMcpServer, draftFromServer, mentionNameFor, type McpDraft, type McpErrors } from "./mcp-form";
+import { buildMcpServer, draftFromServer, mentionNameFor, validateClaudeImport, type McpDraft, type McpErrors } from "./mcp-form";
 import "./ai.css";
 
 type ServerRow = BackendResult<"ai.mcp.list">[number];
@@ -189,7 +189,7 @@ function ServerRowView({ server, onEdit }: { server: ServerRow; onEdit: () => vo
         <span className="sc-s-navrow__description sc-truncate">{detail}</span>
         {server.enabled && server.status === "error" && server.error && <span className="sc-s-missing sc-s-mcp-row__error sc-truncate">{server.error}</span>}
       </button>
-      <span className="sc-s-value">{server.toolCount ? `${server.toolCount} tools` : ""}</span>
+      <span className="sc-s-value">{server.toolCount} tool{server.toolCount === 1 ? "" : "s"}</span>
       <MenuButton
         icon="ellipsis-16"
         label={`${server.name} actions`}
@@ -225,12 +225,8 @@ async function importClaudeDesktop() {
     fields: [{ id: "json", label: "Configuration", type: "textarea", placeholder: CLAUDE_EXAMPLE, required: true }],
     primaryTitle: "Import",
     validate: ({ json }) => {
-      try {
-        const parsed = JSON.parse(json);
-        return parsed && typeof parsed.mcpServers === "object" ? null : { json: "Expected an object with “mcpServers”" };
-      } catch {
-        return { json: "That isn't valid JSON" };
-      }
+      const error = validateClaudeImport(json);
+      return error ? { json: error } : null;
     },
   });
   if (!values) return;
@@ -244,7 +240,7 @@ async function importClaudeDesktop() {
 
 /** Settings → MCP: Model Context Protocol servers that give AI extra tools. */
 export function MCPPage() {
-  const { data: servers, isLoading } = useBackend("ai.mcp.list", undefined);
+  const { data: servers, isLoading, error, refetch } = useBackend("ai.mcp.list", undefined);
   const [editing, setEditing] = useState<ServerRow | null | "new">(null);
   return (
     <BuiltinPage id="mcp">
@@ -266,8 +262,9 @@ export function MCPPage() {
           servers.map((server) => <ServerRowView key={server.id} server={server} onEdit={() => setEditing(server)} />)
         ) : (
           <CardEmpty
-            title={isLoading ? "Loading…" : "No MCP Servers"}
-            description={isLoading ? undefined : "Add a server by command or URL, or import the servers you already use in Claude Desktop."}
+            title={error ? "Couldn't Load MCP Servers" : isLoading ? "Loading…" : "No MCP Servers"}
+            description={error ? errorMessage(error) : isLoading ? undefined : "Add a server by command or URL, or import the servers you already use in Claude Desktop."}
+            action={Boolean(error) && <Button size="small" onClick={refetch}>Try Again</Button>}
           />
         )}
       </Section>

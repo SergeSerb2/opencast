@@ -187,6 +187,7 @@ function SelfHostingInfo() {
             <Button size="small" onClick={() => openUrl(LINKS.syncGuide)}>
               Setup Guide
             </Button>
+            <Button size="small" variant="ghost" onClick={() => openUrl(LINKS.syncDeploy)}>Deploy Script</Button>
           </>
         }
       >
@@ -263,13 +264,13 @@ function DeviceRow({ device }: { device: SyncDevice }) {
 }
 
 function SyncedDevices() {
-  const { data: devices, error } = useBackend("sync.devices", undefined);
+  const { data: devices, error, isLoading } = useBackend("sync.devices", undefined);
   return (
     <Section title="Synced Devices">
       {devices?.length ? (
         devices.map((device) => <DeviceRow key={device.deviceId} device={device} />)
       ) : (
-        <CardEmpty title={error ? "Couldn't Load Devices" : "Loading Devices…"} description={error ? errorMessage(error) : undefined} />
+        <CardEmpty title={error ? "Couldn't Load Devices" : isLoading ? "Loading Devices…" : "No Synced Devices"} description={error ? errorMessage(error) : undefined} />
       )}
     </Section>
   );

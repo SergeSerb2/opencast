@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { AICommand, AIPreset } from "@surgecast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
+import { errorMessage } from "../../../bridge/errors";
+import { useSetting } from "../../../bridge/settings";
 import { native } from "../../../bridge/native";
 import { Button, IconButton } from "../../../components/Button/Button";
 import { confirmAlert } from "../../../components/feedback/alert-store";
@@ -13,6 +15,7 @@ import { PageFrame } from "../../ui/PageFrame";
 import { promptForm } from "../../ui/prompt";
 import { CommandEditor, OUTPUT_LABELS, PresetEditor } from "./editors";
 import { useEnabledModels } from "./shared";
+import { exportPresets, parsePresetImport } from "./preset-json";
 import "./ai.css";
 
 function useModelName(): (ref: string | undefined) => string | undefined {
@@ -48,14 +51,15 @@ async function exportCommands() {
 
 /** Settings → AI → AI Commands. */
 export function AICommandsPage() {
-  const { data: commands, isLoading } = useBackend("ai.commands.list", undefined);
+  const { data: commands, isLoading, error, refetch } = useBackend("ai.commands.list", undefined);
   const modelName = useModelName();
   const [editing, setEditing] = useState<AICommand | null | "new">(null);
+  const warnBeforeDelete = useSetting("ai.deleteAiCommandWarning");
   const sorted = [...(commands ?? [])].sort((a, b) => Number(Boolean(a.builtin)) - Number(Boolean(b.builtin)) || a.name.localeCompare(b.name));
 
   const remove = async (command: AICommand) => {
     if (
-      !(await confirmAlert({ title: `Delete “${command.name}”?`, message: "The command is removed from root search and every synced Mac.", primaryAction: { title: "Delete", style: "destructive" } }))
+      warnBeforeDelete && !(await confirmAlert({ title: `Delete “${command.name}”?`, message: "The command is removed from root search and every synced Mac.", primaryAction: { title: "Delete", style: "destructive" } }))
     )
       return;
     try {
@@ -65,6 +69,7 @@ export function AICommandsPage() {
     }
   };
   const reset = async (command: AICommand) => {
+    if (!(await confirmAlert({ title: `Reset “${command.name}”?`, message: "Restore its original prompt and options.", primaryAction: { title: "Reset Command" } }))) return;
     try {
       await backend.call("ai.commands.reset", { id: command.id });
       showToast({ style: "success", title: `Reset “${command.name}”` });
@@ -125,7 +130,7 @@ export function AICommandsPage() {
               </div>
             ))
           ) : (
-            <CardEmpty title={isLoading ? "Loading…" : "No AI Commands"} description={isLoading ? undefined : "Create one to reuse a prompt from root search."} />
+            <CardEmpty title={error ? "Couldn't Load AI Commands" : isLoading ? "Loading…" : "No AI Commands"} description={error ? errorMessage(error) : isLoading ? undefined : "Create one to reuse a prompt from root search."} action={Boolean(error) && <Button size="small" onClick={refetch}>Try Again</Button>} />
           )}
         </div>
       </Section>
@@ -136,11 +141,49 @@ export function AICommandsPage() {
 
 /** Settings → AI → Agents (chat presets). */
 export function PresetsPage() {
-  const { data: presets, isLoading } = useBackend("ai.presets.list", undefined);
+  const { data: presets, isLoading, error, refetch } = useBackend("ai.presets.list", undefined);
   const modelName = useModelName();
   const [editing, setEditing] = useState<AIPreset | null | "new">(null);
+  const [importing, setImporting] = useState(false);
+  const warnBeforeDelete = useSetting("ai.deleteAgentWarning");
+  const importPresets = async () => {
+    const values = await promptForm({
+      title: "Import Agents",
+      message: "Paste agents exported from Surgecast as JSON. Existing agents are kept.",
+      fields: [{ id: "json", label: "JSON", type: "textarea", required: true }],
+      primaryTitle: "Import",
+      validate: ({ json }) => {
+        try { parsePresetImport(json); return null; } catch (error) { return { json: error instanceof Error ? error.message : "Invalid agents" }; }
+      },
+    });
+    if (!values) return;
+    setImporting(true);
+    let imported = 0;
+    try {
+      for (const preset of parsePresetImport(values.json)) {
+        await backend.call("ai.presets.upsert", preset);
+        imported++;
+      }
+      showToast({ style: "success", title: `Imported ${imported} agent${imported === 1 ? "" : "s"}` });
+    } catch (error) {
+      showFailureToast(`Import stopped after ${imported} agent${imported === 1 ? "" : "s"}`, error);
+    } finally { setImporting(false); }
+  };
+  const copyPresets = async () => {
+    try {
+      await native.call("clipboard.write", { content: { kind: "text", text: exportPresets(presets ?? []) } });
+      showToast({ style: "success", title: "Copied agents as JSON" });
+    } catch (error) { showFailureToast("Could not export agents", error); }
+  };
+  const reset = async (preset: AIPreset) => {
+    if (!(await confirmAlert({ title: `Reset “${preset.name}”?`, message: "Restore its original instructions, model and tools.", primaryAction: { title: "Reset Agent" } }))) return;
+    try {
+      await backend.call("ai.presets.reset", { id: preset.id });
+      showToast({ style: "success", title: `Reset “${preset.name}”` });
+    } catch (error) { showFailureToast("Could not reset agent", error); }
+  };
   const remove = async (preset: AIPreset) => {
-    if (!(await confirmAlert({ title: `Delete “${preset.name}”?`, message: "Chats that used this agent keep their messages.", primaryAction: { title: "Delete", style: "destructive" } }))) return;
+    if (warnBeforeDelete && !(await confirmAlert({ title: `Delete “${preset.name}”?`, message: "Chats that used this agent keep their messages.", primaryAction: { title: "Delete", style: "destructive" } }))) return;
     try {
       await backend.call("ai.presets.delete", { id: preset.id });
     } catch (error) {
@@ -152,9 +195,15 @@ export function PresetsPage() {
       title="Agents"
       titleMode="always"
       actions={
-        <Button size="small" icon="plus-16" onClick={() => setEditing("new")}>
+        <Controls>
+          <MenuButton icon="ellipsis-16" label="Import and Export Agents" width={220} sections={[{ items: [
+            { id: "import", title: importing ? "Importing…" : "Import Agents…", icon: "download-16", disabled: importing },
+            { id: "export", title: "Export Agents", icon: "upload-16", disabled: !presets?.length },
+          ] }]} onSelect={(item) => void (item.id === "import" ? importPresets() : copyPresets())} />
+          <Button size="small" icon="plus-16" onClick={() => setEditing("new")}>
           Create Agent
-        </Button>
+          </Button>
+        </Controls>
       }
     >
       <p className="sc-s-page-intro">Agents are reusable chat setups: instructions, a model, creativity and tools. Pick one when you start a chat, or show them in root search.</p>
@@ -175,11 +224,13 @@ export function PresetsPage() {
                     </span>
                   </span>
                 </button>
-                <span className="sc-s-library-row__actions">{!preset.builtin && <IconButton icon="trash-16" label={`Delete ${preset.name}`} onClick={() => void remove(preset)} />}</span>
+                <span className="sc-s-library-row__actions">{preset.builtin
+                  ? <IconButton icon="arrow-counter-clockwise-16" label={`Reset ${preset.name}`} onClick={() => void reset(preset)} />
+                  : <IconButton icon="trash-16" label={`Delete ${preset.name}`} onClick={() => void remove(preset)} />}</span>
               </div>
             ))
           ) : (
-            <CardEmpty title={isLoading ? "Loading…" : "No Agents"} description={isLoading ? undefined : "Create an agent for tasks you repeat, like reviewing code or drafting emails."} />
+            <CardEmpty title={error ? "Couldn't Load Agents" : isLoading ? "Loading…" : "No Agents"} description={error ? errorMessage(error) : isLoading ? undefined : "Create an agent for tasks you repeat, like reviewing code or drafting emails."} action={Boolean(error) && <Button size="small" onClick={refetch}>Try Again</Button>} />
           )}
         </div>
       </Section>

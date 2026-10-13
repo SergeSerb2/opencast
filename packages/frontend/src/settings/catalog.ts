@@ -64,7 +64,7 @@ export const CORE_PAGES: readonly PageEntry[] = [
     group: "core",
     icon: graphite("keyboard-16"),
     keywords: ["escape", "emacs", "vim", "hyper", "caps lock"],
-    rows: ["Escape Key Behavior", "Navigation Bindings", "Page Navigation Keys", "Hyper Key", "Include Shift in Hyper Key"],
+    rows: ["Escape Key Closes Window", "Built-in Hotkeys Preset", "Display Hyper Key Shortcut", "Escape Key Behavior", "Navigation Bindings", "Page Navigation Keys", "Hyper Key", "Include Shift in Hyper Key"],
   },
   {
     id: "cloud-sync",
@@ -93,7 +93,7 @@ export const CORE_PAGES: readonly PageEntry[] = [
     group: "core",
     icon: graphite("wrench-screwdriver-16"),
     keywords: ["import", "export", "rayconfig", "raycast", "backup", "proxy", "favicon", "storage"],
-    rows: ["Import from Raycast", "Export Data", "Import Surgecast Data", "Scheduled Backup", "Backup Location", "Storage", "Use System Proxy Settings", "Favicon Provider"],
+    rows: ["Export Passphrase", "Window Activation Behavior", "Tidy Menu Bar", "Auto-Delete", "Skip on Battery", "Additional Certificate Authority", "Import from Raycast", "Export Data", "Import Surgecast Data", "Scheduled Backup", "Backup Location", "Storage", "Use System Proxy Settings", "Favicon Provider"],
   },
   {
     id: "about",
@@ -116,6 +116,11 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     commandGroups: ["ai"],
     keywords: ["openai", "anthropic", "claude", "gpt", "gemini", "ollama", "openrouter", "api key", "byok", "llm", "provider", "model", "chat", "agents", "presets"],
     rows: [
+      "Follow-up Behavior",
+      "Background Notifications",
+      "Prevent Sleep During AI Runs",
+      "Show Warning Before Deleting Agents",
+      "Show Warning Before Deleting AI Commands",
       "Models & Providers",
       "Agents",
       "AI Commands",
@@ -152,7 +157,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Open, hide and quit the apps on your Mac.",
     commandGroups: ["applications"],
     keywords: ["apps"],
-    rows: ["Hotkey Action"],
+    rows: ["Search Scopes", "Deep Search", "Hotkey Action"],
   },
   {
     id: "calculator",
@@ -162,7 +167,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Math, units, currencies, dates and time zones right in root search.",
     commandGroups: ["calculator"],
     keywords: ["math", "units", "currency"],
-    rows: ["Enable Color Conversion", "REM/EM to Pixel Conversion", "Decimal Separator"],
+    rows: ["Enable Flight Tracker", "Enable Weather", "Syntax Highlighting", "Enable Color Conversion", "REM/EM to Pixel Conversion", "Decimal Separator"],
   },
   {
     id: "calendar",
@@ -182,7 +187,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Everything you copy, searchable — text, links, images, files and colors.",
     commandGroups: ["clipboard"],
     keywords: ["copy", "paste", "pasteboard"],
-    rows: ["Keep History For", "Save Images", "Save Files", "Text Recognition", "Primary Action", "Clear History", "Disabled Applications"],
+    rows: ["Recognition Mode", "Save Universal Clipboard Items Immediately", "Keep History For", "Save Images", "Save Files", "Text Recognition", "Primary Action", "Clear History", "Disabled Applications"],
   },
   {
     id: "developer",
@@ -192,7 +197,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Tools for building and debugging extensions.",
     commandGroups: ["developer"],
     keywords: ["extension development", "reload"],
-    rows: ["Develop an Extension", "Auto-reload on Save", "Keep Window Always Visible During Development"],
+    rows: ["Disable Pop to Root Search", "Open Surgecast in Development Mode", "Use Node Production Environment", "Develop an Extension", "Auto-reload on Save", "Keep Window Always Visible During Development"],
   },
   {
     id: "emoji",
@@ -202,7 +207,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Search and paste emoji and symbols.",
     commandGroups: ["emoji"],
     keywords: ["emoticons", "skin tone"],
-    rows: ["Column Count", "Primary Action", "Emoji Skin Tone"],
+    rows: ["Save AI-generated Custom Keywords", "Column Count", "Primary Action", "Emoji Skin Tone"],
   },
   {
     id: "file-search",
@@ -212,7 +217,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Find files and folders on your Mac.",
     commandGroups: ["files"],
     keywords: ["files", "folders", "finder", "index"],
-    rows: ["Search Scopes", "Ignore Patterns", "Include Hidden Files", "Full Disk Access"],
+    rows: ["Content Search", "Use Ignore Files", "Index Network & Removable Drives", "Keep Files from Removed Volumes", "Search Scopes", "Ignore Patterns", "Include Hidden Files", "Full Disk Access"],
   },
   {
     id: "mcp",
@@ -251,7 +256,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Open links, files and folders with dynamic placeholders.",
     commandGroups: ["quicklinks"],
     keywords: ["links", "bookmarks"],
-    rows: ["Pass Selected Text as Argument", "Show Warning Before Deleting Quicklinks"],
+    rows: ["Show Link Previews", "Prefer Existing Tabs", "Pass Selected Text as Argument", "Show Warning Before Deleting Quicklinks"],
   },
   {
     id: "script-commands",
@@ -271,7 +276,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Text snippets that expand anywhere you type.",
     commandGroups: ["snippets"],
     keywords: ["text expansion", "keyword", "accessibility"],
-    rows: ["Enable Snippet Expansion", "Expand within Words", "Accessibility Permission", "Disabled Applications", "Show Warning Before Deleting Snippets"],
+    rows: ["Expansion Mode", "Injection Delay", "Response Time", "Completion Sound", "Override System Snippets", "Enable Snippet Expansion", "Expand within Words", "Accessibility Permission", "Disabled Applications", "Show Warning Before Deleting Snippets"],
   },
   {
     id: "system",
@@ -309,7 +314,7 @@ export const BUILTIN_PAGES: readonly PageEntry[] = [
     summary: "Move and resize windows with hotkeys.",
     commandGroups: ["windowManagement", "windows"],
     keywords: ["resize", "tiling", "halves", "gaps"],
-    rows: ["Window Gap", "Screen Gap", "Cycling", "Accessibility Permission"],
+    rows: ["Auto Close Empty Desktops", "Respect Stage Manager", "Window Gap", "Screen Gap", "Cycling", "Accessibility Permission"],
   },
 ];
 

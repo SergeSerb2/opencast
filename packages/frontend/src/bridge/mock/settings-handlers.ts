@@ -267,6 +267,9 @@ function isHttpUrl(value: string): boolean {
  * Spread into the mock handler table after the foundation's handlers.
  */
 export function settingsMockHandlers({ settings, commands, events }: SettingsMockContext): Handlers {
+  if (!commands.some((command) => command.id === "builtin:extensions.store")) commands.push({ id: "builtin:extensions.store", title: "Extension Store", kind: "builtin", typeLabel: "Command", icon: "store-16", extensionTitle: "Surgecast", mode: "view", enabled: true });
+  let identity = 0;
+  const newId = (prefix: string) => `${prefix}-${++identity}`;
   const providers: ProviderRow[] = structuredClone(PROVIDERS).concat([
     {
       id: "cliproxy",
@@ -289,6 +292,7 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
   const extensions: InstalledExtension[] = structuredClone(EXTENSIONS);
   const extensionPrefs = new Map<string, Record<string, unknown>>();
   const webSearchKeys = new Set<string>(["tavily"]);
+  let backupHasPassphrase = false;
   const themes: Theme[] = [
     ...builtinThemes(),
     {
@@ -313,7 +317,8 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       updatedAt: now - 5 * day,
     },
   ];
-  let sync: SyncStatus = { phase: "disabled", deviceId: "mock-device", deviceName: "This Mac", pendingChanges: 0, counts: SYNC_COUNTS };
+  if (typeof location !== "undefined" && new URLSearchParams(location.search).get("mock.ai.empty") === "1") providers.length = 0;
+  let sync: SyncStatus = { phase: settings["sync.enabled"] ? "online" : "disabled", serverUrl: settings["sync.serverUrl"] ?? undefined, lastSyncedAt: settings["sync.enabled"] ? now : undefined, deviceId: "mock-device", deviceName: settings["sync.deviceName"] ?? "This Mac", pendingChanges: 0, counts: SYNC_COUNTS };
   let devices = structuredClone(DEVICES);
   let scripts = structuredClone(SCRIPTS);
 
@@ -348,7 +353,7 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
 
     "ai.providers.templates": () => PROVIDER_TEMPLATES,
-    "ai.providers.list": () => providers,
+    "ai.providers.list": () => structuredClone(providers),
     "ai.providers.upsert": ({ provider: input, apiKey }) => {
       if (!input.name.trim()) fail("Provider needs a name");
       if (!isHttpUrl(input.baseUrl)) fail("Base URL must be an http(s) URL without credentials");
@@ -356,7 +361,7 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       const hasApiKey = apiKey === undefined ? (existing?.hasApiKey ?? false) : Boolean(apiKey);
       const headers = input.headers ? Object.fromEntries(Object.keys(input.headers).map((name) => [name, "$keychain"])) : existing?.headers;
       const next: ProviderRow = {
-        ...(existing ?? { id: `p${Date.now()}`, enabled: true, autoFetchModels: true, models: [], createdAt: Date.now() }),
+        ...(existing ?? { id: newId("provider"), enabled: true, autoFetchModels: true, models: [], createdAt: Date.now() }),
         ...input,
         headers,
         secretHeaders: headers ? Object.keys(headers) : undefined,
@@ -411,12 +416,14 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
     "ai.tools.list": () => TOOLS,
 
-    "ai.mcp.list": () => mcp,
+    "ai.mcp.list": () => structuredClone(mcp),
     "ai.mcp.upsert": (input) => {
       const existing = input.id ? mcp.find((s) => s.id === input.id) : undefined;
       const server = {
-        ...(existing ?? { id: `mcp${Date.now()}`, createdAt: Date.now(), status: "disconnected" as const, toolCount: 0, enabled: true }),
+        ...(existing ?? { id: newId("mcp"), createdAt: Date.now(), status: "disconnected" as const, toolCount: 0, enabled: true }),
         ...input,
+        env: input.env ? Object.fromEntries(Object.keys(input.env).map((name) => [name, "$keychain"])) : existing?.env,
+        headers: input.headers ? Object.fromEntries(Object.keys(input.headers).map((name) => [name, "$keychain"])) : existing?.headers,
         mentionName: input.mentionName ?? input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         updatedAt: Date.now(),
       };
@@ -440,23 +447,26 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       return { ok: true, message: `Connected · ${server.toolCount} tools`, tools: ["read_file", "write_file", "list_directory"].slice(0, server.toolCount) };
     },
     "ai.mcp.import": ({ json }) => {
-      let parsed: { mcpServers?: Record<string, { command?: string; args?: string[]; url?: string }> };
+      let parsed: { mcpServers?: Record<string, { command?: string; args?: string[]; url?: string; env?: Record<string, string>; headers?: Record<string, string> }> };
       try {
         parsed = JSON.parse(json);
       } catch {
         return fail("The text is not valid JSON");
       }
-      if (!parsed.mcpServers || typeof parsed.mcpServers !== "object") fail("Expected a Claude Desktop-style mcpServers object");
+      if (!parsed || !parsed.mcpServers || typeof parsed.mcpServers !== "object" || Array.isArray(parsed.mcpServers)) fail("Expected a Claude Desktop-style mcpServers object");
       const entries = Object.entries(parsed.mcpServers ?? {});
+      if (entries.some(([, config]) => !config || typeof config !== "object" || (!config.command && !config.url))) fail("Each server needs a command or URL");
       for (const [name, config] of entries) {
         mcp.push({
-          id: `mcp-${name}`,
+          id: newId("mcp"),
           name,
           mentionName: name,
           transport: config.url ? "http" : "stdio",
           command: config.command,
           args: config.args,
           url: config.url,
+          env: config.env ? Object.fromEntries(Object.keys(config.env).map((key) => [key, "$keychain"])) : undefined,
+          headers: config.headers ? Object.fromEntries(Object.keys(config.headers).map((key) => [key, "$keychain"])) : undefined,
           enabled: true,
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -468,10 +478,10 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       return { imported: entries.length };
     },
 
-    "ai.commands.list": () => aiCommands,
+    "ai.commands.list": () => structuredClone(aiCommands),
     "ai.commands.upsert": (input) => {
       const existing = input.id ? aiCommands.find((c) => c.id === input.id) : undefined;
-      const command: AICommand = { creativity: "medium", output: "quick-ai", createdAt: Date.now(), ...existing, ...input, id: existing?.id ?? `cmd${Date.now()}`, updatedAt: Date.now() };
+      const command: AICommand = { creativity: "medium", output: "quick-ai", createdAt: Date.now(), ...existing, ...input, id: existing?.id ?? newId("command"), updatedAt: Date.now() };
       if (existing) Object.assign(existing, command);
       else aiCommands.push(command);
       entitiesChanged("aiCommands", [command.id]);
@@ -491,34 +501,41 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
     "ai.commands.export": () => ({
       json: JSON.stringify(
-        aiCommands.filter((c) => !c.builtin).map(({ name, prompt, creativity, model, icon }) => ({ title: name, prompt, creativity, model, icon })),
+        aiCommands.filter((c) => !c.builtin).map(({ name, prompt, creativity, model, icon, output, webSearch, reasoningEffort, highlightEdits, tags }) => ({ title: name, prompt, creativity, model, icon, output, webSearch, reasoningEffort, highlightEdits, tags })),
         null,
         2,
       ),
     }),
     "ai.commands.import": ({ json }) => {
-      let items: { title?: string; name?: string; prompt?: string }[];
+      let items: (Partial<AICommand> & { title?: string })[];
       try {
         items = JSON.parse(json);
       } catch {
         return fail("The text is not valid JSON");
       }
       if (!Array.isArray(items)) fail("Expected an array of AI commands");
-      const valid = items.filter((i) => (i.title ?? i.name) && i.prompt);
+      if (items.some((item) => !item || typeof item !== "object" || typeof (item.title ?? item.name) !== "string" || !(item.title ?? item.name)?.trim() || typeof item.prompt !== "string" || !item.prompt.trim())) fail("Each command needs a name and prompt");
+      const valid = items;
       for (const item of valid)
         aiCommands.push({
-          id: `cmd${Date.now()}${Math.random()}`,
+          id: newId("command"),
           name: item.title ?? item.name ?? "",
           prompt: item.prompt ?? "",
-          creativity: "medium",
-          output: "quick-ai",
+          icon: item.icon,
+          model: item.model,
+          creativity: item.creativity ?? "medium",
+          output: item.output ?? "quick-ai",
+          reasoningEffort: item.reasoningEffort,
+          webSearch: item.webSearch,
+          highlightEdits: item.highlightEdits,
+          tags: item.tags,
           createdAt: Date.now(),
           updatedAt: Date.now(),
         });
       entitiesChanged("aiCommands", []);
       return { imported: valid.length };
     },
-    "ai.presets.list": () => presets,
+    "ai.presets.list": () => structuredClone(presets),
     "ai.presets.upsert": (input) => {
       const existing = input.id ? presets.find((p) => p.id === input.id) : undefined;
       const preset: AIPreset = {
@@ -529,7 +546,7 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
         createdAt: Date.now(),
         ...existing,
         ...input,
-        id: existing?.id ?? `preset${Date.now()}`,
+        id: existing?.id ?? newId("preset"),
         updatedAt: Date.now(),
       };
       if (existing) Object.assign(existing, preset);
@@ -541,6 +558,15 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       const index = presets.findIndex((p) => p.id === id);
       if (index !== -1) presets.splice(index, 1);
       entitiesChanged("aiPresets", [id]);
+    },
+    "ai.presets.reset": ({ id }) => {
+      const original = AI_PRESETS.find((preset) => preset.id === id && preset.builtin) ?? fail("Only built-in agents can be reset");
+      const index = presets.findIndex((preset) => preset.id === id);
+      if (index < 0) return fail("Agent not found", RpcErrorCode.NotFound);
+      const restored = { ...structuredClone(original), updatedAt: Date.now() };
+      presets[index] = restored;
+      entitiesChanged("aiPresets", [id]);
+      return restored;
     },
 
     "themes.list": () => themes,
@@ -593,20 +619,52 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       return installed;
     },
     "extensions.update": () => ({ updated: [] }),
+    "extensions.develop": ({ path }) => {
+      const name = path.split("/").filter(Boolean).pop() || fail("Choose an extension folder");
+      const existing = extensions.find((item) => item.name === name);
+      const developed: InstalledExtension = existing ?? { name, title: name, author: "me", enabled: true, source: "development", path, commands: [{ name: "index", title: "Open", mode: "view" }], preferences: [], tools: [], installedAt: Date.now(), updatedAt: Date.now() };
+      developed.source = "development";
+      developed.path = path;
+      if (!existing) {
+        extensions.push(developed);
+        commands.push({ id: `ext:${name}.index`, title: "Open", kind: "extension", typeLabel: "Command", icon: "terminal-16", mode: "view", enabled: true, extensionId: name, extensionTitle: developed.title });
+      }
+      events.emit("extensions.changed", {});
+      events.emit("commands.changed", { reason: "develop" });
+      return developed;
+    },
     "extensions.getPreferences": ({ name, command }) => {
       const ext = extension(name);
       const defs = command ? (ext.commands.find((c) => c.name === command)?.preferences ?? []) : ext.preferences;
       const stored = extensionPrefs.get(`${name}/${command ?? ""}`) ?? {};
       const values = Object.fromEntries(defs.map((d) => [d.name, stored[d.name] ?? d.default]));
+      for (const definition of defs) if (definition.type === "password" && values[definition.name]) values[definition.name] = "$keychain";
       return { values, missingRequired: defs.filter((d) => d.required && (values[d.name] === undefined || values[d.name] === "")).map((d) => d.name) };
     },
     "extensions.setPreferences": ({ name, command, values }) => {
       const key = `${name}/${command ?? ""}`;
-      extensionPrefs.set(key, { ...extensionPrefs.get(key), ...values });
+      const installed = extension(name);
+      const defs = command ? installed.commands.find((c) => c.name === command)?.preferences ?? [] : installed.preferences;
+      const redacted = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, defs.some((definition) => definition.name === key && definition.type === "password") && value ? "$keychain" : value]));
+      extensionPrefs.set(key, { ...extensionPrefs.get(key), ...redacted });
       events.emit("extensions.changed", {});
     },
 
     "scripts.list": () => scripts,
+    "scripts.create": ({ directory, title, mode, language, packageName }) => {
+      if (!settings["scripts.directories"].includes(directory)) fail("Choose a registered script folder");
+      if (!title.trim()) fail("Give the script a title");
+      const extensions: Record<string, string> = { bash: "sh", python: "py", node: "js", applescript: "applescript", swift: "swift", ruby: "rb" };
+      const suffix = extensions[language] ?? fail("Unsupported script language");
+      const filename = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "script";
+      const path = `${directory.replace(/\/$/, "")}/${filename}.${suffix}`;
+      if (scripts.some((script) => script.path === path)) fail("A script with this filename already exists");
+      const script: ScriptCommand = { path, title: title.trim(), mode, language, packageName, arguments: [] };
+      scripts.push(script);
+      commands.push({ id: `script:${path}`, title: script.title, subtitle: packageName, kind: "script", typeLabel: "Script Command", mode: mode === "silent" ? "no-view" : "view", icon: "terminal-16", enabled: true });
+      events.emit("commands.changed", { reason: "scripts" });
+      return script;
+    },
     "scripts.directories.add": ({ path }) => {
       if (!settings["scripts.directories"].includes(path)) setSetting("scripts.directories", [...settings["scripts.directories"], path]);
       events.emit("commands.changed", { reason: "scripts" });
@@ -616,7 +674,8 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
         "scripts.directories",
         settings["scripts.directories"].filter((d) => d !== path),
       );
-      scripts = scripts.filter((s) => !s.path.startsWith(path));
+      const prefix = `${path.replace(/\/$/, "")}/`;
+      scripts = scripts.filter((s) => !s.path.startsWith(prefix));
       events.emit("commands.changed", { reason: "scripts" });
     },
 
@@ -692,5 +751,10 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       entities: { notes: 2, snippets: 3, quicklinks: 2, aiChats: 2, aiMessages: 4 },
       clipboardItems: 6,
     }),
+    "data.backup.hasPassphrase": () => backupHasPassphrase,
+    "data.backup.setPassphrase": ({ passphrase }) => {
+      if (passphrase !== null && passphrase.length < 8) fail("Use at least 8 characters");
+      backupHasPassphrase = Boolean(passphrase);
+    },
   };
 }

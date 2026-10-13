@@ -38,11 +38,12 @@ function lines(text: string): string[] {
 
 /** Parse "KEY=value" lines. Returns the map or the first invalid line. */
 export function parseEnv(text: string): { values: Record<string, string> } | { error: string } {
-  const values: Record<string, string> = {};
+  const values: Record<string, string> = Object.create(null);
   for (const line of lines(text)) {
     const index = line.indexOf("=");
     const key = index === -1 ? "" : line.slice(0, index).trim();
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return { error: `“${line}” isn't KEY=value` };
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return { error: "Each environment variable must be KEY=value" };
+    if (Object.hasOwn(values, key)) return { error: `“${key}” is listed twice` };
     values[key] = line.slice(index + 1).trim();
   }
   return { values };
@@ -50,14 +51,42 @@ export function parseEnv(text: string): { values: Record<string, string> } | { e
 
 /** Parse "Name: value" lines. Returns the map or the first invalid line. */
 export function parseHeaders(text: string): { values: Record<string, string> } | { error: string } {
-  const values: Record<string, string> = {};
+  const values: Record<string, string> = Object.create(null);
+  const names = new Set<string>();
   for (const line of lines(text)) {
     const index = line.indexOf(":");
     const name = index === -1 ? "" : line.slice(0, index).trim();
-    if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)) return { error: `“${line}” isn't Name: value` };
+    if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)) return { error: "Each header must be Name: value" };
+    if (names.has(name.toLowerCase())) return { error: `“${name}” is listed twice` };
+    names.add(name.toLowerCase());
     values[name] = line.slice(index + 1).trim();
   }
   return { values };
+}
+
+export function validateClaudeImport(json: string): string | null {
+  let parsed: unknown;
+  try { parsed = JSON.parse(json); } catch { return "Enter valid JSON"; }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "Expected an object with mcpServers";
+  const servers = (parsed as Record<string, unknown>).mcpServers;
+  if (!servers || typeof servers !== "object" || Array.isArray(servers) || !Object.keys(servers).length) return "mcpServers must contain at least one server";
+  for (const [name, server] of Object.entries(servers)) {
+    if (!name.trim() || !server || typeof server !== "object" || Array.isArray(server)) return "Each named server must be an object";
+    const config = server as Record<string, unknown>;
+    if (typeof config.command !== "string" && typeof config.url !== "string") return `“${name}” needs a command or URL`;
+    if (config.command !== undefined && (typeof config.command !== "string" || !config.command.trim())) return `“${name}” needs a command`;
+    if (config.url !== undefined) {
+      if (typeof config.url !== "string") return `“${name}” needs a URL`;
+      const result = buildMcpServer({ ...draftFromServer(null), name, transport: "http", url: config.url });
+      if ("errors" in result) return `“${name}”: ${result.errors.url}`;
+    }
+    if (config.args !== undefined && (!Array.isArray(config.args) || !config.args.every((arg) => typeof arg === "string"))) return `“${name}”: arguments must be a list of strings`;
+    for (const field of ["env", "headers"]) {
+      const values = config[field];
+      if (values !== undefined && (!values || typeof values !== "object" || Array.isArray(values) || !Object.values(values).every((value) => typeof value === "string"))) return `“${name}”: ${field} must map names to strings`;
+    }
+  }
+  return null;
 }
 
 export function draftFromServer(server: MCPServer | null): McpDraft {

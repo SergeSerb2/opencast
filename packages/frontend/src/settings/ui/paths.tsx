@@ -15,13 +15,15 @@ export interface PathListEditorProps {
   emptyTitle: string;
   emptyDescription?: string;
   addTitle?: string;
+  canChooseFiles?: boolean;
+  allowedTypes?: string[];
 }
 
 /** Folder list with Add Folder… (native open panel) and per-row Show in Finder / Remove. */
-export function PathListEditor({ value, onAdd, onRemove, emptyTitle, emptyDescription, addTitle = "Add Folder…" }: PathListEditorProps) {
+export function PathListEditor({ value, onAdd, onRemove, emptyTitle, emptyDescription, addTitle = "Add Folder…", canChooseFiles = false, allowedTypes }: PathListEditorProps) {
   const add = async () => {
     try {
-      const picked = await chooseFiles({ canChooseFiles: false, canChooseDirectories: true, allowMultipleSelection: true, title: addTitle.replace("…", ""), prompt: "Add" });
+      const picked = await chooseFiles({ canChooseFiles, canChooseDirectories: !canChooseFiles, allowedTypes, allowMultipleSelection: true, title: addTitle.replace("…", ""), prompt: "Add" });
       const fresh = (picked ?? []).filter((path) => !value.includes(path));
       if (fresh.length) onAdd(fresh);
     } catch (error) {
