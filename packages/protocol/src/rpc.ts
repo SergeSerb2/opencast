@@ -34,6 +34,7 @@ import type {
   Note,
   NoteSummary,
   Quicklink,
+  ProcessInfo,
   RootSearchResult,
   ScriptCommand,
   Snippet,
@@ -70,7 +71,7 @@ export interface BackendMethods {
     params: { id: CommandId; arguments?: Record<string, string>; fallbackText?: string; launchContext?: Record<string, unknown>; source?: "root" | "hotkey" | "deeplink" | "fallback" | "alias" };
     result: LaunchResult;
   };
-  "commands.setPrefs": { params: { id: CommandId; prefs: Partial<CommandPrefs> }; result: CommandInfo };
+  "commands.setPrefs": { params: { id: CommandId; prefs: Partial<CommandPrefs>; unset?: (keyof CommandPrefs)[] }; result: CommandInfo };
   "commands.resetRanking": { params: { id?: CommandId }; result: Void };
   "commands.moveFavorite": { params: { id: CommandId; toIndex: number }; result: Void };
 
@@ -129,10 +130,12 @@ export interface BackendMethods {
   "emoji.recordUse": { params: { emoji: string }; result: Void };
   "files.search": { params: { query: string; limit?: number; scope?: string[] }; result: FileResult[] };
   "files.recent": { params: { limit?: number }; result: FileResult[] };
+  "system.processes": { params: Void; result: ProcessInfo[] };
+  "system.killProcess": { params: { pid: number; force?: boolean }; result: Void };
   "system.run": { params: { action: string; value?: unknown }; result: Void };
   "windows.run": { params: { command: WindowCommand }; result: Void };
   "windows.layouts.list": { params: Void; result: WindowLayout[] };
-  "windows.layouts.upsert": { params: Omit<WindowLayout, "createdAt" | "updatedAt"> & { id?: string }; result: WindowLayout };
+  "windows.layouts.upsert": { params: Omit<WindowLayout, "createdAt" | "updatedAt"> & { id?: string } | Omit<WindowLayout, "id" | "createdAt" | "updatedAt"> & { id?: string }; result: WindowLayout };
   "windows.layouts.delete": { params: { id: string }; result: Void };
   "windows.layouts.apply": { params: { id: string }; result: Void };
   "calendar.events": { params: { from: string; to: string }; result: CalendarEvent[] };
@@ -211,6 +214,9 @@ export interface BackendMethods {
   "ext.toast.action": { params: { sessionId: string; toastId: string; action: "primary" | "secondary" }; result: Void };
 
   // ---- script commands -----------------------------------------------------------------------------
+  "scripts.reload": { params: Void; result: Void };
+  "scripts.start": { params: { path: string; arguments?: string[] }; result: { executionId: string } };
+  "scripts.cancel": { params: { executionId: string }; result: Void };
   "scripts.list": { params: Void; result: ScriptCommand[] };
   "scripts.directories.add": { params: { path: string }; result: Void };
   "scripts.directories.remove": { params: { path: string }; result: Void };
@@ -236,6 +242,7 @@ export interface BackendMethods {
   // ---- import / export --------------------------------------------------------------------------------
   /** Import a Raycast .rayconfig export (v3 container, older JSON wrapper, or classic). */
   "data.importRayconfig": { params: { path: string; password?: string; categories?: string[] }; result: { results: { category: string; imported: number; error?: string }[] } };
+  "data.storage": { params: Void; result: { totalBytes: number; databaseBytes: number; clipboardBytes: number; entities: Record<string, number>; clipboardItems: number } };
   "data.export": { params: { path: string; password?: string; categories?: string[] }; result: { path: string } };
   "data.import": { params: { path: string; password?: string }; result: { results: { category: string; imported: number; error?: string }[] } };
 
@@ -255,6 +262,7 @@ export interface BackendEvents {
   "entities.changed": { collection: string; ids: string[]; source: "local" | "sync" };
   "commands.changed": { reason: string };
   "clipboard.changed": { item: ClipboardItem };
+  "clipboard.itemsChanged": { ids: string[]; deleted?: boolean };
   "notes.changed": { id: string; deleted?: boolean };
   "ai.stream": AIStreamEvent;
   "ai.chats.changed": { chatId: string };
@@ -271,6 +279,8 @@ export interface BackendEvents {
   "launcher.toast": { toast: ToastState | null };
   "sync.status": SyncStatus;
   "themes.changed": Record<string, never>;
+  "scripts.output": { executionId: string; stream: "stdout" | "stderr"; chunk: string };
+  "scripts.completed": { executionId: string; exitCode: number; output: string; lastLine: string; durationMs: number; error?: string };
 }
 
 export type BackendEventTopic = keyof BackendEvents;

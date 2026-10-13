@@ -7,7 +7,7 @@
  */
 
 import type { Hotkey, ImageLike, KeyboardShortcut, UINode } from "./ui";
-import type { AppInfo } from "./native";
+import type { AppInfo, RunningAppInfo } from "./native";
 
 // ---------------------------------------------------------------------------
 // Commands and root search
@@ -27,7 +27,7 @@ import type { AppInfo } from "./native";
  */
 export type CommandId = string;
 
-export type CommandKind = "builtin" | "app" | "extension" | "script" | "quicklink" | "snippet" | "ai-command" | "ai-preset" | "window-layout";
+export type CommandKind = "builtin" | "app" | "extension" | "script" | "quicklink" | "snippet" | "ai-command" | "ai-preset" | "window-layout" | "file";
 
 export type CommandMode = "view" | "no-view" | "menu-bar";
 
@@ -36,6 +36,7 @@ export interface CommandArgument {
   type: "text" | "password" | "dropdown";
   placeholder: string;
   required?: boolean;
+  default?: string;
   data?: { title: string; value: string }[];
 }
 
@@ -579,6 +580,7 @@ export interface Theme {
   colors: {
     background: string;
     backgroundSecondary: string;
+    accent?: string;
     text: string;
     selection: string;
     loader: string;
@@ -653,4 +655,14 @@ export interface FooterToast {
   title: string;
   message?: string;
   primaryAction?: { title: string; shortcut?: KeyboardShortcut };
+}
+
+/** A running process; arguments are omitted to avoid exposing credentials. */
+export interface ProcessInfo {
+  pid: number;
+  name: string;
+  executable: string;
+  cpuPercent: number;
+  memoryBytes: number;
+  app?: RunningAppInfo;
 }

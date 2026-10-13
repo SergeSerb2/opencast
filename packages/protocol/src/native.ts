@@ -193,6 +193,8 @@ export interface NativeMethods {
   // --- clipboard & input ---------------------------------------------------
   "clipboard.read": { params: void; result: ClipboardSnapshot | null };
   "clipboard.write": { params: { content: ClipboardContent; concealed?: boolean; transient?: boolean }; result: void };
+  /** Queue items for successive physical Cmd-V presses; native consumes one item per press. */
+  "clipboard.setSequentialPaste": { params: { contents: ClipboardContent[] }; result: void };
   "clipboard.clear": { params: void; result: void };
   /** Start/stop emitting `clipboard.changed`. Poll interval in ms (default 300). */
   "clipboard.setMonitoring": { params: { enabled: boolean; intervalMs?: number; ignoredBundleIds?: string[] }; result: void };
