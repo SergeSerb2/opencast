@@ -18,6 +18,16 @@ const save = () => fs.writeFileSync(stateFile, JSON.stringify(s));
 const fail = message => { console.error(message); process.exit(1); };
 s.calls.push(a); save();
 if (a.includes('--slurp') && a.includes('--jq')) fail('unsupported flag combination');
+const recordUpload = file => {
+  if (s.release !== 'draft') fail('attempted published overwrite');
+  const name = path.basename(file);
+  if (s.assets.includes(name)) fail('asset already exists');
+  fs.copyFileSync(file, path.join(s.remote, name));
+  s.assets.push(name);
+  if (s.retargetOnUpload) s.tag = '0'.repeat(40);
+  if (s.publishOnUpload) s.release = 'published';
+  save();
+};
 if (a[0] === 'api') {
   const endpoint = a[1];
   if (endpoint.includes('/compare/')) console.log('ahead');
@@ -38,8 +48,28 @@ if (a[0] === 'api') {
     if (s.releaseError) fail(s.releaseError);
     const release = { id: s.id, draft: s.release === 'draft',
       tag_name: 'v0.1.0-build.1', target_commitish: s.target || s.revision, assets: s.assets.map(name => ({ name })) };
-    const rows = s.release ? (s.duplicateRelease ? [release, release] : [release]) : [];
+    const rows = s.release && !(s.hideNewDraft && s.recentCreate) ? (s.duplicateRelease ? [release, release] : [release]) : [];
     console.log(JSON.stringify(s.draftOnLaterPage ? [[], rows] : [rows]));
+  }
+  else if (endpoint.endsWith('/releases') && a.includes('POST')) {
+    if (s.tag !== s.revision) fail('wrong tag');
+    s.release = 'draft'; s.assets = []; s.recentCreate = true;
+    if (s.retargetOnCreate) s.tag = '0'.repeat(40);
+    save();
+    console.log(JSON.stringify({ id: s.id, draft: true, tag_name: 'v0.1.0-build.1',
+      target_commitish: s.target || s.revision, assets: [] }));
+  }
+  else if (endpoint.includes('/releases/' + s.id + '/assets?')) {
+    recordUpload(value('--input'));
+  }
+  else if (endpoint.endsWith('/releases/' + s.id) && a.includes('PATCH')) {
+    if (!a.includes('tag_name=v0.1.0-build.1')) fail('API would remove the current tag');
+    s.release = 'published'; save(); console.log('https://example.invalid/release');
+  }
+  else if (endpoint.endsWith('/releases/' + s.id)) {
+    if (!s.release) fail('gh: Not Found (HTTP 404)');
+    console.log(JSON.stringify({ id: s.id, draft: s.release === 'draft',
+      tag_name: 'v0.1.0-build.1', target_commitish: s.target || s.revision, assets: s.assets }));
   }
   else if (endpoint.endsWith('/git/refs')) {
     if (s.tag || s.tagRace) fail('gh: Reference already exists (HTTP 422)');
@@ -64,19 +94,12 @@ if (a[0] === 'api') {
   } else if (a[1] === 'create') {
     if (!a.includes('--verify-tag') || s.tag !== s.revision) fail('wrong tag');
     s.release = 'draft'; s.assets = [];
+    s.recentCreate = true;
     if (s.retargetOnCreate) s.tag = '0'.repeat(40);
     save();
   } else if (a[1] === 'upload') {
-    if (s.release !== 'draft') fail('attempted published overwrite');
     if (a.includes('--clobber')) fail('attempted overwrite');
-    const file = a[a.length - 1];
-    const name = path.basename(file);
-    if (s.assets.includes(name)) fail('asset already exists');
-    fs.copyFileSync(file, path.join(s.remote, name));
-    s.assets.push(name);
-    if (s.retargetOnUpload) s.tag = '0'.repeat(40);
-    if (s.publishOnUpload) s.release = 'published';
-    save();
+    recordUpload(a[a.length - 1]);
   } else if (a[1] === 'edit') { s.release = 'published'; save(); }
   else fail('Unexpected release command');
 } else fail('Unexpected command');
@@ -123,7 +146,7 @@ function fixture(t, options = {}) {
       MOCK_STATE: statePath, PATH: dir + ':' + process.env.PATH },
   });
   const calls = () => JSON.parse(readFileSync(statePath)).calls;
-  const writes = () => calls().filter(a => a[0] === 'release' && ['create', 'upload', 'edit'].includes(a[1]) || a[0] === 'api' && a.includes('POST'));
+  const writes = () => calls().filter(a => a[0] === 'release' && ['create', 'upload', 'edit'].includes(a[1]) || a[0] === 'api' && (a.includes('POST') || a.includes('PATCH')));
   return { run, calls, writes, remote, assets, writeAssets, revision };
 }
 
@@ -132,7 +155,7 @@ test('creates an exact tag and publishes a draft only after validation', t => {
   const result = f.run();
   assert.equal(result.status, 0, result.stderr);
   const writes = f.writes();
-  assert.deepEqual(writes.map(a => a[0] === 'api' ? 'tag' : a[1]), ['tag', 'create', 'upload', 'upload', 'upload', 'edit']);
+  assert.deepEqual(writes.map(a => a[0] === 'api' ? (a[1].endsWith('/git/refs') ? 'tag' : a[1].includes('/assets?') ? 'upload' : a.includes('PATCH') ? 'edit' : 'create') : a[1]), ['tag', 'create', 'upload', 'upload', 'upload', 'edit']);
   assert.ok(writes[0].includes('sha=' + f.revision));
 });
 test('rejects an unrelated existing tag without a release', t => {
@@ -153,7 +176,7 @@ test('does not treat API failures as missing tags', t => {
 test('does not publish if another writer creates the tag first', t => {
   const f = fixture(t, { tagRace: true });
   assert.notEqual(f.run().status, 0);
-  assert.ok(!f.calls().some(a => a[0] === 'release' && ['create', 'upload', 'edit'].includes(a[1])));
+  assert.ok(!f.writes().some(a => a[1].endsWith('/releases') || a[1].includes('/assets?') || a.includes('PATCH')));
 });
 test('accepts an identical published retry without writes', t => {
   const f = fixture(t, { tag: true, release: 'published' });
@@ -188,23 +211,23 @@ test('release lookup failures cannot bypass published asset protection', t => {
 test('rejects a tag retargeted during draft creation', t => {
   const f = fixture(t, { retargetOnCreate: true });
   assert.notEqual(f.run().status, 0);
-  assert.ok(!f.calls().some(a => a[0] === 'release' && ['upload', 'edit'].includes(a[1])));
+  assert.ok(!f.writes().some(a => a[1].includes('/assets?') || a.includes('PATCH')));
 });
 test('rejects a tag retargeted during upload before making the draft public', t => {
   const f = fixture(t, { retargetOnUpload: true });
   assert.notEqual(f.run().status, 0);
-  assert.ok(!f.calls().some(a => a[0] === 'release' && a[1] === 'edit'));
+  assert.ok(!f.writes().some(a => a.includes('PATCH')));
 });
 test('does not edit a draft another writer made public', t => {
   const f = fixture(t, { publishOnUpload: true });
   assert.notEqual(f.run().status, 0);
-  assert.ok(!f.calls().some(a => a[0] === 'release' && a[1] === 'edit'));
+  assert.ok(!f.writes().some(a => a.includes('PATCH')));
 });
 test('resumes a partial draft by comparing present files and uploading missing ones', t => {
   const f = fixture(t, { tag: true, release: 'draft', assets: ['OpenCast-0.1.0-build.1-arm64.dmg'] });
   const result = f.run();
   assert.equal(result.status, 0, result.stderr);
-  const uploads = f.calls().filter(a => a[0] === 'release' && a[1] === 'upload');
+  const uploads = f.calls().filter(a => a[0] === 'api' && a[1].includes('/assets?') && a.includes('POST'));
   assert.equal(uploads.length, 2);
   assert.ok(!uploads.some(a => a.includes('--clobber')));
 });
@@ -219,4 +242,17 @@ test('rejects an ambiguous release list without writing', t => {
   const f = fixture(t, { tag: true, release: 'draft', duplicateRelease: true });
   assert.notEqual(f.run().status, 0);
   assert.deepEqual(f.writes(), []);
+});
+test('publishes a created draft even when it is not yet visible in the release list', t => {
+  const f = fixture(t, { hideNewDraft: true });
+  const result = f.run();
+  assert.equal(result.status, 0, result.stderr);
+});
+test('preserves the tag and exact source when publishing by ID', t => {
+  const f = fixture(t);
+  const result = f.run();
+  assert.equal(result.status, 0, result.stderr);
+  const publish = f.calls().find(a => a[0] === 'api' && a.includes('PATCH'));
+  assert.ok(publish.includes('tag_name=v0.1.0-build.1'));
+  assert.ok(publish.includes('target_commitish=' + f.revision));
 });
