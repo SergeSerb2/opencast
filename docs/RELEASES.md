@@ -48,6 +48,9 @@ paginated release list, which includes drafts for repository writers. Any list
 error or duplicate tag match stops the release. Only explicit tag-ref 404
 responses allow tag creation. Draft retries
 compare existing files and upload only missing files without overwriting assets.
+New drafts keep the release ID returned by creation. Subsequent checks use its
+direct API endpoint. Upload and publication requests use the same ID, so a delay
+in list or tag lookup visibility cannot block publication.
 There is no personal access token or signing secret in the repository. Other
 repositories' runners on this Mac are independent of the OpenCast runner.
 

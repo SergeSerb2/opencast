@@ -44,6 +44,23 @@ check_tag() {
     fi
 }
 check_tag
+read_release_metadata() {
+    RELEASE_EXISTS=1
+    METADATA="$(node --input-type=module - "$TEMP/release.json" "$TAG" <<'JS'
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const r = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+assert(Number.isSafeInteger(r.id) && r.id > 0);
+assert.equal(r.tag_name, process.argv[3]);
+assert.equal(typeof r.draft, 'boolean');
+assert.equal(typeof r.target_commitish, 'string');
+assert(r.assets.every(name => typeof name === 'string'));
+console.log(`${r.id}\t${r.draft}\t${r.target_commitish}`);
+JS
+)"
+    read -r RELEASE_ID DRAFT TARGET <<< "$METADATA"
+    ASSETS="$(node -p 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).assets.join("\n")' "$TEMP/release.json")"
+}
 load_release() {
     # The by-tag endpoint returns published releases only. List releases with
     # write access to include drafts, and fail closed on any pagination error.
@@ -58,30 +75,22 @@ const matches = pages.flat().filter(r => r.tag_name === tag);
 assert(matches.length <= 1, 'Multiple releases use the same tag');
 if (matches.length) {
   const r = matches[0];
-  writeFileSync(output, JSON.stringify({ id: r.id, draft: r.draft,
+  writeFileSync(output, JSON.stringify({ id: r.id, draft: r.draft, tag_name: r.tag_name,
     target_commitish: r.target_commitish, assets: r.assets.map(a => a.name) }));
 }
 console.log(matches.length);
 JS
 )"
     if [ "$RELEASE_EXISTS" = 1 ]; then
-        METADATA="$(node --input-type=module - "$TEMP/release.json" <<'JS'
-import { readFileSync } from 'node:fs';
-import assert from 'node:assert/strict';
-const r = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-assert(Number.isSafeInteger(r.id) && r.id > 0);
-assert.equal(typeof r.draft, 'boolean');
-assert.equal(typeof r.target_commitish, 'string');
-assert(r.assets.every(name => typeof name === 'string'));
-console.log(`${r.id}\t${r.draft}\t${r.target_commitish}`);
-JS
-)"
-        read -r RELEASE_ID DRAFT TARGET <<< "$METADATA"
-        ASSETS="$(node -p 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).assets.join("\n")' "$TEMP/release.json")"
+        read_release_metadata
     fi
 }
 check_draft() {
-    load_release
+    # A newly created draft can lag in the release list. Its returned ID is
+    # authoritative; use the direct endpoint for all subsequent state checks.
+    gh api "repos/$REPO/releases/$EXPECTED_RELEASE_ID" \
+        --jq '{id, draft, tag_name, target_commitish, assets: [.assets[].name]}' >"$TEMP/release.json"
+    read_release_metadata
     if [ "$RELEASE_EXISTS" != 1 ] || [ "$RELEASE_ID" != "$EXPECTED_RELEASE_ID" ] || \
         [ "$DRAFT" != true ] || [ "$TARGET" != "$REVISION" ]; then
         echo 'Release is no longer the expected source draft' >&2; exit 1
@@ -142,10 +151,11 @@ if [ -z "$TAG_TARGET" ]; then
     gh api "repos/$REPO/git/refs" --method POST -f "ref=refs/tags/$TAG" -f "sha=$REVISION" >/dev/null
 fi
 if [ "$RELEASE_EXISTS" = 0 ]; then
-    gh release create "$TAG" --repo "$REPO" --target "$REVISION" --verify-tag --draft \
-        --title "OpenCast $VERSION (build $BUILD_NUMBER)" --notes-file "$NOTES"
-    load_release
-    if [ "$RELEASE_EXISTS" != 1 ]; then echo 'Created release could not be read' >&2; exit 1; fi
+    gh api "repos/$REPO/releases" --method POST -f "tag_name=$TAG" \
+        -f "target_commitish=$REVISION" -F draft=true \
+        -f "name=OpenCast $VERSION (build $BUILD_NUMBER)" -F "body=@$NOTES" \
+        --jq '{id, draft, tag_name, target_commitish, assets: [.assets[].name]}' >"$TEMP/release.json"
+    read_release_metadata
 fi
 EXPECTED_RELEASE_ID="$RELEASE_ID"
 check_draft
@@ -157,11 +167,14 @@ for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
             echo "Draft $asset differs from the verified artifact; repair it explicitly" >&2; exit 1
         fi
     else
-        gh release upload "$TAG" --repo "$REPO" "$OUT/$asset"
+        # Upload to the known release ID instead of rediscovering the new draft
+        # through a tag lookup. Existing assets are never overwritten.
+        gh api "https://uploads.github.com/repos/$REPO/releases/$EXPECTED_RELEASE_ID/assets?name=$asset" \
+            --method POST -H 'Content-Type: application/octet-stream' --input "$OUT/$asset" >/dev/null
     fi
 done
 LATEST=false
 if [ "$(gh api "repos/$REPO/commits/$DEFAULT_BRANCH" --jq .sha)" = "$REVISION" ]; then LATEST=true; fi
 check_draft
-gh release edit "$TAG" --repo "$REPO" --draft=false --latest="$LATEST"
-gh release view "$TAG" --repo "$REPO" --json url --jq .url
+gh api "repos/$REPO/releases/$EXPECTED_RELEASE_ID" --method PATCH \
+    -f "tag_name=$TAG" -f "target_commitish=$REVISION" -F draft=false -f "make_latest=$LATEST" --jq .html_url
