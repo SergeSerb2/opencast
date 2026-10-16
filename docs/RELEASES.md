@@ -18,11 +18,14 @@ VM starts from a clean base image and is discarded after one job. No host files,
 Docker socket, clipboard, signing keys, or release credentials are shared with
 these VMs. The release build runs after merging.
 
-The dedicated repository runner is `opencast-local-mac-arm64`, with labels
-`self-hosted`, `macOS`, `ARM64`, and `opencast-release`. It is installed on the
-build Mac at `~/.local/share/opencast/actions-runner` as a user launchd service.
-The Mac must be awake and online with the user session available. Jobs queue while
-the runner is unavailable. GitHub cancels jobs that exceed its queue timeout;
+The release build also runs in a disposable local macOS VM, with labels
+`self-hosted`, `macOS`, `ARM64`, and `opencast-release`. The local controller at
+`~/.local/share/local-ci/controller.py` creates a fresh VM for each queued job.
+It runs as the `com.serge.local-ci` user launchd service. The former native
+`opencast-local-mac-arm64` runner is disabled and unregistered. Runner labels
+select VM roles; they do not grant access to the host or its credentials.
+The Mac must be awake and online with the user session available. Jobs queue
+while it is unavailable. GitHub cancels jobs that exceed its queue timeout;
 rerun failed CI or use the manual release action when the Mac is available again.
 
 The workflow has a manual **Run workflow** action on `main`. It uses full Git
@@ -36,7 +39,7 @@ A new rebuild can produce different DMG bytes, so retry only the failed
 publishing job to reuse its original artifact. Older queued commits do not
 replace a newer commit as the Latest release.
 
-The Mac builds and verifies the DMG with read-only repository permission. A
+The build VM builds and verifies the DMG with read-only repository permission. A
 separate disposable local VM with the `opencast-publish` label downloads those
 files and checks their checksum and source manifest before publishing. Only the publishing step receives the
 short-lived write token. It runs no dependency installs or build tools. Release
@@ -95,15 +98,14 @@ The build scripts use ad-hoc signatures. Developer ID signing and notarization
 need a separate certificate and Apple notarization credentials before they can
 replace this release method.
 
-## Manage the runner on the build Mac
+## Inspect the local workers on the build Mac
 
 ```sh
-cd ~/.local/share/opencast/actions-runner
-./svc.sh status
-./svc.sh stop
-./svc.sh start
+launchctl print "gui/$(id -u)/com.serge.local-ci"
+tail -n 30 ~/.local/share/local-ci/controller.log
+~/.local/share/local-ci/tools/tart.app/Contents/MacOS/tart list
 ```
 
-To remove this automation, disable the release workflow in GitHub, stop and
-uninstall this runner's service, and remove this runner in the repository's
-Actions settings. Do not change the runner used by another repository.
+To pause OpenCast automation, disable its CI and release workflows in GitHub.
+The controller also serves other repositories, so stopping the shared service
+affects their jobs. Do not restart the retired native runner for PR checks.
