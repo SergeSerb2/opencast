@@ -13,7 +13,7 @@ concurrency:
 jobs:
   web:
     name: TypeScript (typecheck, test, build)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, opencast-release]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -35,7 +35,7 @@ jobs:
 
   macos:
     name: macOS app (Swift build)
-    runs-on: macos-15
+    runs-on: [self-hosted, macOS, ARM64, opencast-release]
     steps:
       - uses: actions/checkout@v4
       - name: Build native host
