@@ -1,2 +1,2 @@
 self-hosted-runner:
-  labels: [opencast-release]
+  labels: [opencast-release, opencast-ci, opencast-publish]

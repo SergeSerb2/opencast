@@ -13,7 +13,10 @@ Developer ID certificate. If macOS blocks the app, follow
 After a merge to `main`, the existing `CI` workflow runs. A successful CI run from
 a push to `main` starts `Release OpenCast DMG` for that exact commit. Each commit
 has its own concurrency group, so a later merge does not cancel an earlier build.
-PR code is checked on GitHub-hosted runners; the release job runs after merging.
+PR checks run in disposable local macOS VMs with the `opencast-ci` label. Each
+VM starts from a clean base image and is discarded after one job. No host files,
+Docker socket, clipboard, signing keys, or release credentials are shared with
+these VMs. The release build runs after merging.
 
 The dedicated repository runner is `opencast-local-mac-arm64`, with labels
 `self-hosted`, `macOS`, `ARM64`, and `opencast-release`. It is installed on the
@@ -34,8 +37,8 @@ publishing job to reuse its original artifact. Older queued commits do not
 replace a newer commit as the Latest release.
 
 The Mac builds and verifies the DMG with read-only repository permission. A
-separate GitHub-hosted job downloads those files and checks their checksum and
-source manifest before publishing. Only the publishing step receives the
+separate disposable local VM with the `opencast-publish` label downloads those
+files and checks their checksum and source manifest before publishing. Only the publishing step receives the
 short-lived write token. It runs no dependency installs or build tools. Release
 actions are pinned to full commit SHAs. All Node and pnpm build commands use the
 same checksum-pinned standalone Node runtime that is bundled in the app. The
@@ -51,7 +54,8 @@ compare existing files and upload only missing files without overwriting assets.
 New drafts keep the release ID returned by creation. Subsequent checks use its
 direct API endpoint. Upload and publication requests use the same ID, so a delay
 in list or tag lookup visibility cannot block publication.
-There is no personal access token or signing secret in the repository. Other
+There is no personal access token or signing secret in the repository. The host controller obtains only a short-lived runner registration token for each
+VM. The GitHub CLI credential on the host never enters the guest. Other
 repositories' runners on this Mac are independent of the OpenCast runner.
 
 ## Build and verify locally
