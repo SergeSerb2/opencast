@@ -432,7 +432,10 @@ describe("edge cases and persistence", () => {
     await vi.waitFor(async () =>
       expect((await f!.call("clipboard.list", {})).total).toBe(0),
     );
-    await expect(readFile(item.imagePath!)).rejects.toThrow();
+    // Retention removes the database row before it finishes the async unlink.
+    await vi.waitFor(async () =>
+      expect(readFile(item.imagePath!)).rejects.toThrow(),
+    );
     f.ctx.settings.set("clipboard.disabledApplications", ["private.app"]);
     f.emit("clipboard.changed", {
       ...snapshot,
