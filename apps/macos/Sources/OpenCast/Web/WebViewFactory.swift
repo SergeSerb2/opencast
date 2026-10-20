@@ -118,6 +118,13 @@ import WebKit
         "window.__opencastNative.emit('window.route', \(json(route)))", completionHandler: nil)
     }
   }
+  func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+    guard ready != nil, let (kind, web) = views.first(where: { $0.value === webView }) else { return }
+    Environment.log("Web content process terminated (\(kind)); reloading")
+    // A fresh page must not replay a command route and repeat its side effects.
+    routes.removeValue(forKey: kind)
+    load(web, kind: kind)
+  }
   func webView(
     _ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
