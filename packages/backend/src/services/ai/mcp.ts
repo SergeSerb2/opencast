@@ -167,14 +167,21 @@ export class MCP implements ToolProvider {
         undefined,
         { signal, timeout: 60_000 },
       );
-      if (result.isError)
-        return JSON.parse(
-          JSON.stringify(result, (_key, value: unknown) =>
-            typeof value === "string"
-              ? redact(value, connection.secrets)
-              : value,
-          ),
-        );
+      // Servers can echo secrets anywhere in an error, including object keys.
+      const scrub = (value: unknown): unknown =>
+        typeof value === "string"
+          ? redact(value, connection.secrets)
+          : Array.isArray(value)
+            ? value.map(scrub)
+            : value && typeof value === "object"
+              ? Object.fromEntries(
+                  Object.entries(value).map(([key, item]) => [
+                    redact(key, connection.secrets),
+                    scrub(item),
+                  ]),
+                )
+              : value;
+      if (result.isError) return scrub(result) as typeof result;
       return result;
     } catch (error) {
       throw new Error(redact(safeError(error), connection.secrets));
