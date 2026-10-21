@@ -118,7 +118,7 @@ local development. Tokens never appear in URLs and redirects are refused by clie
 
 | Method | Path | Behavior |
 | --- | --- | --- |
-| GET | `/v1/health` | Unauthenticated `{ ok: true, version: 1 }` |
+| GET | `/v1/health` | Unauthenticated `{ ok: true, version: 1, configured: boolean }` |
 | GET | `/v1/vault` | Vault JSON, or 404 `vault_not_found` |
 | PUT | `/v1/vault` | Create vault (201); 409 if present. Replace with vault fields plus `replace: true` and raw `If-Match: <existing vaultId>` |
 | DELETE | `/v1/vault` | Require `X-OpenCast-Confirm: wipe`; delete all account records/devices/vault; return `{ ok: true }` |
@@ -129,6 +129,10 @@ local development. Tokens never appear in URLs and redirects are refused by clie
 | GET | `/v1/pull?after=0&limit=200` | `{ records, cursor, hasMore }`; records contain `rid, seq, deleted, nonce, ct, keyEpoch`, ordered by increasing sequence |
 | GET | `/v1/stats` | `{ records, tombstones, bytes, devices, lastSeq }`; `records` counts live records, `bytes` is decoded ciphertext including tags |
 | GET | `/v1/events` | Bearer-authenticated WebSocket, messages `{ type: "changed", seq }`; 501 if NOTIFIER absent; close 4003 on removal/wipe |
+
+`configured` is true when `SYNC_TOKEN` or `SYNC_TOKENS` is set. It reveals no secret or
+account details. Without either token secret, authenticated routes return 503
+`not_configured`. `GET /` is also public and returns a short plain-text setup message.
 
 Clients send optional raw `If-Match: <vaultId>` on push. The worker checks it inside the
 D1 transaction to reject publication racing a vault replacement. A sequence allocation,
@@ -150,12 +154,35 @@ old-epoch records are not automatically re-encrypted or readable with a new key.
 
 ## Deployment and recovery
 
-See [the Worker deployment guide](../packages/sync-worker/README.md), or run
-`./scripts/deploy-sync.sh` after `wrangler login`. Configure the returned HTTPS URL,
-server token, passphrase and optional device name through `sync.connect` in OpenCast.
-Each additional Mac uses the same account token and passphrase. Separate tokens/accounts
-provide separate vaults; a shared team vault intentionally shares one administrative token.
-The script stops without Cloudflare login and never starts a login flow itself.
+See [the Worker deployment guide](../packages/sync-worker/README.md).
+Its Deploy to Cloudflare button needs no terminal once the repository is public.
+Generate a token in OpenCast → Settings → Cloud Sync and paste it into the button's
+`SYNC_TOKEN` field. You can also generate one with `openssl rand -hex 32`.
+Cloudflare creates the Worker, D1 database, and SQLite Durable Object.
+The server creates its schema on first use. Applying migrations is optional and safe
+before or after first use. The daily cron also initializes the schema if needed.
+
+For a terminal deploy, run `pnpm install --frozen-lockfile`, then
+`pnpm --filter @opencast/sync-worker exec wrangler login` and `./scripts/deploy-sync.sh`.
+The script checks login and never starts it. It finds or creates the database, writes
+an ignored local config, deploys, applies migrations, and sets a random token through stdin.
+It does not edit the tracked config or save the token to a file. Existing tokens can be
+kept or rotated. `--yes` accepts defaults and keeps an existing token.
+
+New Worker and database names default to `opencast-sync`. Upgrade an existing service
+with `./scripts/deploy-sync.sh --name surgecast-sync`. Add `--database <existing-name>`
+if its database has another name. Confirm that the script reuses your existing database.
+Keep the old Worker name to keep its URL. Keep the existing token and Durable Object
+migration. For manual deploys and custom routes, follow the Worker guide.
+
+The script checks `/v1/health` for `ok`, version 1, and `configured: true`. It prints a
+setup code with the URL and token. Paste it into OpenCast → Settings → Cloud Sync.
+If you keep an existing token, enter it at the hidden prompt to make a code. Otherwise,
+use the URL and your existing token. Treat setup codes like passwords: they grant admin
+access to the server. They do not contain your encryption passphrase.
+Choose a strong passphrase separately. Each additional Mac uses the same account token
+and passphrase. Separate tokens/accounts provide separate vaults. A shared team vault
+shares one administrative token.
 
 Keep the passphrase in a password manager. If you lose it and every unlocked device/key,
 the cloud data is unrecoverable. If one device is still unlocked, export your local data,
