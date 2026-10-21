@@ -121,11 +121,12 @@ interface Row {
   id: string;
   data: string;
 }
-export function clipboardItems(ctx: AppContext, limit = 50): ClipboardItem[] {
+export function clipboardItems(ctx: AppContext, limit = 50, offset = 0): ClipboardItem[] {
   return ctx.db
     .all<Row>(
-      "SELECT id,data FROM clipboard_history ORDER BY last_copied_at DESC LIMIT ?",
+      "SELECT id,data FROM clipboard_history ORDER BY last_copied_at DESC LIMIT ? OFFSET ?",
       limit,
+      offset,
     )
     .map((r) => JSON.parse(r.data));
 }
