@@ -295,7 +295,11 @@ export class SyncEngine {
       try {
         const vault = await wrapVault(newPassphrase, vmk, session.vault.vaultId, session.vault.keyEpoch);
         this.assertSession(session);
-        await session.http.request("/v1/vault", "PUT", { ...vault, replace: true }, { "If-Match": session.vault.vaultId });
+        try { await session.http.request("/v1/vault", "PUT", { ...vault, replace: true }, { "If-Match": session.vault.vaultId, "X-OpenCast-Vault-Salt": remote.kdf.salt }); }
+        catch (error) {
+          if (error instanceof SyncHttpError && error.status === 409) throw new Error("The passphrase was changed on another Mac. Reconnect with the new passphrase, then try again.");
+          throw error;
+        }
       } finally { vmk.fill(0); }
     });
   }

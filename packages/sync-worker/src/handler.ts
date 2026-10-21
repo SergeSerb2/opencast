@@ -59,8 +59,11 @@ async function route(request: Request, env: Env): Promise<Response> {
       const input = await body(request), v = vault(input);
       if (input.replace !== undefined && typeof input.replace !== "boolean") invalid("Invalid replace flag");
       const encoded = JSON.stringify(v);
+      // Optional: the KDF salt of the wrapper the client last read, so concurrent passphrase changes cannot both win.
+      const salt = request.headers.get("X-OpenCast-Vault-Salt");
       const result = input.replace === true
-        ? await stmt("UPDATE accounts SET vault_id = ?, key_epoch = ?, vault_json = ? WHERE account = ? AND vault_id = ? AND vault_json IS NOT NULL RETURNING account", v.vaultId, v.keyEpoch, encoded, account, request.headers.get("If-Match")).all()
+        ? await stmt(`UPDATE accounts SET vault_id = ?, key_epoch = ?, vault_json = ? WHERE account = ? AND vault_id = ? AND vault_json IS NOT NULL${salt === null ? "" : " AND json_extract(vault_json, '$.kdf.salt') = ?"} RETURNING account`,
+          v.vaultId, v.keyEpoch, encoded, account, request.headers.get("If-Match"), ...(salt === null ? [] : [salt])).all()
         : await stmt(`INSERT INTO accounts (account, vault_id, key_epoch, vault_json) VALUES (?, ?, ?, ?)
             ON CONFLICT(account) DO UPDATE SET vault_id = excluded.vault_id, key_epoch = excluded.key_epoch, vault_json = excluded.vault_json
             WHERE accounts.vault_json IS NULL RETURNING account`, account, v.vaultId, v.keyEpoch, encoded).all();
