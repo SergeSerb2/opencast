@@ -19,6 +19,16 @@ the wrapped key. This protocol does not provide complete rollback detection or s
 multi-device history. A strong passphrase is essential. A stolen unlocked device or
 trusted extension with backend access can read local plaintext and keys.
 
+With **AI & MCP Keys** on, the vault also contains provider API keys, secret headers,
+MCP environment and header secrets, and web-search keys. The server cannot read them;
+it still sees record counts and ciphertext lengths, which approximate key lengths.
+A passphrase compromise previously exposed notes and settings. With this option on,
+it also exposes every synced API key. Use a strong, unique passphrase.
+Synced keys are copied into each Mac's Keychain. Removing a device does not erase keys
+already on it. If a Mac is lost, rotate the keys at each provider. A malicious server
+can replay an old key ciphertext, as with any record; a stale key can fail at the provider.
+The sync token, vault key, backup passphrase, extension secrets and OAuth tokens never sync.
+
 A bearer token authorizes server access, vault replacement, device registration/removal
 and wipe. Sharing a token grants administrative authority. Removing a device blocks its
 HTTP requests and closes its WebSockets, but a token holder can explicitly re-register.
@@ -65,6 +75,11 @@ VMK and token are stored only through `ctx.secrets` in Keychain accounts `sync:v
 `sync:token`. Passphrases are not persisted. Derived keys live in memory and are zeroed
 when stopping a session. SQLite contains device ID, vault identity/epoch, cursor and
 last-sync time, plus device-local sync preferences, never encryption keys or tokens.
+Provider and MCP secrets and web-search keys stay in Keychain. When their category is
+enabled, values pass directly between Keychain and encrypted sync records. A separate
+`sync_secret_state` table stores only account names, timestamps, deletion flags, server
+sequences, dirty flags and SHA-256 value hashes. Secret values never enter SQLite or
+generic entity export paths. Hashes can reveal equality or allow guesses of weak values.
 The generic entity store itself is local plaintext: E2EE protects the remote service,
 not an unlocked local database. Fixed vectors cover HKDF/HMAC/record encryption and
 scrypt/key wrapping; tests cover tampering, context substitution and compressed Unicode.
@@ -94,9 +109,12 @@ Title/caret-only changes do not generate content conflict copies. These are enti
 LWW semantics, not a CRDT; clock skew can choose the wrong winner for other collections.
 Observed remote timestamps advance the local monotonic clock.
 
-Cursor updates and entity application occur in one SQLite transaction. Push acknowledgments
-clear dirty flags only if the version hasn't changed locally during the request. Changes
-arriving during an active cycle schedule another cycle. Triggers are application readiness,
+Each pull page applies entities in a SQLite transaction, then awaits allowed Keychain
+writes and saves their metadata. It advances the cursor last. Failed Keychain writes
+leave the page available for replay. Local secret edits and sync applies share a lock,
+so an edit during a native call cannot be overwritten by an earlier apply.
+Push acknowledgments clear dirty flags only if the version hasn't changed locally during
+the request. Changes arriving during an active cycle schedule another cycle. Triggers are application readiness,
 configured `sync.intervalSeconds` (default 300; minimum 5), 2 seconds after local changes,
 wake, manual `sync.now`, and authenticated WebSocket `changed` hints. Network retries use
 exponential backoff from 2 seconds to 5 minutes. WebSockets reconnect with the same cap;
@@ -107,6 +125,37 @@ Remote wipe stops publication, requires explicit `confirm: "wipe"`, deletes the 
 vault/records/devices, disables this client's sync, and forgets its keys. Other devices
 observe the missing/replaced vault and require reconnection. Server sequences never
 reset, even across wipes, avoiding cursor reuse.
+
+### AI & MCP Keys
+
+This category is off by default. Turn it on separately on each Mac through the existing
+category settings. It works best with **AI Commands & Presets** and **MCP Servers** on,
+but their switches are independent. Turning it off stops secret push and pull and leaves
+local Keychain values intact. Remote ciphertext remains; wiping Cloud Sync data removes
+it. Re-enabling replays remote records to catch up.
+
+The virtual collection is `syncedSecrets`; its record ID is the Keychain account.
+Live records use `data: { v: 1, value }`; tombstones use `data: { v: 1 }` with `deleted: true`.
+Both use the existing encrypted v1 envelope. Older clients skip the unknown collection.
+Push collection and pull application allow only these accounts:
+
+- `ai.provider:<id>:apiKey` and `ai.provider:<id>:header:<name>`
+- `mcp:<id>:env:<name>` and `mcp:<id>:header:<name>`
+- `ai.websearch:<provider>:apiKey`, for tavily, brave, exa, searxng and jina
+
+Accounts are at most 256 characters; values are at most 64 KiB of UTF-8. Neither may
+contain NUL or control characters. Header and environment names use their respective
+HTTP token and environment-variable syntax. Other accounts are ignored, including
+`sync:*`, `data.backup:*`, `ext:*` and `oauth:*`. Secret values never appear in status,
+change events or public RPC results. The private native Keychain RPC channel carries
+values between the backend and the host; it must not be captured as an application log.
+
+Successful local sets and explicit deletes track changes even while this category is
+off. After pulling, a collector compares indexed Keychain values with stored hashes
+before pushing. A missing or unreadable value never creates a deletion. Deleting a
+provider or MCP server explicitly deletes its local secrets; the resulting tombstones
+delete peer copies on Macs with this category on. Secret conflicts use the same last
+writer wins rule as entities, with dirty local ties preserved.
 
 ## HTTP API
 
@@ -204,6 +253,7 @@ it does not recover a lost encryption key. Removing a device does not erase its 
   remote retention window can miss deletions and resurrect old dirty data. There is no
   permanent deleted-ID registry or device acknowledgment gate; reconnect from a current
   device/export when recovering a long-offline install.
+  This also applies to deleted API keys and MCP secrets: a long-offline Mac can resurrect them.
 - Cloudflare plan/storage/request limits still apply. The Worker keeps only the latest
   version of each record, not a complete history. Unlimited product features do not
   imply unlimited infrastructure capacity.

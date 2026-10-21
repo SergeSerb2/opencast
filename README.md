@@ -49,7 +49,7 @@ controls, and a bit of confetti. The launcher is the best way to explore it.
 ## Make it yours
 
 For AI, open **Settings → AI → Models & Providers**. Add your provider and choose
-the models you want to use. API keys stay in your Mac’s Keychain. OpenAI,
+the models you want to use. API keys stay in your Mac’s Keychain and can optionally sync end-to-end encrypted. OpenAI,
 Anthropic, Gemini, OpenRouter, and local tools such as Ollama and LM Studio are
 supported. An OpenAI-compatible proxy such as
 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) works too.
