@@ -23,15 +23,21 @@ import OpenCastCore
     down.post(tap: .cghidEventTap)
     up.post(tap: .cghidEventTap)
   }
-  func focusTarget() async {
-    if windows.launcher.isVisible
-      || NSWorkspace.shared.frontmostApplication?.processIdentifier
-        == ProcessInfo.processInfo.processIdentifier
-    {
-      windows.launcher.hide(restoreFocus: true)
-      windows.launcher.previous?.activate()
+  func focusTarget() async throws {
+    let front = NSWorkspace.shared.frontmostApplication
+    let restoreFocus = windows.launcher.isVisible
+      || front?.processIdentifier == ProcessInfo.processInfo.processIdentifier
+    guard let target = restoreFocus ? windows.launcher.previous : front else {
+      throw RpcError(code: -32005, message: "No input target application")
     }
-    try? await Task.sleep(nanoseconds: 60_000_000)
+    if restoreFocus {
+      windows.launcher.hide(restoreFocus: true)
+      target.activate()
+    }
+    try await Task.sleep(nanoseconds: 60_000_000)
+    guard NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier else {
+      throw RpcError(code: -32005, message: "Input target changed before key injection")
+    }
   }
   func paste(_ content: [String: Any], restore: Bool, stillValid: (() -> Bool)? = nil) async throws
   {
@@ -56,12 +62,16 @@ import OpenCastCore
     let saved = board.saved()
     try board.write(content, transient: restore)
     let count = NSPasteboard.general.changeCount
-    await focusTarget()
-    if stillValid?() == false || NSPasteboard.general.changeCount != count {
+    do {
+      try await focusTarget()
+      if stillValid?() == false || NSPasteboard.general.changeCount != count {
+        throw RpcError(code: -32005, message: "Input target changed before paste")
+      }
+      try Self.press(9, flags: .maskCommand)
+    } catch {
       board.restore(saved, ifCount: count)
-      throw RpcError(code: -32005, message: "Input target changed before paste")
+      throw error
     }
-    try Self.press(9, flags: .maskCommand)
     if restore {
       try? await Task.sleep(nanoseconds: 400_000_000)
       board.restore(saved, ifCount: count)
@@ -95,7 +105,7 @@ import OpenCastCore
     case "input.typeText":
       try Permissions.requireAX()
       let text = try p.string("text", allowEmpty: true)
-      await focusTarget()
+      try await focusTarget()
       var chunks: [[UInt16]] = []
       var chunk: [UInt16] = []
       for scalar in text.unicodeScalars {
@@ -125,7 +135,7 @@ import OpenCastCore
       let key = try p.string("key")
       guard let code = KeyMap.code(key) else { throw RpcError.invalid("Unknown key: \(key)") }
       let flags = try Hotkeys.flags(p["modifiers"] as? [String] ?? [])
-      await focusTarget()
+      try await focusTarget()
       try Self.press(code, flags: flags)
     case "input.selectedText":
       try Permissions.requireAX()
@@ -145,7 +155,7 @@ import OpenCastCore
         return selected
       }
       let saved = board.saved()
-      await focusTarget()
+      try await focusTarget()
       let count = NSPasteboard.general.changeCount
       try Self.press(8, flags: .maskCommand)
       var changed = false
