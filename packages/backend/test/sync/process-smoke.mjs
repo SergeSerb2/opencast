@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { createInterface } from "node:readline";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -72,6 +73,18 @@ function put(app, id, content, updatedAt) {
 }
 function note(app, id) { const row = app.db.prepare("SELECT data FROM entities WHERE collection='notes' AND id=? AND deleted=0").get(id); return row ? JSON.parse(row.data) : undefined; }
 async function now(app) { const result = await app.rpc("sync.now"); assert.equal(result.phase, "online", result.lastError); }
+const keySentinels = ["initial", "rotated"].map(label => `opencast-key-sync-${label}-${randomUUID()}`);
+function assertNoKeyLeaks() {
+  for (const app of apps) {
+    for (const suffix of ["", "-wal", "-shm"]) {
+      const file = join(app.dir, "opencast.db" + suffix);
+      if (!existsSync(file)) continue;
+      const bytes = readFileSync(file);
+      assert.ok(keySentinels.every(key => !bytes.includes(Buffer.from(key))), `Provider key appeared in ${file}`);
+    }
+    assert.ok(keySentinels.every(key => !app.stderr.includes(key)), "Provider key appeared in backend stderr");
+  }
+}
 try {
   await wipe();
   const a = await start("A"), b = await start("B");
@@ -113,6 +126,30 @@ try {
     assert.equal(app.keys.size, 2);
     for (const value of app.keys.values()) assert.ok(!app.stderr.includes(value), "Secret appeared in backend logs");
   }
+  for (const app of [a, b]) {
+    assert.ok(!(await app.rpc("settings.getAll"))["sync.optInCategories"].includes("ai-keys"));
+    await app.rpc("sync.setCategoryEnabled", { category: "ai-keys", enabled: true });
+  }
+  // Disable discovery so this scenario needs only the sync Worker, with no AI server.
+  const provider = await a.rpc("ai.providers.upsert", {
+    provider: { name: "Key Sync Smoke", template: "custom", api: "openai", baseUrl: url + "/v1", enabled: false, autoFetchModels: false },
+    apiKey: keySentinels[0],
+  });
+  const account = `ai.provider:${provider.id}:apiKey`;
+  await now(a); await now(b);
+  assert.equal((await b.rpc("ai.providers.list")).find(p => p.id === provider.id)?.hasApiKey, true);
+  assert.ok(b.keys.get(account) === keySentinels[0], "A's provider key did not reach B's Keychain");
+  assertNoKeyLeaks();
+  await b.rpc("ai.providers.upsert", { provider, apiKey: keySentinels[1] });
+  await now(b); await now(a);
+  assert.ok(a.keys.get(account) === keySentinels[1], "B's rotated provider key did not reach A's Keychain");
+  assertNoKeyLeaks();
+  await a.rpc("ai.providers.delete", { id: provider.id });
+  await now(a); await now(b);
+  assert.equal(a.keys.has(account), false);
+  assert.equal(b.keys.has(account), false, "Provider deletion left B's Keychain key behind");
+  assert.ok(!(await b.rpc("ai.providers.list")).some(p => p.id === provider.id));
+  assertNoKeyLeaks();
   const previousVault = await (await fetch(url + "/v1/vault", { headers: { Authorization: `Bearer ${token}`, "X-OpenCast-Device": "process-test" } })).json();
   await assert.rejects(a.rpc("sync.changePassphrase", { newPassphrase: "short" }), /at least 12/);
   const newPassphrase = "new process smoke passphrase";
@@ -151,7 +188,8 @@ try {
   for (const app of apps) {
     for (const secret of [...app.keys.values(), token, rotatedToken, passphrase, newPassphrase]) assert.ok(!app.stderr.includes(secret), "Secret appeared in backend logs");
   }
-  console.log("Bundled backend processes: probe, setup-code handoff, explicit create/join, wrong passphrase, absent-vault guard, revocation, stop reasons, passphrase rewrap, token update, Keychain isolation, encrypted conflicts and tombstones passed");
+  assertNoKeyLeaks();
+  console.log("Bundled backend processes: probe, setup-code handoff, explicit create/join, wrong passphrase, absent-vault guard, revocation, stop reasons, passphrase rewrap, token update, Keychain isolation, encrypted conflicts and tombstones, opted-in provider key transfer, rotation, deletion and SQLite/stderr leak checks passed");
 } finally {
   for (const app of apps) await close(app);
   await wipe(); rmSync(root, { recursive: true, force: true });
