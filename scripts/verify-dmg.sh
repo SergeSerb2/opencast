@@ -35,9 +35,28 @@ for binary in Contents/MacOS/OpenCast Contents/Resources/node/bin/node; do
 done
 "$ROOT/scripts/verify-node.sh" "$APP/Contents/Resources/node/bin/node"
 for path in backend/index.mjs frontend/main.html frontend/ai-chat.html frontend/notes.html \
-    frontend/settings.html raycast-api/runtime.cjs raycast-api/worker.cjs; do
-    test -s "$APP/Contents/Resources/$path"
+    frontend/settings.html raycast-api/runtime.cjs raycast-api/worker.cjs \
+    licenses/OpenCast-LICENSE.txt licenses/THIRD-PARTY-NOTICES.txt licenses/Node-LICENSE.txt \
+    licenses/Inter-OFL.txt licenses/JetBrainsMono-OFL.txt licenses/Lucide-LICENSE.txt licenses/inventory.json; do
+    if [ ! -s "$APP/Contents/Resources/$path" ]; then
+        echo "Missing release resource: $path" >&2; exit 1
+    fi
 done
+"$APP/Contents/Resources/node/bin/node" --input-type=module - "$APP/Contents/Resources/licenses" <<'JS'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+const directory = process.argv[2];
+const inventory = JSON.parse(readFileSync(`${directory}/inventory.json`, 'utf8'));
+assert.equal(inventory.node.version, process.versions.node, 'Node license version mismatch');
+for (const [file, hash] of Object.entries(inventory.files)) {
+  assert.equal(createHash('sha256').update(readFileSync(`${directory}/${file}`)).digest('hex'), hash, `Changed license: ${file}`);
+}
+for (const name of ['@fontsource-variable/inter', '@fontsource/jetbrains-mono', 'lucide-react', 'mathjs', 'highlight.js']) {
+  assert(inventory.packages.some(p => p.name === name && p.version && p.license && p.sources.length), `Missing package notice: ${name}`);
+}
+assert.equal(inventory.files['Node-LICENSE.txt'], inventory.node.licenseSHA256);
+JS
 "$APP/Contents/Resources/node/bin/node" -e '
 const [major, minor] = process.versions.node.split(".").map(Number);
 if (major < 22 || (major === 22 && minor < 13)) process.exit(1);
