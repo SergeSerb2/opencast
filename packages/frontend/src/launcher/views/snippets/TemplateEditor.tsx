@@ -143,6 +143,7 @@ export const TemplateEditor = forwardRef<TemplateEditorHandle, TemplateEditorPro
   };
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (!multiline && event.key === "Enter" && !event.metaKey) event.preventDefault();
     if (!placeholderMenuOpen) {
       if (menu && event.key === "Escape") {

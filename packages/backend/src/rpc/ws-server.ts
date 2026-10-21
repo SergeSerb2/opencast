@@ -111,10 +111,15 @@ export class WsRpcServer {
     try {
       msg = JSON.parse(raw) as RpcMessage;
     } catch {
-      conn.socket.send(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: RpcErrorCode.ParseError, message: "Parse error" } }));
+      this.send(conn, { jsonrpc: "2.0", id: null, error: { code: RpcErrorCode.ParseError, message: "Parse error" } });
       return;
     }
-    if (!("method" in msg)) return; // the frontend never answers server requests
+    if (!msg || typeof msg !== "object" || Array.isArray(msg) || msg.jsonrpc !== "2.0" ||
+        !("method" in msg) || typeof msg.method !== "string" ||
+        ("id" in msg && typeof msg.id !== "string" && typeof msg.id !== "number")) {
+      this.send(conn, { jsonrpc: "2.0", id: null, error: { code: RpcErrorCode.InvalidRequest, message: "Invalid request" } });
+      return;
+    }
     if (msg.method === "$/cancel") {
       const id = (msg.params as { id?: string | number } | undefined)?.id;
       if (id !== undefined) conn.inflight.get(id)?.abort();

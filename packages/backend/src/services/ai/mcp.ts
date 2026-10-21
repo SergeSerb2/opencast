@@ -2,11 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type {
-  MCPServer,
-  AIToolInfo,
-  BackendMethods,
-} from "@opencast/protocol";
+import type { MCPServer, AIToolInfo, BackendMethods } from "@opencast/protocol";
 import type { AppContext, ToolProvider } from "../../context";
 import { httpUrl, providerUrl, redact, safeError } from "./common";
 interface Connection {
@@ -171,26 +167,57 @@ export class MCP implements ToolProvider {
         undefined,
         { signal, timeout: 60_000 },
       );
-      if (result.isError && Array.isArray(result.content))
-        for (const item of result.content)
-          if (item.type === "text" && typeof item.text === "string")
-            item.text = redact(item.text, connection.secrets);
+      // Servers can echo secrets anywhere in an error, including object keys.
+      const scrub = (value: unknown): unknown =>
+        typeof value === "string"
+          ? redact(value, connection.secrets)
+          : Array.isArray(value)
+            ? value.map(scrub)
+            : value && typeof value === "object"
+              ? Object.fromEntries(
+                  Object.entries(value).map(([key, item]) => [
+                    redact(key, connection.secrets),
+                    scrub(item),
+                  ]),
+                )
+              : value;
+      if (result.isError) return scrub(result) as typeof result;
       return result;
     } catch (error) {
       throw new Error(redact(safeError(error), connection.secrets));
     }
   }
-  status() {
-    return this.servers().map((s) => ({
-      ...s,
-      status: this.connections.has(s.id)
-        ? ("connected" as const)
-        : this.errors.has(s.id)
-          ? ("error" as const)
-          : ("disconnected" as const),
-      toolCount: this.connections.get(s.id)?.tools.length ?? 0,
-      error: this.errors.get(s.id),
-    }));
+  async status() {
+    return Promise.all(
+      this.servers().map(async (s) => ({
+        ...s,
+        status: this.connections.has(s.id)
+          ? ("connected" as const)
+          : this.errors.has(s.id)
+            ? ("error" as const)
+            : ("disconnected" as const),
+        toolCount: this.connections.get(s.id)?.tools.length ?? 0,
+        error: this.errors.get(s.id),
+        missingSecrets: (
+          await Promise.all(
+            (
+              [
+                ["env", s.env],
+                ["header", s.headers],
+              ] as const
+            ).flatMap(([kind, values]) =>
+              Object.entries(values ?? {})
+                .filter(([, value]) => value === "$keychain")
+                .map(async ([name]) =>
+                  (await this.ctx.secrets.has(`mcp:${s.id}:${kind}:${name}`))
+                    ? []
+                    : [`${kind}:${name}`],
+                ),
+            ),
+          )
+        ).flat(),
+      })),
+    );
   }
   async upsert(
     input: BackendMethods["ai.mcp.upsert"]["params"],
@@ -273,16 +300,21 @@ export class MCP implements ToolProvider {
       "ai.mcp.upsert": (p) => this.upsert(p),
       "ai.mcp.delete": (p) => this.delete(p.id),
       "ai.mcp.test": async ({ id }) => {
+        let connection: Connection | undefined;
         try {
-          const c = await this.connect(id);
-          await c.client.listTools(undefined, { timeout: 30_000 });
+          connection = await this.connect(id);
+          await connection.client.listTools(undefined, { timeout: 30_000 });
           return {
             ok: true,
             message: "Connected and listed tools",
-            tools: c.tools.map((t) => t.name),
+            tools: connection.tools.map((t) => t.name),
           };
         } catch (e) {
-          return { ok: false, message: safeError(e), tools: [] };
+          return {
+            ok: false,
+            message: redact(safeError(e), connection?.secrets ?? []),
+            tools: [],
+          };
         }
       },
       "ai.mcp.import": async ({ json }) => {

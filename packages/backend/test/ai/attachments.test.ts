@@ -136,7 +136,7 @@ it("accepts bounded inline images and rejects unsupported models and oversized t
 
 it("loads remote images with a size bound and rejects credentials in their URLs", async () => {
   vi.stubGlobal("fetch", async () => new Response("image bytes", { headers: { "content-type": "image/png" } }));
-  const turns = [{ role: "user" as const, content: "", attachments: [{ id: "remote", kind: "image" as const, name: "remote.png", url: "https://example.test/image.png" }] }];
+  const turns = [{ role: "user" as const, content: "", attachments: [{ id: "remote", kind: "image" as const, name: "remote.png", url: "https://93.184.216.34/image.png" }] }];
   expect((await prepareTurns(turns, provider, model))[0].parts[0]).toMatchObject({ type: "image", data: Buffer.from("image bytes").toString("base64") });
   turns[0].attachments[0].url = "https://name:password@example.test/image.png";
   await expect(prepareTurns(turns, provider, model)).rejects.toThrow("credentials");

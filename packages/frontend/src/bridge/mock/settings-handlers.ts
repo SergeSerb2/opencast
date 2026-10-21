@@ -93,6 +93,7 @@ const PROVIDER_TEMPLATES: BackendResult<"ai.providers.templates"> = [
 
 /** Models a provider "discovers" on refresh, keyed by template. */
 const DISCOVERABLE: Record<string, AIProvider["models"]> = {
+  ollama: [{ id: "llama3.2:latest", name: "Llama 3.2", enabled: true, capabilities: { tools: true } }],
   openai: [{ id: "gpt-5.1-nano", name: "GPT-5.1 nano", contextWindow: 400_000, capabilities: { vision: true, tools: true }, enabled: false }],
   cliproxyapi: [
     { id: "claude-sonnet-5-5", name: "claude-sonnet-5-5", capabilities: { vision: true, tools: true, reasoning: true }, enabled: true },
@@ -317,9 +318,33 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
   ];
   if (typeof location !== "undefined" && new URLSearchParams(location.search).get("mock.ai.empty") === "1") providers.length = 0;
-  let sync: SyncStatus = { phase: settings["sync.enabled"] ? "online" : "disabled", serverUrl: settings["sync.serverUrl"] ?? undefined, lastSyncedAt: settings["sync.enabled"] ? now : undefined, deviceId: "mock-device", deviceName: settings["sync.deviceName"] ?? "This Mac", pendingChanges: 0, counts: SYNC_COUNTS };
+  const syncParams = new URLSearchParams(typeof location === "undefined" ? "" : location.search);
+  const stopped = syncParams.get("mock.sync.stopReason");
+  const stopReason = stopped === "vault-changed" || stopped === "device-removed" ? stopped : undefined;
+  if (stopReason) {
+    settings["sync.enabled"] = false;
+    settings["sync.serverUrl"] ??= "https://sync.example.workers.dev";
+  }
+  let sync: SyncStatus = { phase: settings["sync.enabled"] ? "online" : "disabled", serverUrl: settings["sync.serverUrl"] ?? undefined, lastSyncedAt: settings["sync.enabled"] ? now : undefined, deviceId: "mock-device", deviceName: settings["sync.deviceName"] ?? "This Mac", pendingChanges: 0, counts: SYNC_COUNTS, stopReason };
+  let syncToken = "mock-sync-token";
+  let mockVault = settings["sync.enabled"] || stopReason || syncParams.get("mock.sync.vault") === "present"
+    ? { passphrase: "correct horse battery staple" } : undefined;
+  let deviceRevoked = stopReason === "device-removed" || syncParams.get("mock.sync.vault") === "unknown";
+  const syncCredentials = (serverUrl: string, token: string) => {
+    let url: URL;
+    try { url = new URL(serverUrl); } catch { return fail("Invalid sync server URL"); }
+    if (url.username || url.password || url.search || url.hash || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) fail("Sync requires HTTPS (HTTP is allowed only for localhost development)");
+    if (!token.length || token.length > 4096 || /[\r\n]/.test(token)) fail("A valid sync server token is required");
+    return { serverUrl: url.toString().replace(/\/+$/, ""), token };
+  };
   let devices = structuredClone(DEVICES);
   let scripts = structuredClone(SCRIPTS);
+
+  // AI secret presence is device-local in the mock, just as it is in Keychain.
+  const providerHeaderKeys = new Set(providers.flatMap((p) => (p.secretHeaders ?? Object.keys(p.headers ?? {})).map((name) => `${p.id}:${name}`)));
+  const mcpKeys = new Set(mcp.flatMap((s) => ([ ["env", s.env], ["header", s.headers] ] as const).flatMap(([kind, values]) => Object.keys(values ?? {}).map((name) => `${s.id}:${kind}:${name}`))));
+  const missingProviderHeaders = (p: ProviderRow) => (p.secretHeaders ?? []).filter((name) => !providerHeaderKeys.has(`${p.id}:${name}`));
+  const missingMcpSecrets = (s: MCPServer) => ([ ["env", s.env], ["header", s.headers] ] as const).flatMap(([kind, values]) => Object.entries(values ?? {}).filter(([name, value]) => value === "$keychain" && !mcpKeys.has(`${s.id}:${kind}:${name}`)).map(([name]) => `${kind}:${name}`));
 
   const providerChanged = () => events.emit("ai.providers.changed", {});
   const entitiesChanged = (collection: string, ids: string[]) => events.emit("entities.changed", { collection, ids, source: "local" });
@@ -352,7 +377,25 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
 
     "ai.providers.templates": () => PROVIDER_TEMPLATES,
-    "ai.providers.list": () => structuredClone(providers),
+    "ai.providers.list": () => structuredClone(providers.map((p) => ({ ...p, missingSecretHeaders: missingProviderHeaders(p) }))),
+    "ai.providers.detectLocal": async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      if (new URLSearchParams(location.search).get("mock.ai.detect") === "none") return [];
+      return [
+        { templateId: "ollama", baseUrl: "http://127.0.0.1:11434/v1", api: "openai", status: "ok", modelCount: DISCOVERABLE.ollama?.length ?? 0, sample: (DISCOVERABLE.ollama ?? []).slice(0, 5).map((m) => m.id), latencyMs: 24 },
+        { templateId: "cliproxyapi", baseUrl: "http://127.0.0.1:8317/v1", api: "openai", status: "auth-required", modelCount: 0, sample: [], latencyMs: 18 },
+      ];
+    },
+    "ai.providers.testDraft": async ({ provider: draft, apiKey, secretHeaders }) => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const saved = draft.id ? provider(draft.id) : undefined;
+      const template = PROVIDER_TEMPLATES.find((t) => t.id === draft.template);
+      const keyPresent = apiKey === undefined ? saved?.hasApiKey : Boolean(apiKey);
+      const missing = Object.entries(secretHeaders ?? {}).find(([name, value]) => value === "$keychain" && !providerHeaderKeys.has(`${draft.id}:${name}`));
+      const message = !isHttpUrl(draft.baseUrl) ? "Enter a valid http:// or https:// URL" : draft.baseUrl.includes("/bad") ? "The server answered but has no model list there. Check that the URL ends with /v1." : missing ? `Configure the ${missing[0]} header on this Mac` : apiKey === "invalid" || ((template?.needsApiKey || draft.template === "cliproxyapi") && !keyPresent) ? "Provider HTTP 401: Check the API key." : undefined;
+      const models = message ? [] : DISCOVERABLE[draft.template ?? "custom"] ?? [{ id: "default-model" }];
+      return { ok: !message, message: message ?? `Connected and fetched ${models.length} model${models.length === 1 ? "" : "s"}`, latencyMs: 180, modelCount: models.length, sampleModelIds: models.slice(0, 5).map((m) => m.id) };
+    },
     "ai.providers.upsert": ({ provider: input, apiKey }) => {
       if (!input.name.trim()) fail("Provider needs a name");
       if (!isHttpUrl(input.baseUrl)) fail("Base URL must be an http(s) URL without credentials");
@@ -368,7 +411,9 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
         models: input.models ?? existing?.models ?? [],
         updatedAt: Date.now(),
       } as ProviderRow;
-      if (!existing && next.autoFetchModels) {
+      for (const [name, value] of Object.entries(input.headers ?? {})) if (value !== "$keychain") providerHeaderKeys.add(`${next.id}:${name}`);
+      next.secretHeaders = input.secretHeaders ?? (input.headers ? Object.keys(input.headers) : existing?.secretHeaders);
+      if (next.enabled && next.autoFetchModels && (!next.models.length || apiKey !== undefined || input.headers !== undefined || existing?.modelFetchError || existing?.api !== next.api || existing?.baseUrl !== next.baseUrl)) {
         next.models = structuredClone(DISCOVERABLE[next.template] ?? [{ id: "default-model", name: "default-model", capabilities: { tools: true }, enabled: true }]);
         next.modelFetchError = undefined;
       }
@@ -382,13 +427,13 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       if (index !== -1) providers.splice(index, 1);
       providerChanged();
     },
-    "ai.providers.test": async ({ id }) => {
+    "ai.providers.test": async ({ id, deep }) => {
       const p = provider(id);
       await new Promise((resolve) => setTimeout(resolve, 600));
       if (p.modelFetchError) return { ok: false, message: p.modelFetchError };
       const template = PROVIDER_TEMPLATES.find((t) => t.id === p.template);
       if (template?.needsApiKey && !p.hasApiKey) return { ok: false, message: "401 Unauthorized — add an API key" };
-      return { ok: true, message: `Connected · ${p.models.length} models`, latencyMs: 180 + Math.round(Math.random() * 200) };
+      return { ok: true, message: deep ? `Models: OK (${p.models.length}). Chat: OK.` : `Connected · ${p.models.length} models`, latencyMs: 180 + Math.round(Math.random() * 200) };
     },
     "ai.providers.refreshModels": async ({ id }) => {
       const p = provider(id);
@@ -415,7 +460,7 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
     "ai.tools.list": () => TOOLS,
 
-    "ai.mcp.list": () => structuredClone(mcp),
+    "ai.mcp.list": () => structuredClone(mcp.map((s) => ({ ...s, missingSecrets: missingMcpSecrets(s) }))),
     "ai.mcp.upsert": (input) => {
       const existing = input.id ? mcp.find((s) => s.id === input.id) : undefined;
       const server = {
@@ -426,6 +471,8 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
         mentionName: input.mentionName ?? input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         updatedAt: Date.now(),
       };
+      for (const [kind, values] of [ ["env", input.env], ["header", input.headers] ] as const)
+        for (const [name, value] of Object.entries(values ?? {})) if (value !== "$keychain") mcpKeys.add(`${server.id}:${kind}:${name}`);
       if (existing) Object.assign(existing, server);
       else mcp.push(server);
       events.emit("ai.mcp.changed", {});
@@ -439,6 +486,8 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     "ai.mcp.test": async ({ id }) => {
       const server = mcp.find((s) => s.id === id) ?? fail(`Server ${id} not found`, RpcErrorCode.NotFound);
       await new Promise((resolve) => setTimeout(resolve, 500));
+      const missing = missingMcpSecrets(server);
+      if (missing.length) return { ok: false, message: `Configure ${missing.join(", ")} on this Mac`, tools: [] };
       if (server.status === "error") return { ok: false, message: server.error ?? "Connection failed", tools: [] };
       server.status = "connected";
       server.toolCount = Math.max(server.toolCount, 3);
@@ -472,6 +521,11 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
           status: "disconnected",
           toolCount: 0,
         });
+      }
+      for (const server of mcp.slice(-entries.length)) {
+        const config = parsed.mcpServers?.[server.name];
+        for (const [kind, values] of [ ["env", config?.env], ["header", config?.headers] ] as const)
+          for (const [name, value] of Object.entries(values ?? {})) if (value !== "$keychain") mcpKeys.add(`${server.id}:${kind}:${name}`);
       }
       events.emit("ai.mcp.changed", {});
       return { imported: entries.length };
@@ -681,43 +735,97 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
 
     "sync.status": () => sync,
-    "sync.connect": async ({ serverUrl, token, passphrase, deviceName }) => {
-      if (!isHttpUrl(serverUrl)) fail("Server URL must start with https://");
-      if (!token.trim()) fail("Enter the access token printed by the deploy script");
-      if (passphrase.length < 8) fail("Wrong passphrase");
-      emitSync({ ...sync, phase: "connecting", serverUrl });
+    "sync.probe": ({ serverUrl, token }) => {
+      syncCredentials(serverUrl, token);
+      if (token === "incorrect") fail("Invalid sync server token");
+      return { vault: deviceRevoked ? "unknown" : mockVault ? "present" : "absent", deviceRevoked, configured: true };
+    },
+    "sync.setupCode": () => {
+      if (!settings["sync.enabled"] || !sync.serverUrl) return fail("Cloud Sync is disconnected");
+      const bytes = new TextEncoder().encode(JSON.stringify({ url: sync.serverUrl, token: syncToken }));
+      const encoded = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      return { code: "opencast-sync-v1:" + encoded, serverUrl: sync.serverUrl };
+    },
+    "sync.parseSetupCode": ({ code }) => {
+      const prefix = "opencast-sync-v1:";
+      const invalid = "Invalid setup code. Copy it again from your other Mac or the deploy script.";
+      if (!code.trim().startsWith(prefix)) return fail(invalid);
+      const encoded = code.trim().slice(prefix.length);
+      if (encoded.length > Math.ceil(8192 * 4 / 3)) return fail("Setup code exceeds 8 KiB");
+      if (!/^[A-Za-z0-9_-]+$/.test(encoded)) return fail(invalid);
+      let value: unknown;
+      try {
+        const binary = atob(encoded.replace(/-/g, "+").replace(/_/g, "/"));
+        if (binary.length > 8192) return fail("Setup code exceeds 8 KiB");
+        if (btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") !== encoded) return fail(invalid);
+        value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, char => char.charCodeAt(0))));
+      } catch { return fail(invalid); }
+      if (!value || typeof value !== "object" || Array.isArray(value)) return fail(invalid);
+      const payload = value as Record<string, unknown>;
+      if (typeof payload.url !== "string" || typeof payload.token !== "string") return fail(invalid);
+      return syncCredentials(payload.url, payload.token);
+    },
+    "sync.connect": async ({ serverUrl, token, passphrase, deviceName, expectVault }) => {
+      const credentials = syncCredentials(serverUrl, token);
+      if (token === "incorrect") fail("Invalid sync server token");
+      if (expectVault === "create" && mockVault) fail("A vault already exists for that token. Join it instead.");
+      if (expectVault === "join" && !mockVault) fail("No vault exists for that token. Check the server URL and token.");
+      if (!passphrase || passphrase.length > 4096) fail("Passphrase must contain 1–4096 characters");
+      if (!mockVault && passphrase.length < 12) fail("Use at least 12 characters for a new vault passphrase");
+      if (mockVault && passphrase !== mockVault.passphrase) fail("Wrong passphrase");
+      emitSync({ ...sync, phase: "connecting", serverUrl: credentials.serverUrl });
       await new Promise((resolve) => setTimeout(resolve, 700));
-      setSetting("sync.enabled", true);
-      setSetting("sync.serverUrl", serverUrl);
+      mockVault ??= { passphrase };
+      deviceRevoked = false;
+      syncToken = token;
+      setSetting("sync.serverUrl", credentials.serverUrl);
       if (deviceName) setSetting("sync.deviceName", deviceName);
       devices = devices.map((d) => (d.current ? { ...d, name: deviceName || d.name } : d));
-      return emitSync({ ...sync, phase: "online", serverUrl, deviceName: deviceName || sync.deviceName, lastSyncedAt: Date.now(), pendingChanges: 0 });
+      const status = emitSync({ ...sync, phase: "online", serverUrl: credentials.serverUrl, deviceName: deviceName || sync.deviceName, lastSyncedAt: Date.now(), pendingChanges: 0, stopReason: undefined });
+      setSetting("sync.enabled", true);
+      return status;
+    },
+    "sync.updateToken": ({ token }) => {
+      if (!settings["sync.enabled"] || !sync.serverUrl) return fail("Cloud Sync is disconnected");
+      syncCredentials(sync.serverUrl, token);
+      if (token === "incorrect") return fail("Invalid sync server token");
+      syncToken = token;
+      return sync;
+    },
+    "sync.changePassphrase": ({ newPassphrase }) => {
+      if (!settings["sync.enabled"] || !mockVault) return fail("Cloud Sync is disconnected");
+      if (newPassphrase.length < 12 || newPassphrase.length > 4096) return fail("Passphrase must contain 12–4096 characters");
+      mockVault.passphrase = newPassphrase;
     },
     "sync.disconnect": () => {
       setSetting("sync.enabled", false);
-      emitSync({ ...sync, phase: "disabled", serverUrl: undefined, lastSyncedAt: undefined });
+      emitSync({ ...sync, phase: "disabled", lastSyncedAt: undefined, stopReason: undefined });
     },
     "sync.now": async () => {
+      if (!settings["sync.enabled"]) return sync;
       emitSync({ ...sync, phase: "initial-sync" });
       await new Promise((resolve) => setTimeout(resolve, 600));
       return emitSync({ ...sync, phase: "online", lastSyncedAt: Date.now(), pendingChanges: 0 });
     },
-    "sync.devices": () => (sync.phase === "disabled" ? [] : devices),
+    "sync.devices": () => (settings["sync.enabled"] ? devices : []),
     "sync.removeDevice": ({ deviceId }) => {
       devices = devices.filter((d) => d.deviceId !== deviceId);
       events.emit("sync.status", sync);
     },
     "sync.setCategoryEnabled": ({ category, enabled }) => {
-      if (!SYNC_CATEGORIES.some((c) => c.id === category)) fail(`Unknown sync category ${category}`);
-      const disabled = new Set(settings["sync.disabledCategories"]);
-      if (enabled) disabled.delete(category);
-      else disabled.add(category);
-      setSetting("sync.disabledCategories", [...disabled]);
+      const known = SYNC_CATEGORIES.find((c) => c.id === category);
+      if (!known) fail(`Unknown sync category ${category}`);
+      const key = known && "optIn" in known ? "sync.optInCategories" : "sync.disabledCategories";
+      const ids = new Set(settings[key]);
+      if (enabled === (key === "sync.optInCategories")) ids.add(category);
+      else ids.delete(category);
+      setSetting(key, [...ids]);
     },
     "sync.wipeRemote": () => {
       setSetting("sync.enabled", false);
+      mockVault = undefined;
       devices = structuredClone(DEVICES);
-      emitSync({ ...sync, phase: "disabled", serverUrl: undefined, lastSyncedAt: undefined });
+      emitSync({ ...sync, phase: "disabled", lastSyncedAt: undefined, stopReason: undefined });
     },
 
     "data.importRayconfig": async ({ path, password, categories }) => {

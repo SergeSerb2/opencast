@@ -8,6 +8,7 @@ DerivedData/
 .DS_Store
 .wrangler/
 .dev.vars
+packages/sync-worker/wrangler.local.toml
 *.log
 coverage/
 .vite/

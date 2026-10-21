@@ -196,7 +196,7 @@ export function ViewFrame({
   useEffect(() => {
     if (!isActive) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.isComposing) return;
+      if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
       const key = eventKey(event);
       if (matchesShortcut(event, CMD_K)) {
         event.preventDefault();
@@ -287,6 +287,7 @@ export function ViewFrame({
           aria-controls={listId}
           aria-activedescendant={activeDescendant}
           onKeyDown={(event, field) => {
+            if (event.nativeEvent.isComposing || event.keyCode === 229) return;
             if (onSearchKeyDown?.(event, field)) event.preventDefault();
           }}
         >

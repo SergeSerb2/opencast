@@ -16,5 +16,29 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.4",
     "wrangler": "^4.149.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SergeSerb2/opencast.git",
+    "directory": "packages/sync-worker"
+  },
+  "homepage": "https://github.com/SergeSerb2/opencast#readme",
+  "bugs": {
+    "url": "https://github.com/SergeSerb2/opencast/issues"
+  },
+  "author": "Serge Alex Serbinenko",
+  "license": "MIT",
+  "cloudflare": {
+    "bindings": {
+      "SYNC_TOKEN": {
+        "description": "A long random access token. Generate one in OpenCast → Settings → Cloud Sync, or run `openssl rand -hex 32`. Keep it like a password. This is not your encryption passphrase."
+      },
+      "DB": {
+        "description": "Stores encrypted sync records, vault metadata, and device registrations. OpenCast creates its schema on first use."
+      },
+      "NOTIFIER": {
+        "description": "A SQLite Durable Object that sends WebSocket change hints to your devices. The app also polls for changes."
+      }
+    }
   }
 }

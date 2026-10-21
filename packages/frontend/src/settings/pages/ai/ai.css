@@ -303,3 +303,17 @@ button.sc-s-capability:hover {
   padding: 0;
   min-width: 0;
 }
+
+.sc-s-onboarding__detection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sc-s-test-models {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}

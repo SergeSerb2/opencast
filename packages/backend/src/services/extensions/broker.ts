@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 import type { AlertOptions, ClipboardContent, AIModelOption, ToastState, ScreenInfo } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import type { HostSession, ExtensionSessions } from "./sessions";
+import { clipboardItems } from "../core/clipboard";
 interface OAuthFlow { sessionId: string; callbackId: string; expires: number; }
 interface PendingAlert { sessionId: string; resolve(value: boolean): void; timer: NodeJS.Timeout; }
 export class ExtensionBroker {
@@ -67,10 +68,9 @@ export class ExtensionBroker {
       case "paste": session.closeWindow = true; await ctx.native.call("input.paste", { content: clipboard(p.contents) }); return;
       case "clearClipboard": await ctx.native.call("clipboard.clear", undefined); return;
       case "getClipboard": {
-        if (!Number.isInteger(p.offset) || p.offset < 0) throw new Error("Clipboard offset must be a nonnegative integer");
+        if (!Number.isSafeInteger(p.offset) || p.offset < 0) throw new Error("Clipboard offset must be a nonnegative integer");
         if (p.offset > 0) {
-          const history = await invoke("clipboard.list", { limit: 1, offset: p.offset }) as any;
-          const item = history.items[0]; return { text: item?.text ?? "", html: item?.html, file: item?.filePaths?.[0] };
+          const item = clipboardItems(ctx, 1, p.offset)[0]; return { text: item?.text ?? "", html: item?.html, file: item?.filePaths?.[0] };
         }
         const snapshot = await ctx.native.call("clipboard.read", undefined);
         return { text: snapshot?.text ?? (snapshot?.primary.kind === "text" ? snapshot.primary.text : ""), html: snapshot?.html, file: snapshot?.primary.kind === "file" ? snapshot.primary.paths[0] : undefined };

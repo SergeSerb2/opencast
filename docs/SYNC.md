@@ -19,6 +19,16 @@ the wrapped key. This protocol does not provide complete rollback detection or s
 multi-device history. A strong passphrase is essential. A stolen unlocked device or
 trusted extension with backend access can read local plaintext and keys.
 
+With **AI & MCP Keys** on, the vault also contains provider API keys, secret headers,
+MCP environment and header secrets, and web-search keys. The server cannot read them;
+it still sees record counts and ciphertext lengths, which approximate key lengths.
+A passphrase compromise previously exposed notes and settings. With this option on,
+it also exposes every synced API key. Use a strong, unique passphrase.
+Synced keys are copied into each Mac's Keychain. Removing a device does not erase keys
+already on it. If a Mac is lost, rotate the keys at each provider. A malicious server
+can replay an old key ciphertext, as with any record; a stale key can fail at the provider.
+The sync token, vault key, backup passphrase, extension secrets and OAuth tokens never sync.
+
 A bearer token authorizes server access, vault replacement, device registration/removal
 and wipe. Sharing a token grants administrative authority. Removing a device blocks its
 HTTP requests and closes its WebSockets, but a token holder can explicitly re-register.
@@ -65,17 +75,42 @@ VMK and token are stored only through `ctx.secrets` in Keychain accounts `sync:v
 `sync:token`. Passphrases are not persisted. Derived keys live in memory and are zeroed
 when stopping a session. SQLite contains device ID, vault identity/epoch, cursor and
 last-sync time, plus device-local sync preferences, never encryption keys or tokens.
+Provider and MCP secrets and web-search keys stay in Keychain. When their category is
+enabled, values pass directly between Keychain and encrypted sync records. A separate
+`sync_secret_state` table stores only account names, timestamps, deletion flags, server
+sequences, dirty flags and SHA-256 value hashes. Secret values never enter SQLite or
+generic entity export paths. Hashes can reveal equality or allow guesses of weak values.
 The generic entity store itself is local plaintext: E2EE protects the remote service,
 not an unlocked local database. Fixed vectors cover HKDF/HMAC/record encryption and
 scrypt/key wrapping; tests cover tampering, context substitution and compressed Unicode.
 
 ## Client behavior and conflicts
 
-Connect checks server version, creates or unwraps the vault, registers a stable local
-device ID, stores keys in Keychain, marks local content dirty, and pulls from cursor 0
-before publishing. Wrong passphrases return `Wrong passphrase`. Existing local content
+Setup first probes the server and token without creating a vault or registering a device.
+An empty account asks you to create a vault with a confirmed passphrase of at least 12
+characters. An existing account asks for its passphrase. Connect enforces this intent:
+joining an empty account fails without creating a vault, and creating against an existing
+vault asks you to join instead. It then registers a stable local device ID, stores keys
+in Keychain, marks local content dirty, and pulls from cursor 0 before publishing. Wrong passphrases return `Wrong passphrase`. Existing local content
 is merged; it is never deleted merely because it is absent remotely. Each cycle checks
-the vault ID/epoch; a missing/replaced vault stops automatic sync pending reconnection.
+the vault ID/epoch; a missing/replaced vault or removed device stops automatic sync.
+The reason persists across restarts and appears above setup. Reconnect with the current
+server credentials and passphrase. A successful connect or disconnect clears the reason.
+
+On a connected Mac, Add Another Mac copies a setup code containing only the server URL
+and access token. The format is `opencast-sync-v1:` followed by unpadded base64url of
+UTF-8 JSON `{"url":"…","token":"…"}`. Paste it into setup on another Mac, then enter
+the passphrase there. Share it only with your own Macs: it contains an administrative
+server token and has no expiry. OpenCast marks its copies concealed and transient so
+its clipboard history skips them. The code contains neither the passphrase nor vault key.
+
+The setup form shows an **Also sync AI & MCP keys** switch. On a Mac that has never
+connected it starts on; on a Mac that connected before it shows that Mac's saved choice.
+The form saves the choice just before connecting, so the first sync can include keys, and
+restores the previous choice if connecting fails. On an existing connection, turning the
+category on asks for confirmation.
+Turning it off keeps keys on this Mac and stops syncing them; it does not remove remote
+ciphertext. Extension passwords and sign-ins stay in each Mac's Keychain.
 
 `SYNC_CATEGORIES` and `ALWAYS_SYNCED_COLLECTIONS` define the collection allowlist.
 Settings are filtered individually by `SETTINGS[key].scope` and `.category`. Unknown
@@ -94,9 +129,12 @@ Title/caret-only changes do not generate content conflict copies. These are enti
 LWW semantics, not a CRDT; clock skew can choose the wrong winner for other collections.
 Observed remote timestamps advance the local monotonic clock.
 
-Cursor updates and entity application occur in one SQLite transaction. Push acknowledgments
-clear dirty flags only if the version hasn't changed locally during the request. Changes
-arriving during an active cycle schedule another cycle. Triggers are application readiness,
+Each pull page applies entities in a SQLite transaction, then awaits allowed Keychain
+writes and saves their metadata. It advances the cursor last. Failed Keychain writes
+leave the page available for replay. Local secret edits and sync applies share a lock,
+so an edit during a native call cannot be overwritten by an earlier apply.
+Push acknowledgments clear dirty flags only if the version hasn't changed locally during
+the request. Changes arriving during an active cycle schedule another cycle. Triggers are application readiness,
 configured `sync.intervalSeconds` (default 300; minimum 5), 2 seconds after local changes,
 wake, manual `sync.now`, and authenticated WebSocket `changed` hints. Network retries use
 exponential backoff from 2 seconds to 5 minutes. WebSockets reconnect with the same cap;
@@ -108,6 +146,41 @@ vault/records/devices, disables this client's sync, and forgets its keys. Other 
 observe the missing/replaced vault and require reconnection. Server sequences never
 reset, even across wipes, avoiding cursor reuse.
 
+### AI & MCP Keys
+
+This is an opt-in category: it stays off until someone turns it on, either with the setup
+form's switch or under Synced Content, and an app update never turns it on. Turn it on
+separately on each Mac. It works best with **AI Commands & Presets** and **MCP Servers** on,
+but their switches are independent. Turning it off stops secret push and pull and leaves
+local Keychain values intact. Remote ciphertext remains; wiping Cloud Sync data removes
+it. Re-enabling replays remote records to catch up.
+
+The virtual collection is `syncedSecrets`; its record ID is the Keychain account.
+Live records use `data: { v: 1, value }`; tombstones use `data: { v: 1 }` with `deleted: true`.
+Both use the existing encrypted v1 envelope. Older clients skip the unknown collection.
+Push collection and pull application allow only these accounts:
+
+- `ai.provider:<id>:apiKey` and `ai.provider:<id>:header:<name>`
+- `mcp:<id>:env:<name>` and `mcp:<id>:header:<name>`
+- `ai.websearch:<provider>:apiKey`, for tavily, brave, exa, searxng and jina
+
+Accounts are at most 256 characters and may not contain control characters. Values are
+at most 64 KiB of UTF-8 and may contain tabs and line breaks (for example a PEM key in an
+MCP environment variable), but no other control characters. Header and environment names use their respective
+HTTP token and environment-variable syntax. Other accounts are ignored, including
+`sync:*`, `data.backup:*`, `ext:*` and `oauth:*`. Secret values never appear in status,
+change events or public RPC results. The private native Keychain RPC channel carries
+values between the backend and the host; it must not be captured as an application log.
+
+Successful local sets and explicit deletes track changes even while this category is
+off. After pulling, a collector compares indexed Keychain values with stored hashes
+before pushing. A missing or unreadable value never creates a deletion. Deleting a
+provider or MCP server explicitly deletes its local secrets; the resulting tombstones
+delete peer copies on Macs with this category on. Secret conflicts use the same last
+writer wins rule as entities, with dirty local ties preserved. A key saved before this
+feature existed has no change timestamp, so when a Mac joins with the category on, the
+vault's key for the same account replaces it. The vault is the source of truth on join.
+
 ## HTTP API
 
 All endpoints return JSON. Errors have `{ error, message }`. Except health, every request
@@ -118,9 +191,9 @@ local development. Tokens never appear in URLs and redirects are refused by clie
 
 | Method | Path | Behavior |
 | --- | --- | --- |
-| GET | `/v1/health` | Unauthenticated `{ ok: true, version: 1 }` |
+| GET | `/v1/health` | Unauthenticated `{ ok: true, version: 1, configured: boolean }` |
 | GET | `/v1/vault` | Vault JSON, or 404 `vault_not_found` |
-| PUT | `/v1/vault` | Create vault (201); 409 if present. Replace with vault fields plus `replace: true` and raw `If-Match: <existing vaultId>` |
+| PUT | `/v1/vault` | Create vault (201); 409 if present. Replace with vault fields plus `replace: true` and raw `If-Match: <existing vaultId>`; optional `X-OpenCast-Vault-Salt: <current kdf.salt>` also requires the stored wrapper to be unchanged |
 | DELETE | `/v1/vault` | Require `X-OpenCast-Confirm: wipe`; delete all account records/devices/vault; return `{ ok: true }` |
 | POST | `/v1/devices` | Upsert `{ deviceId, name, platform, appVersion? }`; body ID must match header; explicit registration clears revocation; vault required |
 | GET | `/v1/devices` | Array of active devices including `deviceId, name, platform, appVersion, lastSeenAt` |
@@ -129,6 +202,10 @@ local development. Tokens never appear in URLs and redirects are refused by clie
 | GET | `/v1/pull?after=0&limit=200` | `{ records, cursor, hasMore }`; records contain `rid, seq, deleted, nonce, ct, keyEpoch`, ordered by increasing sequence |
 | GET | `/v1/stats` | `{ records, tombstones, bytes, devices, lastSeq }`; `records` counts live records, `bytes` is decoded ciphertext including tags |
 | GET | `/v1/events` | Bearer-authenticated WebSocket, messages `{ type: "changed", seq }`; 501 if NOTIFIER absent; close 4003 on removal/wipe |
+
+`configured` is true when `SYNC_TOKEN` or `SYNC_TOKENS` is set. It reveals no secret or
+account details. Without either token secret, authenticated routes return 503
+`not_configured`. `GET /` is also public and returns a short plain-text setup message.
 
 Clients send optional raw `If-Match: <vaultId>` on push. The worker checks it inside the
 D1 transaction to reject publication racing a vault replacement. A sequence allocation,
@@ -143,19 +220,51 @@ record, usually after tombstone retention. Clients reset the cursor and retry di
 versions against null bases after re-pulling. `vault_changed` (409) means the vault epoch
 or pinned identity changed, or authorization changed during a transaction.
 
-PUT supports replacing the passphrase wrapper for the **same VMK/vault ID/epoch**, without
-rewriting records. The current client RPC/UI does not expose passphrase change or key
+Change Passphrase rewraps the Keychain VMK with `wrapVault` under the **same VMK/vault
+ID/epoch**, then sends PUT with `replace: true`, `If-Match: <vaultId>`, and the salt of
+the wrapper it last read in `X-OpenCast-Vault-Salt`. If another Mac changed the passphrase
+in the meantime, the Worker answers 409 and nothing is overwritten. It does not
+rewrite records. Other connected Macs keep working; only future joins need the new
+passphrase. It does not remove anyone who holds the server token.
+
+After changing the token on your Worker, use Update Access Token on each connected Mac.
+The client probes the new credentials and checks the vault ID/epoch before saving the
+token in Keychain and restarting its session. A token for a different or empty vault is
+rejected. New setup codes use the updated token. The client does not expose vault key
 rotation. Changing VMK/epoch requires an explicit export/new-vault/re-enrollment workflow;
 old-epoch records are not automatically re-encrypted or readable with a new key.
 
 ## Deployment and recovery
 
-See [the Worker deployment guide](../packages/sync-worker/README.md), or run
-`./scripts/deploy-sync.sh` after `wrangler login`. Configure the returned HTTPS URL,
-server token, passphrase and optional device name through `sync.connect` in OpenCast.
-Each additional Mac uses the same account token and passphrase. Separate tokens/accounts
-provide separate vaults; a shared team vault intentionally shares one administrative token.
-The script stops without Cloudflare login and never starts a login flow itself.
+See [the Worker deployment guide](../packages/sync-worker/README.md).
+Its Deploy to Cloudflare button needs no terminal once the repository is public.
+Generate a token in OpenCast → Settings → Cloud Sync and paste it into the button's
+`SYNC_TOKEN` field. You can also generate one with `openssl rand -hex 32`.
+Cloudflare creates the Worker, D1 database, and SQLite Durable Object.
+The server creates its schema on first use. Applying migrations is optional and safe
+before or after first use. The daily cron also initializes the schema if needed.
+
+For a terminal deploy, run `pnpm install --frozen-lockfile`, then
+`pnpm --filter @opencast/sync-worker exec wrangler login` and `./scripts/deploy-sync.sh`.
+The script checks login and never starts it. It finds or creates the database, writes
+an ignored local config, deploys, applies migrations, and sets a random token through stdin.
+It does not edit the tracked config or save the token to a file. Existing tokens can be
+kept or rotated. `--yes` accepts defaults and keeps an existing token.
+
+New Worker and database names default to `opencast-sync`. Upgrade an existing service
+with `./scripts/deploy-sync.sh --name surgecast-sync`. Add `--database <existing-name>`
+if its database has another name. Confirm that the script reuses your existing database.
+Keep the old Worker name to keep its URL. Keep the existing token and Durable Object
+migration. For manual deploys and custom routes, follow the Worker guide.
+
+The script checks `/v1/health` for `ok`, version 1, and `configured: true`. It prints a
+setup code with the URL and token. Paste it into OpenCast → Settings → Cloud Sync.
+If you keep an existing token, enter it at the hidden prompt to make a code. Otherwise,
+use the URL and your existing token. Treat setup codes like passwords: they grant admin
+access to the server. They do not contain your encryption passphrase.
+Choose a strong passphrase separately. Each additional Mac uses the same account token
+and passphrase. Separate tokens/accounts provide separate vaults. A shared team vault
+shares one administrative token.
 
 Keep the passphrase in a password manager. If you lose it and every unlocked device/key,
 the cloud data is unrecoverable. If one device is still unlocked, export your local data,
@@ -177,6 +286,7 @@ it does not recover a lost encryption key. Removing a device does not erase its 
   remote retention window can miss deletions and resurrect old dirty data. There is no
   permanent deleted-ID registry or device acknowledgment gate; reconnect from a current
   device/export when recovering a long-offline install.
+  This also applies to deleted API keys and MCP secrets: a long-offline Mac can resurrect them.
 - Cloudflare plan/storage/request limits still apply. The Worker keeps only the latest
   version of each record, not a complete history. Unlimited product features do not
   imply unlimited infrastructure capacity.

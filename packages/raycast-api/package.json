@@ -23,5 +23,16 @@
     "vitest": "^5.0.4"
   },
   "main": "./dist/runtime.cjs",
-  "types": "./dist/index.d.ts"
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SergeSerb2/opencast.git",
+    "directory": "packages/raycast-api"
+  },
+  "homepage": "https://github.com/SergeSerb2/opencast#readme",
+  "bugs": {
+    "url": "https://github.com/SergeSerb2/opencast/issues"
+  },
+  "author": "Serge Alex Serbinenko",
+  "license": "MIT"
 }

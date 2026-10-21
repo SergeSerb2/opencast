@@ -300,7 +300,7 @@ export function mapRequest(input: AdapterRequest): {
               : {
                   thinkingBudget:
                     request.reasoningEffort === "none"
-                      ? 0
+                      ? /(^|\/)gemini-2\.5-pro(?:-|$)/.test(model.id) ? 128 : 0
                       : { low: 1024, medium: 4096, high: 8192 }[
                           request.reasoningEffort ?? "medium"
                         ],

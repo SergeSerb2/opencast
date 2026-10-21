@@ -206,6 +206,8 @@ export const SETTINGS = {
   "sync.intervalSeconds": device(300),
   /** Sync category ids that are turned off (see SYNC_CATEGORIES). */
   "sync.disabledCategories": device<string[]>([]),
+  /** Opt-in sync category ids that are turned on (SYNC_CATEGORIES entries with `optIn`). */
+  "sync.optInCategories": device<string[]>([]),
 } satisfies Record<string, SettingDef<unknown>>;
 
 export type SettingsKey = keyof typeof SETTINGS;
@@ -225,6 +227,7 @@ export function isSettingsKey(key: string): key is SettingsKey {
 /**
  * Cloud Sync categories (Settings → Cloud Sync → Synced Content).
  * `collections` lists the EntityStore collections each category covers.
+ * `optIn` categories stay off until turned on, so an update never starts uploading them.
  */
 export const SYNC_CATEGORIES = [
   { id: "ai-presets-commands", title: "AI Commands & Presets", collections: ["aiCommands", "aiPresets", "aiProviders"] },
@@ -235,6 +238,7 @@ export const SYNC_CATEGORIES = [
   { id: "snippets", title: "Snippets", collections: ["snippets"] },
   { id: "window-management-layouts", title: "Window Management Layouts", collections: ["windowLayouts"] },
   { id: "extensions", title: "Extensions", collections: ["extensions"] },
+  { id: "ai-keys", title: "AI & MCP Keys", collections: ["syncedSecrets"], optIn: true },
   { id: "general-settings.appearance", title: "Appearance", collections: [] },
   { id: "general-settings.ui-zoom", title: "Interface Size", collections: [] },
   { id: "general-settings.open-at-login", title: "Open at Login", collections: [] },

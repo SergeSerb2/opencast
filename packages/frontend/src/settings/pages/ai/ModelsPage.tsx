@@ -1,4 +1,4 @@
-import type { AIProvider } from "@opencast/protocol";
+import type { BackendResult } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { useBackend } from "../../../bridge/hooks";
 import { errorMessage } from "../../../bridge/errors";
@@ -8,17 +8,17 @@ import { showFailureToast } from "../../../components/feedback/toast-store";
 import { Icon } from "../../../icons/Icon";
 import { Image } from "../../../icons/Image";
 import { navigate } from "../../navigation";
-import { CardEmpty, Section } from "../../ui/layout";
+import { CardEmpty, Controls, Section } from "../../ui/layout";
 import { PageFrame } from "../../ui/PageFrame";
-import { AddProviderButton, OnboardingCard } from "./onboarding";
-import { CAPABILITIES, formatContext, providerIcon, useEnabledModels } from "./shared";
+import { AddProviderButton, OnboardingCard, useLocalDetection } from "./onboarding";
+import { CAPABILITIES, formatContext, providerIcon, useEnabledModels, MissingKeyBadge, useKeySyncState } from "./shared";
 import "./ai.css";
 
-type ProviderRow = AIProvider & { hasApiKey: boolean };
+type ProviderRow = BackendResult<"ai.providers.list">[number];
 
 function providerStatus(provider: ProviderRow, needsKey: boolean): { label: string; tone: "warning" | "error" | "neutral" } | null {
+  if ((needsKey && !provider.hasApiKey) || provider.missingSecretHeaders?.length) return null;
   if (!provider.enabled) return { label: "Off", tone: "neutral" };
-  if (needsKey && !provider.hasApiKey) return { label: "Needs API Key", tone: "warning" };
   if (provider.modelFetchError) return { label: "Can't Load Models", tone: "error" };
   if (!provider.models.some((m) => m.enabled)) return { label: "No Models", tone: "warning" };
   return null;
@@ -41,7 +41,7 @@ async function setProviderEnabled(provider: ProviderRow, enabled: boolean) {
   }
 }
 
-function ProviderListRow({ provider, needsKey }: { provider: ProviderRow; needsKey: boolean }) {
+function ProviderListRow({ provider, needsKey, waiting }: { provider: ProviderRow; needsKey: boolean; waiting: boolean }) {
   const status = providerStatus(provider, needsKey);
   const enabledModels = provider.models.filter((m) => m.enabled).length;
   return (
@@ -51,6 +51,7 @@ function ProviderListRow({ provider, needsKey }: { provider: ProviderRow; needsK
         <span className="sc-s-row__label">
           <span className="sc-s-row__title">
             {provider.name}
+            <MissingKeyBadge waiting={waiting} names={[...(needsKey && !provider.hasApiKey ? ["API key"] : []), ...(provider.missingSecretHeaders ?? [])]} />
             {status && (
               <span className="sc-s-badge" data-tone={status.tone === "neutral" ? undefined : status.tone}>
                 {status.label}
@@ -96,15 +97,17 @@ function EnabledModels() {
 
 /** Settings → AI → Models & Providers. */
 export function ModelsPage() {
-  const { data: providers, isLoading, error, refetch } = useBackend("ai.providers.list", undefined);
+  const local = useLocalDetection();
+  const sync = useKeySyncState();
+  const { data: providers, isLoading, error, refetch } = useBackend("ai.providers.list", undefined, [], { refetchOn: [{ topic: "ai.providers.changed" }, { topic: "sync.status" }] });
   const { data: templates } = useBackend("ai.providers.templates", undefined);
   const needsKey = (template: string) => templates?.find((t) => t.id === template)?.needsApiKey ?? false;
   return (
     <PageFrame title="Models & Providers" titleMode="always">
-      {!isLoading && !error && !providers?.length && <OnboardingCard />}
-      <Section title="Providers" description="OpenCast sends prompts straight to these providers with your own keys." actions={<AddProviderButton />}>
+      {!isLoading && !error && !providers?.length && <OnboardingCard local={local} />}
+      <Section title="Providers" description="OpenCast sends prompts straight to these providers with your own keys." actions={<Controls><Button size="small" variant="ghost" disabled={local.busy} onClick={() => void local.detect()}>{local.busy ? "Detecting…" : "Detect"}</Button><AddProviderButton detections={local.detections} /></Controls>}>
         {providers?.length ? (
-          providers.map((provider) => <ProviderListRow key={provider.id} provider={provider} needsKey={needsKey(provider.template)} />)
+          providers.map((provider) => <ProviderListRow key={provider.id} provider={provider} needsKey={needsKey(provider.template)} waiting={sync.enabled && sync.keysEnabled} />)
         ) : (
           <CardEmpty title={error ? "Couldn't Load Providers" : isLoading ? "Loading Providers…" : "No Providers Yet"} description={error ? errorMessage(error) : isLoading ? undefined : "Add a provider to use Quick AI, AI Chat and AI Commands."} action={Boolean(error) && <Button size="small" onClick={refetch}>Try Again</Button>} />
         )}

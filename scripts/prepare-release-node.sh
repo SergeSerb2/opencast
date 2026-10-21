@@ -17,7 +17,18 @@ curl --fail --location --proto '=https' --tlsv1.2 \
     "https://nodejs.org/dist/v$VERSION/$NAME.tar.gz" -o "$STAGE/$NAME.tar.gz"
 test "$(shasum -a 256 "$STAGE/$NAME.tar.gz" | awk '{print $1}')" = "$SHA256"
 tar -xzf "$STAGE/$NAME.tar.gz" -C "$STAGE"
+test -s "$STAGE/$NAME/LICENSE"
 "$ROOT/scripts/verify-node.sh" "$STAGE/$NAME/bin/node"
+# Record the verified archive's binary/license pair before signing the app copy.
+"$STAGE/$NAME/bin/node" --input-type=module - "$STAGE/$NAME" "$VERSION" "$SHA256" <<'JS'
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+const [dir, version, archiveSHA256] = process.argv.slice(2);
+const hash = file => createHash('sha256').update(readFileSync(`${dir}/${file}`)).digest('hex');
+writeFileSync(`${dir}/opencast-node.json`, JSON.stringify({ version, archiveSHA256,
+  binarySHA256: hash('bin/node'), licenseSHA256: hash('LICENSE'),
+  source: `https://nodejs.org/dist/v${version}/node-v${version}-darwin-${process.arch}.tar.gz` }, null, 2) + '\n');
+JS
 # Keep the package manager bootstrap under the same integrity boundary.
 curl --fail --location --proto '=https' --tlsv1.2 \
     https://registry.npmjs.org/pnpm/-/pnpm-10.18.0.tgz -o "$STAGE/pnpm.tgz"

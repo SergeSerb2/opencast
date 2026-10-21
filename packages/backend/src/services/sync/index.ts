@@ -1,5 +1,6 @@
 import type { Service } from "../../context";
 import { SyncEngine, syncMigration } from "./engine";
+import { decodeSetupCode } from "./setup-code";
 
 export const syncService: Service = {
   name: "sync",
@@ -8,7 +9,12 @@ export const syncService: Service = {
     const engine = new SyncEngine(ctx);
     ctx.rpc.handleAll({
       "sync.status": () => engine.status(),
+      "sync.probe": options => engine.probe(options),
+      "sync.setupCode": () => engine.setupCode(),
+      "sync.parseSetupCode": options => decodeSetupCode(options.code),
       "sync.connect": options => engine.connect(options),
+      "sync.updateToken": options => engine.updateToken(options.token),
+      "sync.changePassphrase": options => engine.changePassphrase(options.newPassphrase),
       "sync.disconnect": options => engine.disconnect(options.forgetKeys),
       "sync.now": () => engine.now(),
       "sync.devices": () => engine.devices(),

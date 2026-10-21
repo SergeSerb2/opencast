@@ -18,5 +18,14 @@
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SergeSerb2/opencast.git"
+  },
+  "homepage": "https://github.com/SergeSerb2/opencast#readme",
+  "bugs": {
+    "url": "https://github.com/SergeSerb2/opencast/issues"
+  },
+  "author": "Serge Alex Serbinenko"
 }

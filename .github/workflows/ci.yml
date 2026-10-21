@@ -10,21 +10,28 @@ concurrency:
   group: ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   web:
     name: TypeScript (typecheck, test, build)
-    runs-on: [self-hosted, macOS, ARM64, opencast-ci]
+    # A public repository runs on free GitHub-hosted runners, so fork pull requests never
+    # reach the self-hosted VMs. Only the private repository uses the owner's local Mac.
+    runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted","macOS","ARM64","opencast-ci"]') || 'macos-15' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          node-version: 22
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Check release script syntax
         run: |
-          for script in scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh scripts/make-icon.sh scripts/prepare-release-node.sh scripts/verify-node.sh scripts/typecheck-release.sh; do
+          for script in scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh scripts/make-icon.sh scripts/prepare-release-node.sh scripts/verify-node.sh scripts/typecheck-release.sh scripts/deploy-sync.sh; do
             bash -n "$script"
           done
       - name: Check release provenance and retries
@@ -35,8 +42,10 @@ jobs:
 
   macos:
     name: macOS app (Swift build)
-    runs-on: [self-hosted, macOS, ARM64, opencast-ci]
+    runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted","macOS","ARM64","opencast-ci"]') || 'macos-15' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Build native host
         run: swift build -c release --package-path apps/macos

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/SergeSerb2/opencast/security/advisories/new
+    about: Please report vulnerabilities privately, not in a public issue.
+  - name: Cloud Sync setup guide
+    url: https://github.com/SergeSerb2/opencast/blob/main/docs/SYNC.md
+    about: Read this first if you need help deploying or connecting your sync server.

@@ -25,17 +25,20 @@ fi
 if [ "$SKIP_WEB" = 0 ]; then
     if [ ! -d node_modules ]; then pnpm install --frozen-lockfile; fi
     for package in frontend backend raycast-api; do
-        # In-progress packages can have a build script before they have source/output.
-        if pnpm --filter "@opencast/$package" build; then
-            if [ ! -d "packages/$package/dist" ]; then echo "Warning: $package has no dist output yet; skipping bundle copy" >&2; fi
-        elif [ ! -d "packages/$package/dist" ]; then
-            echo "Warning: $package is not buildable yet and has no dist output; continuing native assembly" >&2
-        else
-            echo "Error: $package build failed with existing output; refusing stale artifacts" >&2
+        if ! pnpm --filter "@opencast/$package" build; then
+            echo "Error: $package build failed; refusing incomplete or stale artifacts" >&2
             exit 1
         fi
     done
 fi
+for component in frontend/main.html frontend/ai-chat.html frontend/notes.html frontend/settings.html \
+    backend/index.mjs raycast-api/runtime.cjs raycast-api/worker.cjs \
+    raycast-api/node_modules/react/index.js raycast-api/node_modules/react-reconciler/index.js \
+    raycast-api/node_modules/scheduler/index.js; do
+    if [ ! -s "packages/${component%%/*}/dist/${component#*/}" ]; then
+        echo "Missing required app component: $component (build web packages first)" >&2; exit 1
+    fi
+done
 swift build -c "$CONFIG" --package-path apps/macos
 BIN_DIR="$(swift build -c "$CONFIG" --package-path apps/macos --show-bin-path)"
 APP="$ROOT/build/OpenCast.app"
@@ -51,22 +54,20 @@ cp apps/macos/Resources/Info.plist "$STAGE/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :OpenCastSourceRevision string $SOURCE_REVISION" "$STAGE/Contents/Info.plist"
 if [ ! -f apps/macos/Resources/AppIcon.icns ]; then ./scripts/make-icon.sh; fi
 cp apps/macos/Resources/AppIcon.icns "$STAGE/Contents/Resources/AppIcon.icns"
-if [ "$SKIP_WEB" = 0 ]; then
-    for package in frontend backend raycast-api; do
-        if [ -d "packages/$package/dist" ]; then ditto "packages/$package/dist" "$STAGE/Contents/Resources/$package"; else echo "Warning: omitting $package; no build output" >&2; fi
-    done
-fi
+for package in frontend backend raycast-api; do
+    ditto "packages/$package/dist" "$STAGE/Contents/Resources/$package"
+done
+NODE=''
 if [ "$BUNDLE_NODE" = 1 ]; then
     NODE="${OPENCAST_NODE:-${SURGECAST_NODE:-}}"
-    if [ -z "$NODE" ] && [ -x "$APP/Contents/Resources/node/bin/node" ]; then NODE="$APP/Contents/Resources/node/bin/node"; fi
-    if [ -z "$NODE" ]; then NODE="$("${SHELL:-/bin/zsh}" -lc 'command -v node' || true)"; fi
-    if [ -z "$NODE" ]; then for candidate in /opt/homebrew/bin/node /usr/local/bin/node; do if [ -x "$candidate" ]; then NODE="$candidate"; break; fi; done; fi
+    if [ -z "$NODE" ]; then NODE="$(./scripts/prepare-release-node.sh)"; fi
     if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then echo 'Node not found; set OPENCAST_NODE' >&2; exit 1; fi
     ./scripts/verify-node.sh "$NODE"
     mkdir -p "$STAGE/Contents/Resources/node/bin"
     cp -L "$NODE" "$STAGE/Contents/Resources/node/bin/node"
     codesign --force -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE/Contents/Resources/node/bin/node"
 fi
+node scripts/collect-licenses.mjs "$STAGE/Contents/Resources/licenses" "$NODE"
 codesign --force --deep -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE"
 codesign --verify --deep --strict "$STAGE"
 rm -rf "$APP"

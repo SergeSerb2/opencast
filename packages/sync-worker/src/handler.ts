@@ -1,6 +1,7 @@
 import type { D1Database, DurableObjectNamespace } from "@cloudflare/workers-types";
-import { SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncWireRecord, type SyncPushResult } from "../../protocol/src/sync";
+import { SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncWireRecord, type SyncPushResult } from "./sync";
 import { authenticate, type AuthEnvironment } from "./auth";
+import { ensureSchema } from "./schema";
 import { HttpError, invalid, integer, object, pushRecord, text, vault } from "./validation";
 
 export interface Env extends AuthEnvironment { DB: D1Database; NOTIFIER?: DurableObjectNamespace }
@@ -36,10 +37,14 @@ async function notify(env: Env, account: string, data: unknown): Promise<void> {
 }
 async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url), path = url.pathname, method = request.method;
-  if (path === "/v1/health" && method === "GET") return json({ ok: true, version: 1 });
+  if (path === "/" && method === "GET") return new Response("OpenCast sync server is running. Paste this URL into OpenCast → Settings → Cloud Sync.\n", {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+  });
+  if (path === "/v1/health" && method === "GET") return json({ ok: true, version: 1, configured: !!(env.SYNC_TOKEN || env.SYNC_TOKENS) });
   const account = await authenticate(request, env);
   const device = text((request.headers.get("X-OpenCast-Device") ?? request.headers.get("X-Surgecast-Device")), "X-OpenCast-Device", 128);
   const registration = path === "/v1/devices" && method === "POST";
+  await ensureSchema(env.DB);
   const known = await env.DB.prepare("SELECT revoked FROM devices WHERE account = ? AND device_id = ?").bind(account, device).first<{ revoked: number }>();
   if (known?.revoked && !registration) throw new HttpError(403, "device_revoked", "This device has been removed; explicitly reconnect to register it again");
   const stmt = (sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args);
@@ -54,8 +59,11 @@ async function route(request: Request, env: Env): Promise<Response> {
       const input = await body(request), v = vault(input);
       if (input.replace !== undefined && typeof input.replace !== "boolean") invalid("Invalid replace flag");
       const encoded = JSON.stringify(v);
+      // Optional: the KDF salt of the wrapper the client last read, so concurrent passphrase changes cannot both win.
+      const salt = request.headers.get("X-OpenCast-Vault-Salt");
       const result = input.replace === true
-        ? await stmt("UPDATE accounts SET vault_id = ?, key_epoch = ?, vault_json = ? WHERE account = ? AND vault_id = ? AND vault_json IS NOT NULL RETURNING account", v.vaultId, v.keyEpoch, encoded, account, request.headers.get("If-Match")).all()
+        ? await stmt(`UPDATE accounts SET vault_id = ?, key_epoch = ?, vault_json = ? WHERE account = ? AND vault_id = ? AND vault_json IS NOT NULL${salt === null ? "" : " AND json_extract(vault_json, '$.kdf.salt') = ?"} RETURNING account`,
+          v.vaultId, v.keyEpoch, encoded, account, request.headers.get("If-Match"), ...(salt === null ? [] : [salt])).all()
         : await stmt(`INSERT INTO accounts (account, vault_id, key_epoch, vault_json) VALUES (?, ?, ?, ?)
             ON CONFLICT(account) DO UPDATE SET vault_id = excluded.vault_id, key_epoch = excluded.key_epoch, vault_json = excluded.vault_json
             WHERE accounts.vault_json IS NULL RETURNING account`, account, v.vaultId, v.keyEpoch, encoded).all();
@@ -104,6 +112,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const records = data.records.map(pushRecord);
     if (new Set(records.map(r => r.rid)).size !== records.length) invalid("Duplicate rid in batch");
     const results: SyncPushResult[] = [];
+    let responseBytes = 16 + records.length * 512;
     let changed = 0;
     for (const r of records) {
       // Sequence allocation, CAS, and conflict read are one D1 transaction. No pre-read races.
@@ -126,6 +135,9 @@ async function route(request: Request, env: Env): Promise<Response> {
       else {
         const current = batch[2].results[0] as unknown as Row | undefined;
         if (!current) throw new HttpError(409, "record_missing", "Record was removed by retention; pull from cursor 0 and retry with a null baseSeq");
+        // Small stale writes can conflict with large ciphertexts. Bound the response too.
+        responseBytes += current.ct.length;
+        if (responseBytes > SYNC_MAX_REQUEST_BYTES) throw new HttpError(413, "too_large", "Push conflicts exceed 4 MiB; pull and retry with fewer records");
         results.push({ rid: r.rid, status: "conflict", current: wire(current) });
       }
     }
@@ -168,5 +180,6 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
   }
 }
 export async function collectTombstones(env: Env, now = Date.now()): Promise<void> {
+  await ensureSchema(env.DB);
   await env.DB.prepare("DELETE FROM records WHERE deleted = 1 AND updated_at < ?").bind(now - 90 * 86400000).run();
 }

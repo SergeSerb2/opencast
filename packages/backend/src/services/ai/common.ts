@@ -12,8 +12,9 @@ export class ProviderError extends Error {
     message: string,
     readonly status?: number,
     readonly retryAfter?: string | null,
+    cause?: unknown,
   ) {
-    super(message);
+    super(message, { cause });
   }
 }
 export function httpUrl(value: string): URL {
@@ -120,6 +121,24 @@ export function redact(message: string, secrets: string[]): string {
   }
   return message;
 }
+/** Error bodies can be huge; read enough to find the provider's message. */
+async function errorBody(response: Response, limit = 64 * 1024): Promise<string> {
+  const reader = response.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (size < limit) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      size += value.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+  return Buffer.concat(chunks).subarray(0, limit).toString("utf8");
+}
 export async function checkedFetch(
   url: string,
   init: RequestInit = {},
@@ -140,10 +159,13 @@ export async function checkedFetch(
         `Provider connection failed: ${error instanceof Error ? error.message : String(error)}`,
         secrets,
       ),
+      undefined,
+      undefined,
+      error,
     );
   }
   if (!response.ok) {
-    const body = (await response.text()).slice(0, 2000);
+    const body = await errorBody(response);
     let detail = body;
     try {
       const json = JSON.parse(body);
@@ -160,7 +182,7 @@ export async function checkedFetch(
             ? " Provider rate limit or quota reached."
             : "";
     throw new ProviderError(
-      redact(`Provider HTTP ${response.status}: ${detail}${hint}`, secrets),
+      `Provider HTTP ${response.status}: ${redact(String(detail), secrets).slice(0, 2000)}${hint}`,
       response.status,
       response.headers.get("retry-after"),
     );

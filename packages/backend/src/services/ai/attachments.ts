@@ -3,8 +3,8 @@ import { extname } from "node:path";
 import { inflateSync } from "node:zlib";
 import type { AIAttachment, AIModel, AIProvider } from "@opencast/protocol";
 import type { AIChatTurn } from "../../context";
-import { httpUrl } from "./common";
-import { readPage } from "./web";
+import { abortSignal } from "./common";
+import { publicPageAgent, readPage } from "./web";
 export type Part =
   | { type: "text"; text: string }
   | { type: "image" | "pdf"; mimeType: string; data: string; name: string };
@@ -126,26 +126,37 @@ export async function prepareTurns(
               throw new Error("Invalid image attachment data");
             mimeType = match[1]; data = match[2];
           } else {
-            httpUrl(attachment.url);
-            const response = await fetch(attachment.url, { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000), redirect: "error" });
-            mimeType = response.headers.get("content-type")?.split(";")[0] ?? "";
-            if (!response.ok || !/^image\/(?:png|jpeg|gif|webp)$/.test(mimeType) || !response.body || Number(response.headers.get("content-length")) > 10 * 1024 * 1024) {
-              await response.body?.cancel();
-              throw new Error("Remote image must be a PNG, JPEG, GIF or WebP smaller than 10 MiB");
-            }
-            const reader = response.body.getReader(), chunks: Uint8Array[] = [];
-            let size = 0;
+            const requestSignal = abortSignal(signal, 30_000);
+            const dispatcher = await publicPageAgent(attachment.url, requestSignal).catch((error: unknown) => {
+              if (error instanceof Error && error.message === "Web reads require a public address")
+                throw new Error("Image links must use a public address. To use an image from this Mac or your network, attach the file instead.");
+              throw error;
+            });
             try {
-              while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                size += value.length;
-                if (size > 10 * 1024 * 1024) throw new Error("Remote image exceeds 10 MiB");
-                chunks.push(value);
+              const response = await fetch(attachment.url, {
+                dispatcher: dispatcher as unknown as RequestInit["dispatcher"],
+                signal: requestSignal,
+                redirect: "error",
+              });
+              mimeType = response.headers.get("content-type")?.split(";")[0] ?? "";
+              if (!response.ok || !/^image\/(?:png|jpeg|gif|webp)$/.test(mimeType) || !response.body || Number(response.headers.get("content-length")) > 10 * 1024 * 1024) {
+                await response.body?.cancel();
+                throw new Error("Remote image must be a PNG, JPEG, GIF or WebP smaller than 10 MiB");
               }
-            } finally { await reader.cancel(); }
-            if (!size) throw new Error("Remote image is empty");
-            data = Buffer.concat(chunks).toString("base64");
+              const reader = response.body.getReader(), chunks: Uint8Array[] = [];
+              let size = 0;
+              try {
+                while (true) {
+                  const { value, done } = await reader.read();
+                  if (done) break;
+                  size += value.length;
+                  if (size > 10 * 1024 * 1024) throw new Error("Remote image exceeds 10 MiB");
+                  chunks.push(value);
+                }
+              } finally { await reader.cancel(); }
+              if (!size) throw new Error("Remote image is empty");
+              data = Buffer.concat(chunks).toString("base64");
+            } finally { await dispatcher.close(); }
           }
           parts.push({ type: "image", mimeType, data, name: attachment.name });
           continue;

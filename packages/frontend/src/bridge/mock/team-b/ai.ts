@@ -312,6 +312,16 @@ export function createAiMock(ctx: MockContext): MockArea {
         presets.splice(index, 1);
         changed("aiPresets", [id]);
       },
+      "ai.presets.reset": ({ id }) => {
+        const original = seedPresets().find((p) => p.id === id && p.builtin);
+        if (!original) invalid("Only built-in agents can be reset");
+        const index = presets.findIndex((p) => p.id === id);
+        if (index === -1) notFound("AI preset");
+        const restored = { ...original!, updatedAt: Date.now() };
+        presets.splice(index, 1, restored);
+        changed("aiPresets", [id]);
+        return restored;
+      },
       "ai.tools.list": () => TOOLS,
     },
   };

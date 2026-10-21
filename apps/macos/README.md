@@ -26,24 +26,26 @@ From the repository root:
 
 ```sh
 swift build -c release --package-path apps/macos
-./scripts/build-app.sh --skip-web
+./scripts/build-app.sh
 codesign -v build/OpenCast.app
 swift run -c release --package-path apps/macos OpenCastSelfTest
 ```
 
-For the complete bundle, run `./scripts/build-app.sh` (requires pnpm). Packages whose
-build fails before they have any `dist` output are omitted with a warning while the
-other teams implement them. A failed build with existing output stops assembly to
-avoid shipping stale files. `--skip-web` assembles Swift and native resources only;
-it is useful with the stub or development overrides. The script stages and signs
-before replacing `build/OpenCast.app`.
+`./scripts/build-app.sh` requires pnpm and builds all three web packages. Any package
+build failure stops assembly. Frontend pages, backend, and extension runtime outputs
+must exist before signing. `--skip-web` skips the web build and reuses those required
+outputs; it does not omit them. The script stages and signs before replacing
+`build/OpenCast.app`. It includes the root license and full third-party notices in
+`Contents/Resources/licenses/`; missing dependency license text stops assembly.
 
 Flags: `--debug`, `--bundle-node`, `--skip-web`, `--open`. Node must be 22.13 or newer.
 Without bundled Node, the host resolves Node from the user's login-shell PATH, then
-Homebrew's usual paths. `--bundle-node` copies the resolved executable; distribution
-should use a standalone Node binary whose library dependencies are available on the
-minimum supported OS. The current signature is ad hoc; public distribution requires
-Developer ID signing and notarization.
+Homebrew's usual paths. `--bundle-node` uses the checksum-pinned standalone Node from
+`scripts/prepare-release-node.sh`, including the full license from that archive.
+`OPENCAST_NODE` can select a runtime prepared by that script, with its adjacent
+license and provenance file intact. Release DMGs support Apple silicon only.
+The current signature is ad hoc and is not notarized. Developer ID signing and
+notarization require an Apple Developer certificate and are not set up yet.
 
 `./scripts/make-icon.sh` regenerates `Resources/AppIcon.icns` from `assets/icon.svg`
 using the pinned SVG renderer, sips and iconutil (requires pnpm).

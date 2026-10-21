@@ -163,6 +163,8 @@ import ApplicationServices
   }
   func stop() {
     stopTap()
+    revision += 1
+    buffer = ""
     if let observer { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
   }
 }

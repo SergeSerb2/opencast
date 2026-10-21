@@ -225,6 +225,30 @@ try {
     throw new Error("Stream timeout");
   };
   assert.deepEqual(await rpc("ai.providers.list"), []);
+  const draft = {
+    template: "custom",
+    api: responsesMode ? "openai-responses" : "openai",
+    baseUrl: `http://127.0.0.1:${mock.address().port}/v1`,
+  };
+  const draftResult = await rpc("ai.providers.testDraft", { provider: draft });
+  assert.equal(draftResult.ok, true, draftResult.message);
+  assert.equal(draftResult.modelCount, 1);
+  assert.deepEqual(draftResult.sampleModelIds, [responsesMode ? "gpt-6-astra" : "mock-model"]);
+  assert.deepEqual(await rpc("ai.providers.list"), [], "Draft testing must not create a provider");
+  // Allocate our own ephemeral port, then close it to exercise connection refusal.
+  const closed = createServer();
+  await new Promise((resolve) => closed.listen(0, "127.0.0.1", resolve));
+  const closedPort = closed.address().port;
+  await new Promise((resolve) => closed.close(resolve));
+  const failedDraft = await rpc("ai.providers.testDraft", {
+    provider: { ...draft, baseUrl: `http://127.0.0.1:${closedPort}/v1` },
+  });
+  assert.equal(failedDraft.ok, false);
+  assert.ok(failedDraft.message.includes(`Nothing answered at 127.0.0.1:${closedPort}`), failedDraft.message);
+  assert.match(failedDraft.message, /running\?/);
+  assert.equal(failedDraft.modelCount, 0);
+  assert.deepEqual(failedDraft.sampleModelIds, []);
+  assert.deepEqual(await rpc("ai.providers.list"), [], "Failed draft testing must not create a provider");
   const provider = await rpc("ai.providers.upsert", {
     provider: {
       name: "Mock OpenAI-compatible",
@@ -258,6 +282,18 @@ try {
     refreshed.models[0].id,
     responsesMode ? "gpt-6-astra" : "mock-model",
   );
+  const requestsBeforeDeep = requests.length;
+  const deep = await rpc("ai.providers.test", { id: provider.id, deep: true });
+  assert.equal(deep.ok, true, deep.message);
+  assert.match(deep.message, /Models: OK \(1\)\. Chat: OK\./);
+  assert.equal(requests.length, requestsBeforeDeep + 1);
+  const ping = requests.at(-1);
+  const pingContent = (responsesMode ? ping.input : ping.messages).find(m => m.role === "user").content;
+  if (responsesMode) assert.deepEqual(pingContent, [{ type: "input_text", text: "ping" }]);
+  else assert.equal(pingContent, "ping");
+  assert.equal(responsesMode ? ping.max_output_tokens : ping.max_tokens, 1);
+  assert.ok(!ping.tools?.length, "Deep testing must not send tools");
+  assert.deepEqual(await rpc("ai.chats.list"), [], "Deep testing must not store a chat");
   const chat = await rpc("ai.chats.create");
   if (responsesMode)
     await rpc("ai.chats.update", {
@@ -360,6 +396,9 @@ try {
         .length,
       providerRequests: requests.length,
       quickAiStored: true,
+      draftTest: draftResult.ok,
+      closedPortTest: !failedDraft.ok,
+      deepTest: deep.ok,
     }),
   );
 } finally {

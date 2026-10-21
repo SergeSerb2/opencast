@@ -27,6 +27,7 @@ await server.listen();
 const base = `http://127.0.0.1:${server.httpServer.address().port}`;
 let passed = 0;
 const pageErrors = [];
+const failures = [];
 const context = await browser.newContext({ viewport: { width: 800, height: 640 }, deviceScaleFactor: 2, colorScheme: "dark", permissions: ["clipboard-read", "clipboard-write"] });
 async function call(page, method, params) {
   return page.evaluate(async ({ method, params }) => {
@@ -48,7 +49,8 @@ async function scenario(name, initialRoute, work) {
     console.log(`PASS ${name}`);
   } catch (error) {
     await page.screenshot({ path: join(output, `failed-${name}.png`) });
-    throw error;
+    failures.push(new Error(`${name}: ${error.message}`, { cause: error }));
+    console.error(`FAIL ${name}: ${error.message}`);
   } finally { await page.close(); }
 }
 try {
@@ -114,8 +116,18 @@ try {
     await page.screenshot({ path: join(output, "workflow-provider-created.png") });
   });
   await scenario("provider-remove-key", "ai/providers/openai", async (page) => {
+    const saved = (await call(page, "ai.providers.list")).find((p) => p.id === "openai");
+    assert.equal(saved.hasApiKey, true);
     await page.locator('[data-setting-id="api-key"]').getByRole("button", { name: "Remove", exact: true }).click();
-    assert.equal(await page.getByRole("button", { name: "Test", exact: true }).isDisabled(), true);
+    const test = page.getByRole("button", { name: "Test", exact: true });
+    assert.equal(await test.isEnabled(), true);
+    await test.click();
+    await page.getByText("Provider HTTP 401: Check the API key.", { exact: true }).waitFor();
+    await page.getByLabel("API Key", { exact: true }).fill("unsaved-test-only-key");
+    await test.click();
+    await page.getByText(/Connected and fetched \d+ models? ·/).waitFor();
+    assert.deepEqual((await call(page, "ai.providers.list")).find((p) => p.id === "openai"), saved);
+    await page.getByLabel("API Key", { exact: true }).fill("");
     await page.getByRole("button", { name: "Save Changes", exact: true }).click();
     await page.waitForFunction(async () => {
       const { backend } = await import("/src/bridge/backend.ts");
@@ -142,7 +154,9 @@ try {
     await page.getByRole("menuitem", { name: "Export Agents", exact: true }).click();
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     assert.equal(JSON.parse(copied).some((agent) => agent.name === "Imported Agent"), true);
-    await call(page, "ai.presets.upsert", { id: "preset-research", name: "Altered Research", instructions: "custom" });
+    const research = (await call(page, "ai.presets.list")).find((preset) => preset.builtin && preset.name === "Deep Research");
+    assert.ok(research, "The mock must provide the built-in Deep Research agent");
+    await call(page, "ai.presets.upsert", { id: research.id, name: "Altered Research", instructions: "custom" });
     await page.getByRole("button", { name: "Reset Altered Research", exact: true }).click();
     await page.getByRole("button", { name: "Reset Agent", exact: true }).click();
     await page.locator(".sc-s-library-row__main", { hasText: "Deep Research" }).waitFor();
@@ -185,11 +199,49 @@ try {
     });
   });
   await scenario("sync-connect-device-category", "cloud-sync", async (page) => {
-    await page.locator('[data-setting-id="server-url"] input').fill("https://sync.example.workers.dev");
-    await page.locator('[data-setting-id="access-token"] input').fill("test-only-token");
-    await page.locator('[data-setting-id="encryption-passphrase"] input').fill("test-only-passphrase");
-    await page.getByRole("button", { name: "Connect", exact: true }).click();
+    const serverUrl = "https://sync.example.workers.dev";
+    await page.getByRole("button", { name: "Generate Access Token", exact: true }).click();
+    const token = await page.getByLabel("Generated Access Token", { exact: true }).inputValue();
+    assert.match(token, /^[a-f0-9]{64}$/);
+    assert.equal(await page.getByLabel("Access Token", { exact: true }).inputValue(), token);
+    const setup = page.getByLabel("Paste setup code", { exact: true });
+    await setup.fill("opencast-sync-v1:invalid");
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByRole("alert").filter({ hasText: "Invalid setup code" }).waitFor();
+    assert.equal((await call(page, "sync.status")).phase, "disabled");
+    const code = "opencast-sync-v1:" + Buffer.from(JSON.stringify({ url: serverUrl, token })).toString("base64url");
+    await setup.fill(code);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByText("Create your vault", { exact: true }).waitFor();
+    await page.getByLabel("Encryption Passphrase", { exact: true }).fill("short");
+    await page.getByLabel("Confirm Passphrase", { exact: true }).fill("short");
+    await page.getByRole("button", { name: "Create Vault & Connect", exact: true }).click();
+    await page.getByRole("alert").filter({ hasText: "Use at least 12 characters" }).waitFor();
+    assert.equal((await call(page, "sync.status")).phase, "disabled");
+    await page.getByLabel("Encryption Passphrase", { exact: true }).fill("test-only-passphrase");
+    await page.getByLabel("Confirm Passphrase", { exact: true }).fill("test-only-passphrase");
+    assert.equal(await page.getByRole("switch", { name: "Also sync AI & MCP keys", exact: true }).getAttribute("aria-checked"), "true");
+    await page.getByRole("button", { name: "Create Vault & Connect", exact: true }).click();
     await page.getByText("Up to Date", { exact: true }).waitFor();
+    await page.getByText("Add Another Mac", { exact: true }).waitFor();
+    assert.equal((await call(page, "sync.status")).serverUrl, serverUrl);
+    await page.getByRole("button", { name: "Show Code", exact: true }).click();
+    const revealedCode = await page.getByLabel("Your Setup Code", { exact: true }).inputValue();
+    assert.ok(revealedCode.startsWith("opencast-sync-v1:"));
+    assert.deepEqual(JSON.parse(Buffer.from(revealedCode.slice("opencast-sync-v1:".length), "base64url").toString("utf8")), { url: serverUrl, token });
+    const keys = page.getByRole("switch", { name: "Sync AI & MCP Keys", exact: true });
+    assert.equal(await keys.getAttribute("aria-checked"), "true");
+    await keys.click();
+    assert.equal((await call(page, "settings.getAll"))["sync.optInCategories"].includes("ai-keys"), false);
+    await keys.click();
+    const confirmation = page.getByRole("alertdialog", { name: "Sync API keys in your encrypted vault?", exact: true });
+    await confirmation.waitFor();
+    assert.equal((await call(page, "settings.getAll"))["sync.optInCategories"].includes("ai-keys"), false);
+    await confirmation.getByRole("button", { name: "Sync Keys", exact: true }).click();
+    await page.waitForFunction(async () => {
+      const { backend } = await import("/src/bridge/backend.ts");
+      return (await backend.call("settings.getAll"))["sync.optInCategories"].includes("ai-keys");
+    });
     await page.getByRole("switch", { name: "Sync Notes", exact: true }).click();
     assert.equal((await call(page, "settings.getAll"))["sync.disabledCategories"].includes("notes"), true);
     await page.getByRole("button", { name: "Remove Mac Studio", exact: true }).click();
@@ -217,15 +269,16 @@ try {
   });
   await scenario("rayconfig-import-results", "advanced", async (page) => {
     await page.locator('[data-setting-id="import-from-raycast"]').getByRole("button", { name: "Import…", exact: true }).click();
-    const picker = page.getByRole("dialog", { name: "Choose a Raycast Export", exact: true });
-    await picker.getByLabel("File Path", { exact: true }).fill("/tmp/settings.rayconfig");
-    await picker.getByRole("button", { name: "Import", exact: true }).click();
+    // The mock native picker returns its encrypted sample export directly.
     const importer = page.getByRole("dialog", { name: "Import from Raycast", exact: true });
+    await importer.getByPlaceholder("Export password", { exact: true }).fill("test-only-export-password");
     await importer.getByRole("button", { name: "Import", exact: true }).click();
-    await importer.getByText("23 imported", { exact: true }).waitFor();
+    for (const count of [18, 24, 9, 6, 12]) await importer.getByText(`${count} imported`, { exact: true }).waitFor();
+    await importer.getByText("Theme “Midnight Pro” has an invalid accent color", { exact: true }).waitFor();
     await page.screenshot({ path: join(output, "workflow-rayconfig-results.png") });
   });
   assert.deepEqual(pageErrors, []);
+  if (failures.length) throw new AggregateError(failures, `${failures.length} browser workflows failed; ${passed} passed`);
   console.log(`${passed} browser workflows passed; no page errors`);
 } finally {
   await context.close();

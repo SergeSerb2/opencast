@@ -3,6 +3,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 if [ "$(uname -s)" != Darwin ]; then echo 'DMG packaging requires macOS' >&2; exit 1; fi
+if [ "$(uname -m)" != arm64 ]; then
+    echo 'OpenCast releases support Apple silicon (arm64) only; build on an arm64 Mac' >&2; exit 1
+fi
 if [ "$#" != 0 ]; then echo "Usage: $0" >&2; exit 2; fi
 if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
     echo 'Fetch the full Git history before assigning a release build number' >&2; exit 1
