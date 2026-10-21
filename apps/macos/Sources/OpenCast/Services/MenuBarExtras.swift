@@ -167,5 +167,5 @@ import AppKit
     if let item = items.removeValue(forKey: id) { NSStatusBar.system.removeStatusItem(item) }
     menus = menus.filter { $0.value != id }
   }
-  func stop() { for id in Array(items.keys) { remove(id) } }
+  func stop() { for id in Array(generation.keys) { remove(id) } }
 }
