@@ -1,3 +1,4 @@
+/// <reference path="./sql.d.ts" />
 import type { D1Database } from "@cloudflare/workers-types";
 import schema from "../migrations/0001_init.sql?raw";
 
