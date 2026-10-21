@@ -11,6 +11,7 @@ async function equal(a: string, b: string): Promise<boolean> {
   return difference === 0;
 }
 export async function authenticate(request: Request, env: AuthEnvironment): Promise<string> {
+  if (!env.SYNC_TOKEN && !env.SYNC_TOKENS) throw new HttpError(503, "not_configured", "Set the SYNC_TOKEN secret on this Worker");
   const header = request.headers.get("Authorization") ?? "";
   const supplied = header.startsWith("Bearer ") ? header.slice(7) : "";
   const tokens: [string, string][] = [];

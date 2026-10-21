@@ -1,11 +1,11 @@
-CREATE TABLE accounts (
+CREATE TABLE IF NOT EXISTS accounts (
   account TEXT PRIMARY KEY,
   last_seq INTEGER NOT NULL DEFAULT 0,
   vault_id TEXT,
   key_epoch INTEGER,
   vault_json TEXT
 );
-CREATE TABLE devices (
+CREATE TABLE IF NOT EXISTS devices (
   account TEXT NOT NULL REFERENCES accounts(account),
   device_id TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE devices (
   revoked INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (account, device_id)
 );
-CREATE TABLE records (
+CREATE TABLE IF NOT EXISTS records (
   account TEXT NOT NULL REFERENCES accounts(account),
   rid TEXT NOT NULL,
   seq INTEGER NOT NULL,
@@ -28,5 +28,5 @@ CREATE TABLE records (
   PRIMARY KEY (account, rid),
   UNIQUE (account, seq)
 );
-CREATE INDEX records_pull ON records(account, seq);
-CREATE INDEX records_gc ON records(updated_at) WHERE deleted = 1;
+CREATE INDEX IF NOT EXISTS records_pull ON records(account, seq);
+CREATE INDEX IF NOT EXISTS records_gc ON records(updated_at) WHERE deleted = 1;

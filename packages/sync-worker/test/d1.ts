@@ -1,12 +1,11 @@
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
 import type { Env } from "../src/handler";
 
 /** Execute the production SQL, including transactional batch semantics, against SQLite. */
 export function createTestEnv(): Env & { close(): void; sqlite: DatabaseSync } {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys = ON");
-  sqlite.exec(readFileSync(new URL("../migrations/0001_init.sql", import.meta.url), "utf8"));
+  // Start empty so existing HTTP tests exercise the Worker's schema initialization.
   class Statement {
     constructor(readonly sql: string, readonly args: (string | number | null)[] = []) {}
     bind(...args: (string | number | null)[]) { return new Statement(this.sql, args); }

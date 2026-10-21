@@ -1,6 +1,7 @@
 import type { D1Database, DurableObjectNamespace } from "@cloudflare/workers-types";
-import { SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncWireRecord, type SyncPushResult } from "../../protocol/src/sync";
+import { SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncWireRecord, type SyncPushResult } from "./sync";
 import { authenticate, type AuthEnvironment } from "./auth";
+import { ensureSchema } from "./schema";
 import { HttpError, invalid, integer, object, pushRecord, text, vault } from "./validation";
 
 export interface Env extends AuthEnvironment { DB: D1Database; NOTIFIER?: DurableObjectNamespace }
@@ -36,10 +37,14 @@ async function notify(env: Env, account: string, data: unknown): Promise<void> {
 }
 async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url), path = url.pathname, method = request.method;
-  if (path === "/v1/health" && method === "GET") return json({ ok: true, version: 1 });
+  if (path === "/" && method === "GET") return new Response("OpenCast sync server is running. Paste this URL into OpenCast → Settings → Cloud Sync.\n", {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+  });
+  if (path === "/v1/health" && method === "GET") return json({ ok: true, version: 1, configured: !!(env.SYNC_TOKEN || env.SYNC_TOKENS) });
   const account = await authenticate(request, env);
   const device = text((request.headers.get("X-OpenCast-Device") ?? request.headers.get("X-Surgecast-Device")), "X-OpenCast-Device", 128);
   const registration = path === "/v1/devices" && method === "POST";
+  await ensureSchema(env.DB);
   const known = await env.DB.prepare("SELECT revoked FROM devices WHERE account = ? AND device_id = ?").bind(account, device).first<{ revoked: number }>();
   if (known?.revoked && !registration) throw new HttpError(403, "device_revoked", "This device has been removed; explicitly reconnect to register it again");
   const stmt = (sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args);
@@ -172,5 +177,6 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
   }
 }
 export async function collectTombstones(env: Env, now = Date.now()): Promise<void> {
+  await ensureSchema(env.DB);
   await env.DB.prepare("DELETE FROM records WHERE deleted = 1 AND updated_at < ?").bind(now - 90 * 86400000).run();
 }

@@ -27,7 +27,7 @@ describe("ciphertext sync HTTP API", () => {
     expect((await legacy("DELETE", undefined, true)).status).toBe(200);
   });
   it("authenticates account tokens, requires devices, and isolates tenants", async () => {
-    expect((await call("/v1/health", "GET", undefined, { Authorization: "" })).body).toEqual({ ok: true, version: 1 });
+    expect((await call("/v1/health", "GET", undefined, { Authorization: "" })).body).toEqual({ ok: true, version: 1, configured: true });
     expect((await call("/v1/vault", "GET", undefined, { Authorization: "Bearer wrong" })).status).toBe(401);
     expect((await call("/v1/vault", "GET", undefined, { "X-OpenCast-Device": "" })).status).toBe(400);
     await setup();

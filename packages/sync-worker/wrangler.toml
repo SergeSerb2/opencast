@@ -1,14 +1,19 @@
-# Stable deployment identity: changing this creates a different workers.dev endpoint.
-name = "surgecast-sync"
+# New deployments. For an existing service use scripts/deploy-sync.sh --name surgecast-sync.
+name = "opencast-sync"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "surgecast-sync"
-# Replace with the id printed by `wrangler d1 create surgecast-sync`.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_name = "opencast-sync"
+# Wrangler provisions and links D1 on first deploy when database_id is absent.
 migrations_dir = "migrations"
+
+# Share the migration SQL with the Worker and Vite's raw text imports in tests.
+[[rules]]
+type = "Text"
+globs = ["**/*.sql", "**/*.sql?raw"]
+fallthrough = true
 
 [[durable_objects.bindings]]
 name = "NOTIFIER"

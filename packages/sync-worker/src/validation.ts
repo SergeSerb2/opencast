@@ -1,4 +1,4 @@
-import { SYNC_MAX_CIPHERTEXT_BYTES, type SyncPushRecord, type SyncVault } from "../../protocol/src/sync";
+import { SYNC_MAX_CIPHERTEXT_BYTES, type SyncPushRecord, type SyncVault } from "./sync";
 
 export class HttpError extends Error {
   constructor(readonly status: number, readonly code: string, message: string) { super(message); }
