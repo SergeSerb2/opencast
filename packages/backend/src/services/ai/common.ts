@@ -121,6 +121,24 @@ export function redact(message: string, secrets: string[]): string {
   }
   return message;
 }
+/** Error bodies can be huge; read enough to find the provider's message. */
+async function errorBody(response: Response, limit = 64 * 1024): Promise<string> {
+  const reader = response.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (size < limit) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      size += value.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+  return Buffer.concat(chunks).subarray(0, limit).toString("utf8");
+}
 export async function checkedFetch(
   url: string,
   init: RequestInit = {},
@@ -147,7 +165,7 @@ export async function checkedFetch(
     );
   }
   if (!response.ok) {
-    const body = await response.text();
+    const body = await errorBody(response);
     let detail = body;
     try {
       const json = JSON.parse(body);
