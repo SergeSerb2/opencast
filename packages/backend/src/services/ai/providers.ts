@@ -174,6 +174,7 @@ export class Providers {
       baseUrl: input.baseUrl,
       enabled: input.enabled ?? old?.enabled ?? true,
       autoFetchModels: input.autoFetchModels ?? old?.autoFetchModels ?? true,
+      modelFetchError: old?.modelFetchError,
       models: models.map((m) => {
         const inferred = inferModel(m.id, input.api);
         const capabilities = { ...m.capabilities };
@@ -201,7 +202,10 @@ export class Providers {
       provider.autoFetchModels &&
       (!provider.models.length ||
         old?.baseUrl !== provider.baseUrl ||
-        old?.api !== provider.api)
+        old?.api !== provider.api ||
+        apiKey !== undefined ||
+        input.headers !== undefined ||
+        Boolean(old?.modelFetchError))
     ) {
       try {
         return await this.refresh(id);
