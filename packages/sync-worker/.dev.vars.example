@@ -1,0 +1,2 @@
+# Use a long random access token from OpenCast Settings → Cloud Sync, or openssl rand -hex 32.
+SYNC_TOKEN=
