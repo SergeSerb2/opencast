@@ -8,6 +8,8 @@ import OpenCastCore
   private var cycleIndex = 0
   private var cycleFrame: CGRect?
   private var history: [(AXUIElement, CGRect)] = []
+  private var busy = false
+  private var waiters: [CheckedContinuation<Void, Never>] = []
   var previous: (() -> NSRunningApplication?)?
   static func rectObject(_ rect: CGRect) -> [String: Double] {
     ["x": rect.minX, "y": rect.minY, "width": rect.width, "height": rect.height]
@@ -30,8 +32,21 @@ import OpenCastCore
     else { throw RpcError(code: -32004, message: "No target application") }
     return app
   }
+  private func acquire() async {
+    if !busy {
+      busy = true
+      return
+    }
+    await withCheckedContinuation { waiters.append($0) }
+  }
+  private func release() {
+    if waiters.isEmpty { busy = false } else { waiters.removeFirst().resume() }
+  }
   func call(_ method: String, _ p: [String: Any]) async throws -> Any {
     if method == "windows.screens" { return screens() }
+    // Keep AX writes and undo history in order across suspension points.
+    await acquire()
+    defer { release() }
     try Permissions.requireAX()
     let app = try target()
     let pid = app.processIdentifier
