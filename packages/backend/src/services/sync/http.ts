@@ -52,15 +52,16 @@ export class SyncHttp {
     return { Authorization: `Bearer ${this.token}`, "X-OpenCast-Device": this.deviceId, "X-Surgecast-Device": this.deviceId, ...extra };
   }
   async request<T>(path: string, method = "GET", data?: unknown, extra?: Record<string, string>): Promise<T> {
+    const signal = AbortSignal.any([this.signal, AbortSignal.timeout(30000)]);
     const response = await fetch(this.serverUrl + path, { method, headers: this.headers({ "Content-Type": "application/json", ...extra }),
-      body: data === undefined ? undefined : JSON.stringify(data), redirect: "error", signal: AbortSignal.any([this.signal, AbortSignal.timeout(30000)]) }).catch(error => { throw new SyncNetworkError(error); });
+      body: data === undefined ? undefined : JSON.stringify(data), redirect: "error", signal }).catch(error => { throw new SyncNetworkError(signal.aborted ? signal.reason : error); });
     const reader = response.body?.getReader();
     const chunks: Uint8Array[] = [];
     let length = 0;
     if (reader) {
       try {
         while (true) {
-          const { done, value } = await reader.read().catch(error => { throw new SyncNetworkError(error); });
+          const { done, value } = await reader.read().catch(error => { throw new SyncNetworkError(signal.aborted ? signal.reason : error); });
           if (done) break;
           length += value.byteLength;
           if (length > SYNC_MAX_REQUEST_BYTES * 2) { await reader.cancel(); throw new Error("Sync server response exceeds 8 MiB"); }
