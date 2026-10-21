@@ -101,6 +101,7 @@ export function LinkPopover({ editor }: { editor: Editor }) {
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (event.key === "Enter") {
       event.preventDefault();
       apply();
