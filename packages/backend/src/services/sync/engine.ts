@@ -205,6 +205,14 @@ export class SyncEngine {
       this.failures++;
       this.phase = error instanceof SyncHttpError && ["vault_not_found", "vault_changed"].includes(error.code) ? "needs-passphrase" : error instanceof SyncNetworkError ? "offline" : "error";
       this.lastError = error instanceof SyncHttpError ? error.message : "Sync failed; check the connection and encrypted record integrity";
+      if (error instanceof SyncHttpError && ["vault_not_found", "vault_changed", "device_revoked"].includes(error.code)) {
+        // These failures require explicit reconnect, including after an application restart.
+        this.session = undefined; session.controller.abort();
+        clearTimeout(this.localTimer); clearTimeout(this.socketTimer);
+        this.socket?.terminate(); this.socket = undefined;
+        session.keys.encKey.fill(0); session.keys.ridKey.fill(0);
+        this.ctx.settings.set("sync.enabled", false);
+      }
       return this.emit();
     }).finally(() => {
       this.running = undefined;
