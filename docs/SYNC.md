@@ -104,8 +104,11 @@ the passphrase there. Share it only with your own Macs: it contains an administr
 server token and has no expiry. OpenCast marks its copies concealed and transient so
 its clipboard history skips them. The code contains neither the passphrase nor vault key.
 
-The setup form defaults Also sync AI & MCP keys to on and saves that category before
-connecting. On an existing connection, enabling the category asks for confirmation.
+The setup form shows an **Also sync AI & MCP keys** switch. On a Mac that has never
+connected it starts on; on a Mac that connected before it shows that Mac's saved choice.
+The form saves the choice just before connecting, so the first sync can include keys, and
+restores the previous choice if connecting fails. On an existing connection, turning the
+category on asks for confirmation.
 Turning it off keeps keys on this Mac and stops syncing them; it does not remove remote
 ciphertext. Extension passwords and sign-ins stay in each Mac's Keychain.
 
@@ -145,8 +148,9 @@ reset, even across wipes, avoiding cursor reuse.
 
 ### AI & MCP Keys
 
-This category is off by default. Turn it on separately on each Mac through the existing
-category settings. It works best with **AI Commands & Presets** and **MCP Servers** on,
+This is an opt-in category: it stays off until someone turns it on, either with the setup
+form's switch or under Synced Content, and an app update never turns it on. Turn it on
+separately on each Mac. It works best with **AI Commands & Presets** and **MCP Servers** on,
 but their switches are independent. Turning it off stops secret push and pull and leaves
 local Keychain values intact. Remote ciphertext remains; wiping Cloud Sync data removes
 it. Re-enabling replays remote records to catch up.
@@ -160,8 +164,9 @@ Push collection and pull application allow only these accounts:
 - `mcp:<id>:env:<name>` and `mcp:<id>:header:<name>`
 - `ai.websearch:<provider>:apiKey`, for tavily, brave, exa, searxng and jina
 
-Accounts are at most 256 characters; values are at most 64 KiB of UTF-8. Neither may
-contain NUL or control characters. Header and environment names use their respective
+Accounts are at most 256 characters and may not contain control characters. Values are
+at most 64 KiB of UTF-8 and may contain tabs and line breaks (for example a PEM key in an
+MCP environment variable), but no other control characters. Header and environment names use their respective
 HTTP token and environment-variable syntax. Other accounts are ignored, including
 `sync:*`, `data.backup:*`, `ext:*` and `oauth:*`. Secret values never appear in status,
 change events or public RPC results. The private native Keychain RPC channel carries
@@ -172,7 +177,9 @@ off. After pulling, a collector compares indexed Keychain values with stored has
 before pushing. A missing or unreadable value never creates a deletion. Deleting a
 provider or MCP server explicitly deletes its local secrets; the resulting tombstones
 delete peer copies on Macs with this category on. Secret conflicts use the same last
-writer wins rule as entities, with dirty local ties preserved.
+writer wins rule as entities, with dirty local ties preserved. A key saved before this
+feature existed has no change timestamp, so when a Mac joins with the category on, the
+vault's key for the same account replaces it. The vault is the source of truth on join.
 
 ## HTTP API
 
@@ -186,7 +193,7 @@ local development. Tokens never appear in URLs and redirects are refused by clie
 | --- | --- | --- |
 | GET | `/v1/health` | Unauthenticated `{ ok: true, version: 1, configured: boolean }` |
 | GET | `/v1/vault` | Vault JSON, or 404 `vault_not_found` |
-| PUT | `/v1/vault` | Create vault (201); 409 if present. Replace with vault fields plus `replace: true` and raw `If-Match: <existing vaultId>` |
+| PUT | `/v1/vault` | Create vault (201); 409 if present. Replace with vault fields plus `replace: true` and raw `If-Match: <existing vaultId>`; optional `X-OpenCast-Vault-Salt: <current kdf.salt>` also requires the stored wrapper to be unchanged |
 | DELETE | `/v1/vault` | Require `X-OpenCast-Confirm: wipe`; delete all account records/devices/vault; return `{ ok: true }` |
 | POST | `/v1/devices` | Upsert `{ deviceId, name, platform, appVersion? }`; body ID must match header; explicit registration clears revocation; vault required |
 | GET | `/v1/devices` | Array of active devices including `deviceId, name, platform, appVersion, lastSeenAt` |
@@ -214,7 +221,9 @@ versions against null bases after re-pulling. `vault_changed` (409) means the va
 or pinned identity changed, or authorization changed during a transaction.
 
 Change Passphrase rewraps the Keychain VMK with `wrapVault` under the **same VMK/vault
-ID/epoch**, then sends PUT with `replace: true` and `If-Match: <vaultId>`. It does not
+ID/epoch**, then sends PUT with `replace: true`, `If-Match: <vaultId>`, and the salt of
+the wrapper it last read in `X-OpenCast-Vault-Salt`. If another Mac changed the passphrase
+in the meantime, the Worker answers 409 and nothing is overwritten. It does not
 rewrite records. Other connected Macs keep working; only future joins need the new
 passphrase. It does not remove anyone who holds the server token.
 

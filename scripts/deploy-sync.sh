@@ -176,7 +176,8 @@ process.stdout.write("opencast-sync-v1:" + Buffer.from(JSON.stringify({ url: pro
   echo "Treat it like a password. It does not contain your encryption passphrase."
   if ! $accept_defaults && command -v pbcopy >/dev/null && confirm "Copy the setup code to the clipboard?"; then
     printf '%s' "$setup_code" | pbcopy
-    echo "Setup code copied."
+    echo "Setup code copied. If OpenCast is running, its Clipboard History keeps a copy on this Mac;"
+    echo "delete that entry after you paste the code."
   fi
 else
   echo "No setup code was generated because the existing token was kept and not entered."
