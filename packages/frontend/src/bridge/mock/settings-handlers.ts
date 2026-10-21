@@ -708,11 +708,13 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       events.emit("sync.status", sync);
     },
     "sync.setCategoryEnabled": ({ category, enabled }) => {
-      if (!SYNC_CATEGORIES.some((c) => c.id === category)) fail(`Unknown sync category ${category}`);
-      const disabled = new Set(settings["sync.disabledCategories"]);
-      if (enabled) disabled.delete(category);
-      else disabled.add(category);
-      setSetting("sync.disabledCategories", [...disabled]);
+      const known = SYNC_CATEGORIES.find((c) => c.id === category);
+      if (!known) fail(`Unknown sync category ${category}`);
+      const key = known && "optIn" in known ? "sync.optInCategories" : "sync.disabledCategories";
+      const ids = new Set(settings[key]);
+      if (enabled === (key === "sync.optInCategories")) ids.add(category);
+      else ids.delete(category);
+      setSetting(key, [...ids]);
     },
     "sync.wipeRemote": () => {
       setSetting("sync.enabled", false);

@@ -6,7 +6,7 @@ import { SYNC_CATEGORIES, SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncSta
 import type { AppContext } from "../../context";
 import type { EntityRecord } from "../../db/entities";
 import { createVault, unwrapVault, deriveKeys, decode, encryptRecord, decryptRecord, validateVault, type VaultKeys } from "./crypto";
-import { categoryFor, isEnabled } from "./categories";
+import { categoryFor, isEnabled, isOptIn } from "./categories";
 import { applyRemote } from "./conflicts";
 import { normalizeServerUrl, SyncHttp, SyncHttpError, SyncNetworkError } from "./http";
 
@@ -43,7 +43,8 @@ export class SyncEngine {
     return id;
   }
   private disabled(): string[] { return this.ctx.settings.get("sync.disabledCategories"); }
-  private eligible(record: { collection: string; id: string }): boolean { return isEnabled(record.collection, record.id, this.disabled()); }
+  private optedIn(): string[] { return this.ctx.settings.get("sync.optInCategories"); }
+  private eligible(record: { collection: string; id: string }): boolean { return isEnabled(record.collection, record.id, this.disabled(), this.optedIn()); }
   private dirty(limit = SYNC_MAX_RECORDS, excluded = new Set<string>()): EntityRecord<unknown>[] {
     const out: EntityRecord<unknown>[] = [];
     // Page over excluded rows too: a disabled category must never starve enabled records.
@@ -90,7 +91,7 @@ export class SyncEngine {
     this.unlisten.push(this.ctx.native.on("system.didWake", () => this.trigger()));
     this.unlisten.push(this.ctx.settings.onChange(key => {
       if (key === "sync.intervalSeconds" && this.session && !this.running) this.schedule();
-      if (key === "sync.disabledCategories" && this.session) {
+      if ((key === "sync.disabledCategories" || key === "sync.optInCategories") && this.session) {
         this.replayGeneration++;
         this.setState("cursor", "0");
         this.trigger();
@@ -355,9 +356,15 @@ export class SyncEngine {
   }
   setCategoryEnabled(category: string, enabled: boolean): void {
     if (!SYNC_CATEGORIES.some(c => c.id === category) || typeof enabled !== "boolean") throw new Error("Unknown sync category or invalid enabled flag");
-    const disabled = new Set(this.disabled());
-    if (enabled) disabled.delete(category); else disabled.add(category);
-    this.ctx.settings.set("sync.disabledCategories", [...disabled]);
+    if (isOptIn(category)) {
+      const optedIn = new Set(this.optedIn());
+      if (enabled) optedIn.add(category); else optedIn.delete(category);
+      this.ctx.settings.set("sync.optInCategories", [...optedIn]);
+    } else {
+      const disabled = new Set(this.disabled());
+      if (enabled) disabled.delete(category); else disabled.add(category);
+      this.ctx.settings.set("sync.disabledCategories", [...disabled]);
+    }
     if (enabled) {
       this.replayGeneration++;
       this.setState("cursor", "0");

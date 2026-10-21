@@ -200,6 +200,7 @@ function SelfHostingInfo() {
 
 function SyncedContent({ status, editable }: { status: SyncStatus; editable: boolean }) {
   const disabled = useSetting("sync.disabledCategories");
+  const optedIn = useSetting("sync.optInCategories");
   const toggle = async (category: string, enabled: boolean) => {
     try {
       await backend.call("sync.setCategoryEnabled", { category, enabled });
@@ -217,7 +218,13 @@ function SyncedContent({ status, editable }: { status: SyncStatus; editable: boo
         return (
           <Row key={category.id} title={category.title} anchor={`sync-${category.id}`}>
             {count !== undefined && <span className="sc-s-value">{count.toLocaleString()}</span>}
-            {editable && <Switch checked={!disabled.includes(category.id)} onChange={(enabled) => void toggle(category.id, enabled)} label={`Sync ${category.title}`} />}
+            {editable && (
+              <Switch
+                checked={"optIn" in category ? optedIn.includes(category.id) : !disabled.includes(category.id)}
+                onChange={(enabled) => void toggle(category.id, enabled)}
+                label={`Sync ${category.title}`}
+              />
+            )}
           </Row>
         );
       })}
