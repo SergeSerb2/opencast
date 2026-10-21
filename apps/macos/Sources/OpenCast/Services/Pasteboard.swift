@@ -37,6 +37,7 @@ import OpenCastCore
     timer = nil
   }
   private func changed() {
+    guard timer != nil else { return }
     let board = NSPasteboard.general
     guard board.changeCount != count else { return }
     count = board.changeCount
