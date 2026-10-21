@@ -10,7 +10,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "react": "19.3.0",
+    "react": "19.3.1",
     "react-reconciler": "0.34.0"
   },
   "devDependencies": {
@@ -20,7 +20,7 @@
     "@types/react-reconciler": "^0.34.0",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.5"
   },
   "main": "./dist/runtime.cjs",
   "types": "./dist/index.d.ts",
