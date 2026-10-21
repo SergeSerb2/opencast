@@ -35,6 +35,12 @@ import OpenCastCore
       target.activate()
     }
     try await Task.sleep(nanoseconds: 60_000_000)
+    // Activation is asynchronous; a busy Mac can take longer than the first delay.
+    var waited = 0
+    while NSWorkspace.shared.frontmostApplication?.processIdentifier != target.processIdentifier && waited < 700 {
+      try await Task.sleep(nanoseconds: 20_000_000)
+      waited += 20
+    }
     guard NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier else {
       throw RpcError(code: -32005, message: "Input target changed before key injection")
     }
