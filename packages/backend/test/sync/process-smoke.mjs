@@ -17,8 +17,8 @@ async function wipe() {
   const response = await fetch(url + "/v1/vault", { method: "DELETE", headers: { Authorization: `Bearer ${token}`, "X-OpenCast-Device": "process-test", "X-OpenCast-Confirm": "wipe" } });
   assert.equal(response.status, 200);
 }
-async function start(name) {
-  const dir = join(root, name), keys = new Map();
+async function start(name, keys = new Map()) {
+  const dir = join(root, name);
   const processChild = spawn(process.execPath, [resolve("packages/backend/dist/index.mjs"), "--dev", "--data-dir", dir, "--port", "0", "--token", "rpc-test"], { stdio: ["pipe", "pipe", "pipe"] });
   const app = { processChild, dir, keys, stderr: "", next: 1, pending: new Map() }; apps.push(app);
   processChild.stderr.on("data", chunk => { app.stderr += chunk.toString(); });
@@ -55,6 +55,15 @@ async function start(name) {
   app.db = new DatabaseSync(join(dir, "opencast.db"));
   return app;
 }
+async function close(app) {
+  if (app.closed) return;
+  app.closed = true;
+  app.socket?.terminate(); app.db?.close();
+  const ended = new Promise(resolveExit => app.processChild.once("exit", resolveExit));
+  app.processChild.kill("SIGTERM");
+  const forced = setTimeout(() => app.processChild.kill("SIGKILL"), 3000);
+  await ended; clearTimeout(forced);
+}
 function put(app, id, content, updatedAt) {
   app.db.prepare(`INSERT INTO entities(collection,id,data,created_at,updated_at,sync_dirty) VALUES ('notes',?,?,?,?,1)
     ON CONFLICT(collection,id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at,deleted=0,sync_dirty=1`)
@@ -67,9 +76,28 @@ try {
   const a = await start("A"), b = await start("B");
   for (const app of apps) {
     const info = await app.rpc("app.info"); assert.ok(info.methods.includes("sync.connect"));
-    const status = await app.rpc("sync.connect", { serverUrl: url, token, passphrase: "process smoke passphrase", deviceName: app === a ? "A" : "B" });
-    assert.equal(status.phase, "online", status.lastError);
   }
+  const credentials = { serverUrl: url, token };
+  const passphrase = "process smoke passphrase";
+  assert.deepEqual(await a.rpc("sync.probe", credentials), { vault: "absent", deviceRevoked: false, configured: true });
+  await assert.rejects(b.rpc("sync.probe", { ...credentials, token: "incorrect" }), /Invalid sync server token/);
+  await assert.rejects(a.rpc("sync.connect", { ...credentials, passphrase: "short", expectVault: "create" }), /at least 12/);
+  const created = await a.rpc("sync.connect", { ...credentials, passphrase, deviceName: "A", expectVault: "create" });
+  assert.equal(created.phase, "online", created.lastError);
+  const setup = await a.rpc("sync.setupCode");
+  assert.equal(setup.serverUrl, url);
+  assert.ok(setup.code.startsWith("opencast-sync-v1:"));
+  const parsed = await b.rpc("sync.parseSetupCode", { code: `  ${setup.code}\n` });
+  assert.deepEqual(parsed, credentials);
+  for (const code of [setup.code.replace("-v1:", "-v2:"), setup.code.slice(0, -5),
+    "opencast-sync-v1:" + Buffer.from(JSON.stringify({ url: "http://example.com", token })).toString("base64url")]) {
+    await assert.rejects(b.rpc("sync.parseSetupCode", { code }));
+  }
+  assert.deepEqual(await b.rpc("sync.probe", parsed), { vault: "present", deviceRevoked: false, configured: true });
+  await assert.rejects(b.rpc("sync.connect", { ...parsed, passphrase, expectVault: "create" }), /vault already exists/);
+  await assert.rejects(b.rpc("sync.connect", { ...parsed, passphrase: "wrong passphrase", expectVault: "join" }), /Wrong passphrase/);
+  const joined = await b.rpc("sync.connect", { ...parsed, passphrase, deviceName: "B", expectVault: "join" });
+  assert.equal(joined.phase, "online", joined.lastError);
   const base = Date.now(); put(a, "shared", "initial", base); await now(a); await now(b);
   assert.equal(note(b, "shared").content, "initial");
   put(b, "shared", "B unsent", base + 100); put(a, "shared", "A newer", base + 200);
@@ -83,14 +111,24 @@ try {
     assert.equal(app.keys.size, 2);
     for (const value of app.keys.values()) assert.ok(!app.stderr.includes(value), "Secret appeared in backend logs");
   }
-  console.log("Bundled backend processes: WebSocket RPC, Keychain isolation, encrypted create, conflicting edits, copy preservation and tombstone propagation passed");
+  const bStatus = await b.rpc("sync.status");
+  await a.rpc("sync.removeDevice", { deviceId: bStatus.deviceId });
+  assert.deepEqual(await b.rpc("sync.probe", parsed), { vault: "unknown", deviceRevoked: true, configured: true });
+  const removed = await b.rpc("sync.now"); assert.equal(removed.stopReason, "device-removed");
+  assert.equal((await b.rpc("sync.connect", { ...parsed, passphrase, expectVault: "join" })).stopReason, undefined);
+  await wipe();
+  const stopped = await b.rpc("sync.now"); assert.equal(stopped.stopReason, "vault-changed");
+  await assert.rejects(b.rpc("sync.connect", { ...parsed, passphrase, expectVault: "join" }), /No vault exists for that token/);
+  const absent = await fetch(url + "/v1/vault", { headers: { Authorization: `Bearer ${token}`, "X-OpenCast-Device": "process-test" } });
+  assert.equal(absent.status, 404, "Joining must not create a missing vault");
+  assert.equal((await b.rpc("sync.status")).stopReason, "vault-changed");
+  await close(b);
+  const restarted = await start("B", b.keys);
+  const resumed = await restarted.rpc("sync.status");
+  assert.equal(resumed.phase, "disabled"); assert.equal(resumed.stopReason, "vault-changed"); assert.equal(resumed.serverUrl, url);
+  await restarted.rpc("sync.disconnect"); assert.equal((await restarted.rpc("sync.status")).stopReason, undefined);
+  console.log("Bundled backend processes: probe, setup-code handoff, explicit create/join, wrong passphrase, absent-vault guard, revocation, stop reasons, Keychain isolation, encrypted conflicts and tombstones passed");
 } finally {
-  for (const app of apps) {
-    app.socket?.terminate(); app.db?.close();
-    const ended = new Promise(resolveExit => app.processChild.once("exit", resolveExit));
-    app.processChild.kill("SIGTERM");
-    const forced = setTimeout(() => app.processChild.kill("SIGKILL"), 3000);
-    await ended; clearTimeout(forced);
-  }
+  for (const app of apps) await close(app);
   await wipe(); rmSync(root, { recursive: true, force: true });
 }

@@ -249,8 +249,12 @@ export interface BackendMethods {
 
   // ---- sync -------------------------------------------------------------------------------------------
   "sync.status": { params: Void; result: SyncStatus };
-  /** Connect to a server; creates the vault if empty or unlocks it with the passphrase. */
-  "sync.connect": { params: { serverUrl: string; token: string; passphrase: string; deviceName?: string }; result: SyncStatus };
+  /** Inspect the server without registering a device or creating a vault. */
+  "sync.probe": { params: { serverUrl: string; token: string }; result: { vault: "present" | "absent" | "unknown"; deviceRevoked: boolean; configured: boolean } };
+  "sync.setupCode": { params: Void; result: { code: string; serverUrl: string } };
+  "sync.parseSetupCode": { params: { code: string }; result: { serverUrl: string; token: string } };
+  /** The expected vault state guards against creating a vault while trying to join. */
+  "sync.connect": { params: { serverUrl: string; token: string; passphrase: string; deviceName?: string; expectVault?: "create" | "join" }; result: SyncStatus };
   "sync.disconnect": { params: { forgetKeys?: boolean }; result: Void };
   "sync.now": { params: Void; result: SyncStatus };
   "sync.devices": { params: Void; result: SyncDevice[] };

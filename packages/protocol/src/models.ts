@@ -668,6 +668,8 @@ export interface SyncStatus {
   deviceName: string;
   lastSyncedAt?: number;
   lastError?: string;
+  /** Persists after sync stops and across application restarts. */
+  stopReason?: "vault-changed" | "device-removed";
   pendingChanges: number;
   /** Per-category local entity counts. */
   counts: Record<string, number>;

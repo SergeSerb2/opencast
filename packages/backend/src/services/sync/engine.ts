@@ -2,14 +2,15 @@ import { hostname } from "node:os";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
 import { SYNC_CATEGORIES, SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncStatus, type SyncDevice,
-  type SyncVault, type SyncPullPage, type SyncPushResult, type SyncPushRecord } from "@opencast/protocol";
+  type SyncVault, type SyncPullPage, type SyncPushResult, type SyncPushRecord, type BackendResult } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import type { EntityRecord } from "../../db/entities";
 import { createVault, unwrapVault, deriveKeys, decode, encryptRecord, decryptRecord, validateVault, recordId, type VaultKeys, type SyncPayload } from "./crypto";
 import { categoryFor, isEnabled, isOptIn } from "./categories";
 import { applyRemote } from "./conflicts";
-import { normalizeServerUrl, SyncHttp, SyncHttpError, SyncNetworkError } from "./http";
+import { normalizeServerUrl, SyncHttp, SyncHttpError, SyncNetworkError, SYNC_CONNECTION_MESSAGES } from "./http";
 import { SecretSync, SECRET_COLLECTION, isSecretAccount, type SecretRecord } from "./secret-sync";
+import { encodeSetupCode, validateSyncToken } from "./setup-code";
 
 export const syncMigration = { id: "sync-001-state", up: "CREATE TABLE sync_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)" };
 interface Session {
@@ -18,7 +19,7 @@ interface Session {
   keys: VaultKeys;
   controller: AbortController;
 }
-interface ConnectOptions { serverUrl: string; token: string; passphrase: string; deviceName?: string }
+interface ConnectOptions { serverUrl: string; token: string; passphrase: string; deviceName?: string; expectVault?: "create" | "join" }
 type PendingRecord = EntityRecord<unknown> | SecretRecord;
 function isSecretRecord(record: PendingRecord): record is SecretRecord { return record.collection === SECRET_COLLECTION; }
 export class SyncEngine {
@@ -82,8 +83,10 @@ export class SyncEngine {
       if (row.sync_dirty && this.eligible({ collection: SECRET_COLLECTION, id: row.account })) pendingChanges++;
     }
     const last = Number(this.getState("lastSyncedAt"));
+    const reason = this.getState("stopReason");
     return { phase: this.phase, serverUrl: this.ctx.settings.get("sync.serverUrl") ?? undefined, deviceId: this.deviceId(),
-      deviceName: this.ctx.settings.get("sync.deviceName") || hostname(), lastSyncedAt: last || undefined, lastError: this.lastError, pendingChanges, counts };
+      deviceName: this.ctx.settings.get("sync.deviceName") || hostname(), lastSyncedAt: last || undefined, lastError: this.lastError,
+      stopReason: reason === "vault-changed" || reason === "device-removed" ? reason : undefined, pendingChanges, counts };
   }
   private emit(): SyncStatus { const status = this.status(); this.ctx.events.emit("sync.status", status); return status; }
   private exclusive<T>(fn: () => Promise<T>): Promise<T> {
@@ -133,10 +136,58 @@ export class SyncEngine {
       } catch { this.phase = "needs-passphrase"; this.lastError = "Stored sync credentials are unavailable; reconnect with the passphrase"; this.emit(); }
     });
   }
+  private async checkServer(http: SyncHttp): Promise<void> {
+    let health: unknown;
+    try { health = await http.request("/v1/health"); }
+    catch (error) {
+      if (error instanceof SyncNetworkError || (error instanceof SyncHttpError && error.status === 401)) throw error;
+      throw new Error(SYNC_CONNECTION_MESSAGES.notServer);
+    }
+    const value = health as { ok?: unknown; version?: unknown; configured?: unknown } | null;
+    if (!value || value.ok !== true || value.version !== 1) throw new Error(SYNC_CONNECTION_MESSAGES.notServer);
+    if (value.configured === false) throw new Error(SYNC_CONNECTION_MESSAGES.unconfigured);
+  }
+  private async readVault(http: SyncHttp): Promise<SyncVault> {
+    let value: unknown;
+    try { value = await http.request("/v1/vault"); }
+    catch (error) {
+      if (error instanceof SyncHttpError || error instanceof SyncNetworkError) throw error;
+      throw new Error(SYNC_CONNECTION_MESSAGES.malformedVault);
+    }
+    try { return validateVault(value); }
+    catch { throw new Error(SYNC_CONNECTION_MESSAGES.malformedVault); }
+  }
+  async probe(options: { serverUrl: string; token: string }): Promise<BackendResult<"sync.probe">> {
+    const serverUrl = normalizeServerUrl(options.serverUrl);
+    validateSyncToken(options.token);
+    const controller = new AbortController();
+    const http = new SyncHttp(serverUrl, options.token, this.deviceId(), controller.signal);
+    try {
+      await this.checkServer(http);
+      try {
+        await this.readVault(http);
+        return { vault: "present", deviceRevoked: false, configured: true };
+      } catch (error) {
+        if (error instanceof SyncHttpError && error.status === 404 && error.code === "vault_not_found") return { vault: "absent", deviceRevoked: false, configured: true };
+        if (error instanceof SyncHttpError && error.code === "device_revoked") return { vault: "unknown", deviceRevoked: true, configured: true };
+        throw error;
+      }
+    } finally { controller.abort(); }
+  }
+  setupCode(): Promise<BackendResult<"sync.setupCode">> {
+    return this.exclusive(async () => {
+      const session = this.requireSession();
+      const token = await this.ctx.secrets.get("sync:token");
+      if (!token) throw new Error("Sync token is unavailable");
+      this.assertSession(session);
+      return { code: encodeSetupCode(session.http.serverUrl, token), serverUrl: session.http.serverUrl };
+    });
+  }
   connect(options: ConnectOptions): Promise<SyncStatus> {
     return this.exclusive(async () => {
       const serverUrl = normalizeServerUrl(options.serverUrl);
-      if (typeof options.token !== "string" || !options.token.length || options.token.length > 4096 || /[\r\n]/.test(options.token)) throw new Error("A valid sync server token is required");
+      validateSyncToken(options.token);
+      if (options.expectVault !== undefined && options.expectVault !== "create" && options.expectVault !== "join") throw new Error("Invalid expected vault state");
       if (options.deviceName !== undefined && (!options.deviceName.trim() || options.deviceName.length > 256 || /[\u0000-\u001f]/.test(options.deviceName))) throw new Error("Invalid sync device name");
       await this.stop();
       this.ctx.settings.set("sync.enabled", false);
@@ -145,28 +196,33 @@ export class SyncEngine {
       const http = new SyncHttp(serverUrl, options.token, this.deviceId(), controller.signal);
       let vmk: Buffer | undefined;
       try {
-        const health = await http.request<{ ok: boolean; version: number }>("/v1/health");
-        if (health.ok !== true || health.version !== 1) throw new Error("Unsupported sync server version");
+        await this.checkServer(http);
         const deviceName = options.deviceName?.trim() || this.ctx.settings.get("sync.deviceName") || hostname();
         const register = () => http.request("/v1/devices", "POST", { deviceId: this.deviceId(), name: deviceName, platform: process.platform, appVersion: this.ctx.version });
         const fetchVault = async () => {
-          try { return await http.request("/v1/vault"); }
+          try { return await this.readVault(http); }
           catch (e) {
             if (!(e instanceof SyncHttpError) || e.code !== "device_revoked") throw e;
             // Only an explicit connect may re-register; automatic resume cannot undo revocation.
             await register();
-            return http.request("/v1/vault");
+            return this.readVault(http);
           }
         };
         let vault: SyncVault;
-        try { vault = validateVault(await fetchVault()); vmk = await unwrapVault(vault, options.passphrase); }
+        try {
+          vault = await fetchVault();
+          if (options.expectVault === "create") throw new Error(SYNC_CONNECTION_MESSAGES.createExists);
+          vmk = await unwrapVault(vault, options.passphrase);
+        }
         catch (e) {
-          if (!(e instanceof SyncHttpError) || e.status !== 404) throw e;
+          if (!(e instanceof SyncHttpError) || e.status !== 404 || e.code !== "vault_not_found") throw e;
+          if (options.expectVault === "join") throw new Error(SYNC_CONNECTION_MESSAGES.joinMissing);
+          if (typeof options.passphrase === "string" && options.passphrase.length < 12) throw new Error(SYNC_CONNECTION_MESSAGES.shortPassphrase);
           const created = await createVault(options.passphrase); vault = created.vault; vmk = created.vmk;
           try { await http.request("/v1/vault", "PUT", vault); }
           catch (race) {
             if (!(race instanceof SyncHttpError) || race.status !== 409) throw race;
-            vmk.fill(0); vault = validateVault(await http.request("/v1/vault")); vmk = await unwrapVault(vault, options.passphrase);
+            vmk.fill(0); vault = await this.readVault(http); vmk = await unwrapVault(vault, options.passphrase);
           }
         }
         await register();
@@ -176,6 +232,7 @@ export class SyncEngine {
         this.ctx.settings.set("sync.deviceName", deviceName);
         this.ctx.db.transaction(() => {
           this.setState("vaultId", vault.vaultId); this.setState("keyEpoch", String(vault.keyEpoch)); this.setState("cursor", "0");
+          this.ctx.db.run("DELETE FROM sync_state WHERE key = 'stopReason'");
           this.ctx.entities.markAllDirty(); this.secretSync.markAllDirty();
         });
         this.session = { controller, http, vault, keys: deriveKeys(vmk, vault.vaultId) };
@@ -187,7 +244,7 @@ export class SyncEngine {
       } catch (e) {
         controller.abort();
         this.phase = e instanceof Error && e.message === "Wrong passphrase" ? "needs-passphrase" : "error";
-        this.lastError = e instanceof SyncHttpError ? e.message : e instanceof Error && ["Wrong passphrase", "Unsupported sync server version", "Passphrase must contain 1–4096 characters", "Unsupported sync vault format"].includes(e.message) ? e.message : "Unable to connect to sync server";
+        this.lastError = e instanceof SyncHttpError || e instanceof SyncNetworkError ? e.message : e instanceof Error && ["Wrong passphrase", "Passphrase must contain 1–4096 characters", ...Object.values(SYNC_CONNECTION_MESSAGES)].includes(e.message) ? e.message : "Unable to connect to sync server";
         this.emit();
         throw new Error(this.lastError);
       } finally { vmk?.fill(0); }
@@ -205,6 +262,7 @@ export class SyncEngine {
   disconnect(forgetKeys = false): Promise<void> {
     return this.exclusive(async () => {
       await this.stop(); this.ctx.settings.set("sync.enabled", false);
+      this.ctx.db.run("DELETE FROM sync_state WHERE key = 'stopReason'");
       if (forgetKeys) { await this.ctx.secrets.delete("sync:vmk"); await this.ctx.secrets.delete("sync:token"); }
       this.phase = "disabled"; this.lastError = undefined; this.emit();
     });
@@ -226,6 +284,7 @@ export class SyncEngine {
       this.phase = error instanceof SyncHttpError && ["vault_not_found", "vault_changed"].includes(error.code) ? "needs-passphrase" : error instanceof SyncNetworkError ? "offline" : "error";
       this.lastError = error instanceof SyncHttpError ? error.message : "Sync failed; check the connection and encrypted record integrity";
       if (error instanceof SyncHttpError && ["vault_not_found", "vault_changed", "device_revoked"].includes(error.code)) {
+        this.setState("stopReason", error.code === "device_revoked" ? "device-removed" : "vault-changed");
         // These failures require explicit reconnect, including after an application restart.
         this.session = undefined; session.controller.abort();
         clearTimeout(this.localTimer); clearTimeout(this.socketTimer);
