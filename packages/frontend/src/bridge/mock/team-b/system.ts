@@ -176,12 +176,12 @@ const CALENDARS = {
 type CalendarKey = keyof typeof CALENDARS;
 
 const PEOPLE = {
-  me: { name: "Serge Alex", email: "serge@opencast.app" },
-  priya: { name: "Priya Raman", email: "priya@opencast.app" },
-  jonas: { name: "Jonas Weber", email: "jonas@opencast.app" },
-  mei: { name: "Mei Tanaka", email: "mei@opencast.app" },
-  alex: { name: "Alex Moreau", email: "alex@hey.com" },
-  dana: { name: "Dana Ortiz", email: "dana@opencast.app" },
+  me: { name: "Taylor Example", email: "taylor@example.com" },
+  priya: { name: "Priya Example", email: "priya@example.com" },
+  jonas: { name: "Jonas Example", email: "jonas@example.com" },
+  mei: { name: "Mei Example", email: "mei@example.com" },
+  alex: { name: "Alex Example", email: "alex@example.com" },
+  dana: { name: "Dana Example", email: "dana@example.com" },
 };
 
 function atClock(dayOffset: number, hours: number, minutes = 0): Date {
