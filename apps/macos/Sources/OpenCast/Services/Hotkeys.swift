@@ -68,7 +68,10 @@ import OpenCastCore
     if flags.contains(.maskControl) { carbon |= UInt32(controlKey) }
     if flags.contains(.maskAlternate) { carbon |= UInt32(optionKey) }
     if flags.contains(.maskShift) { carbon |= UInt32(shiftKey) }
-    if let old = bindings[id], old.key == key, old.modifiers == carbon { return ["ok": true] }
+    if let old = bindings[id], old.key == key, old.modifiers == carbon {
+      if hotkey.bool("hyper") { hyperBindings[id] = hotkey } else { hyperBindings.removeValue(forKey: id) }
+      return ["ok": true]
+    }
     // Register first, so an unrelated conflict does not discard the user's existing binding.
     let number = next
     next += 1
