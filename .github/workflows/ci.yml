@@ -10,16 +10,21 @@ concurrency:
   group: ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   web:
     name: TypeScript (typecheck, test, build)
-    runs-on: [self-hosted, macOS, ARM64, opencast-ci]
+    # A public repository runs on free GitHub-hosted runners, so fork pull requests never
+    # reach the self-hosted VMs. Only the private repository uses the owner's local Mac.
+    runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted","macOS","ARM64","opencast-ci"]') || 'macos-15' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Check release script syntax
@@ -35,7 +40,7 @@ jobs:
 
   macos:
     name: macOS app (Swift build)
-    runs-on: [self-hosted, macOS, ARM64, opencast-ci]
+    runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted","macOS","ARM64","opencast-ci"]') || 'macos-15' }}
     steps:
       - uses: actions/checkout@v4
       - name: Build native host

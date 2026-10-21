@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in OpenCast doesn't work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Tell us what you did, what you expected, and what happened instead.
+      placeholder: |
+        1. Open the launcher with ⌥Space
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: OpenCast build
+      description: Settings → About shows the version and build number.
+      placeholder: 0.1.0 (build 122)
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: macOS 15.4 on an M2 MacBook Air
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Launcher and search
+        - AI (providers, chat, commands)
+        - Cloud Sync
+        - Notes
+        - Clipboard history or snippets
+        - Window management
+        - Extensions or script commands
+        - Settings
+        - Install or update
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Remove API keys, sync tokens, and personal data before you paste.
+      render: text
