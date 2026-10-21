@@ -170,12 +170,14 @@ export class NoteSession {
   }
 
   private async pullRemote(): Promise<void> {
-    const id = this.note?.id;
-    if (!id) return;
+    const note = this.note;
+    if (!note) return;
+    const { id } = note;
     const summary = (await this.api.list()).find((entry) => entry.id === id);
-    if (!summary || this.note?.id !== id || summary.updatedAt === this.note.updatedAt) return;
+    if (!summary || this.note !== note || summary.updatedAt === note.updatedAt) return;
     const fresh = await this.api.get(id);
-    if (!fresh || this.note?.id !== id) return;
+    // A save or navigation can replace the note while either read is in flight.
+    if (!fresh || this.note !== note) return;
     if (this.busy()) {
       // Focus may return while fetching. Keep the old timestamp so the remote
       // content is fetched again after blur if there was no intervening edit.
