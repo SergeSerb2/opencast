@@ -41,5 +41,16 @@
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
     "zustand": "^5.0.15"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SergeSerb2/opencast.git",
+    "directory": "packages/frontend"
+  },
+  "homepage": "https://github.com/SergeSerb2/opencast#readme",
+  "bugs": {
+    "url": "https://github.com/SergeSerb2/opencast/issues"
+  },
+  "author": "Serge Alex Serbinenko",
+  "license": "MIT"
 }
