@@ -1,5 +1,6 @@
-import { cloneElement, useEffect, useState, type ReactElement } from "react";
-import { SYNC_CATEGORIES, type SyncDevice, type SyncStatus } from "@opencast/protocol";
+import { cloneElement, useEffect, useState, type ClipboardEvent, type ReactElement, type ReactNode } from "react";
+import { SYNC_CATEGORIES, type BackendResult, type SyncDevice, type SyncStatus } from "@opencast/protocol";
+import { native } from "../../bridge/native";
 import { backend } from "../../bridge/backend";
 import { errorMessage } from "../../bridge/errors";
 import { useBackend, useEvent } from "../../bridge/hooks";
@@ -15,7 +16,7 @@ import { openUrl } from "../actions";
 import { CORE_PAGES } from "../catalog";
 import { formatRelativeTime } from "../lists";
 import { LINKS } from "../links";
-import { validateSyncSetup, type SyncSetup } from "../sync-form";
+import { passphraseStrength, validateSyncCredentials, validateSyncSetup, type SyncSetup } from "../sync-form";
 import { SettingSelect } from "../ui/controls";
 import { Callout, CardEmpty, Controls, Intro, Row, Section } from "../ui/layout";
 import { PageFrame } from "../ui/PageFrame";
@@ -44,7 +45,7 @@ const INTERVALS = [
 const NOT_SYNCED = [
   { title: "Clipboard History", description: "Stays on the Mac where you copied it." },
   { title: "Script Files", description: "Script folders are per Mac; the scripts themselves stay on disk." },
-  { title: "API Keys, Tokens & Passwords", description: "Kept in each Mac's Keychain. Add your provider keys on every Mac." },
+  { title: "Extension Passwords & Sign-ins", description: "Kept in each Mac's Keychain." },
   { title: "Extension Data", description: "Extensions sync as a list; their local storage and caches stay on each Mac." },
 ];
 
@@ -68,25 +69,63 @@ function StatusBadge({ status }: { status: SyncStatus }) {
 
 function SetupForm({ status }: { status: SyncStatus }) {
   const savedUrl = useSetting("sync.serverUrl");
-  const [form, setForm] = useState<SyncSetup>({ serverUrl: savedUrl ?? "", token: "", passphrase: "", confirmPassphrase: "", createVault: false, deviceName: status.deviceName });
+  const [form, setForm] = useState<SyncSetup>({ serverUrl: savedUrl ?? status.serverUrl ?? "", token: "", passphrase: "", confirmPassphrase: "", deviceName: status.deviceName });
+  const [setupCode, setSetupCode] = useState("");
+  const [probe, setProbe] = useState<BackendResult<"sync.probe"> | null>(null);
+  const [syncKeys, setSyncKeys] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<keyof SyncSetup, string>>>({});
   const [connectError, setConnectError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => setForm((f) => ({ ...f, deviceName: f.deviceName || status.deviceName })), [status.deviceName]);
+  const mode = probe?.vault === "absent" ? "create" : "join";
+  const strength = passphraseStrength(form.passphrase);
+  useEffect(() => setForm((f) => ({ ...f, deviceName: f.deviceName || status.deviceName, serverUrl: f.serverUrl || savedUrl || status.serverUrl || "" })), [savedUrl, status.deviceName, status.serverUrl]);
   const update = (patch: Partial<SyncSetup>) => {
-    setForm({ ...form, ...patch });
+    setForm((current) => ({ ...current, ...patch }));
     setErrors({});
     setConnectError(null);
   };
 
+  const inspect = async (pastedCode?: string) => {
+    if (busy) return;
+    setBusy(true);
+    setConnectError(null);
+    setErrors({});
+    try {
+      let credentials = { serverUrl: form.serverUrl.trim(), token: form.token.trim() };
+      const code = pastedCode ?? (setupCode.trim() || (credentials.serverUrl.startsWith("opencast-sync-v1:") ? credentials.serverUrl : ""));
+      if (code) {
+        credentials = await backend.call("sync.parseSetupCode", { code });
+        setSetupCode(code.trim());
+        update(credentials);
+      }
+      const problems = validateSyncCredentials(credentials);
+      setErrors(problems);
+      if (Object.keys(problems).length) return;
+      const result = await backend.call("sync.probe", credentials);
+      update(credentials);
+      setProbe(result);
+    } catch (error) {
+      setConnectError(errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const pasteCode = (event: ClipboardEvent<HTMLInputElement>, codeField = false) => {
+    const code = event.clipboardData.getData("text").trim();
+    if (!codeField && !code.startsWith("opencast-sync-v1:")) return;
+    event.preventDefault();
+    setSetupCode(code);
+    void inspect(code);
+  };
   const connect = async () => {
-    const problems = validateSyncSetup(form);
+    const problems = validateSyncSetup(form, mode);
     setErrors(problems);
-    if (Object.keys(problems).length) return;
+    if (Object.keys(problems).length || busy) return;
     setBusy(true);
     setConnectError(null);
     try {
-      await backend.call("sync.connect", { serverUrl: form.serverUrl.trim(), token: form.token.trim(), passphrase: form.passphrase, deviceName: form.deviceName.trim() || undefined });
+      await backend.call("sync.setCategoryEnabled", { category: "ai-keys", enabled: syncKeys });
+      await backend.call("sync.connect", { serverUrl: form.serverUrl.trim(), token: form.token.trim(), passphrase: form.passphrase, deviceName: form.deviceName.trim() || undefined, expectVault: mode });
       showToast({ style: "success", title: "Cloud Sync is on" });
     } catch (error) {
       setConnectError(errorMessage(error));
@@ -95,7 +134,7 @@ function SetupForm({ status }: { status: SyncStatus }) {
     }
   };
 
-  const field = (key: keyof SyncSetup, title: string, input: ReactElement<{ "aria-label"?: string; "aria-invalid"?: boolean; "aria-describedby"?: string }>, description?: string) => {
+  const field = (key: keyof SyncSetup, title: string, input: ReactElement<{ "aria-label"?: string; "aria-invalid"?: boolean; "aria-describedby"?: string }>, description?: ReactNode) => {
     const detail = errors[key] || description;
     const descriptionId = `sync-${key}-description`;
     return (
@@ -106,98 +145,102 @@ function SetupForm({ status }: { status: SyncStatus }) {
   };
 
   return (
-    <Section title="Connect to Your Server" description="Use the URL and access token printed by the deploy script.">
-      {field(
-        "serverUrl",
-        "Server URL",
-        <TextField
-          size="small"
-          value={form.serverUrl}
-          onChange={(serverUrl) => update({ serverUrl })}
-          placeholder="https://sync.example.workers.dev"
-          validation={errors.serverUrl ? "error" : undefined}
-        />,
-      )}
-      {field(
-        "token",
-        "Access Token",
-        <TextField size="small" type="password" value={form.token} onChange={(token) => update({ token })} placeholder="Paste token" validation={errors.token ? "error" : undefined} />,
-      )}
-      <Row title="Create a New Vault" description="Turn on for your first Mac. Leave off to join the vault your other Macs already use.">
-        <Switch checked={form.createVault} onChange={(createVault) => update({ createVault })} label="Create a New Vault" />
+    <>
+      {!probe && <SelfHostingInfo onToken={(token) => { setSetupCode(""); update({ token }); }} />}
+      <Section title={!probe ? "Connect to Your Server" : mode === "create" ? "Create your vault" : "Join your vault"}
+        description={!probe ? <>Step 1 of 2 · Check your server. Enter your <span data-setting-id="encryption-passphrase">passphrase</span> and <span data-setting-id="device-name">device name</span> in the next step.</> : `Step 2 of 2 · ${new URL(form.serverUrl).host}`}>
+        {!probe ? (
+          <>
+            <Row title="Paste setup code" description="From your other Mac or the deploy script.">
+              <span className="sc-s-sync-field"><TextField size="small" type="password" aria-label="Paste setup code" value={setupCode} onChange={(code) => { setSetupCode(code); setConnectError(null); }} onPaste={(event) => pasteCode(event, true)} placeholder="opencast-sync-v1:…" disabled={busy} /></span>
+            </Row>
+            {field("serverUrl", "Server URL", <TextField size="small" value={form.serverUrl} onChange={(serverUrl) => { setSetupCode(""); update({ serverUrl }); }} onPaste={(event) => pasteCode(event)} placeholder="https://sync.example.workers.dev" validation={errors.serverUrl ? "error" : undefined} disabled={busy} />)}
+            {field("token", "Access Token", <TextField size="small" type="password" value={form.token} onChange={(token) => { setSetupCode(""); update({ token }); }} placeholder="Paste token" validation={errors.token ? "error" : undefined} disabled={busy} />)}
+          </>
+        ) : (
+          <>
+            {probe.deviceRevoked && <div className="sc-s-item sc-s-description">This Mac was removed. Connect to register it again.</div>}
+            {field("passphrase", "Encryption Passphrase", <TextField size="small" type="password" value={form.passphrase} onChange={(passphrase) => update({ passphrase })} placeholder={mode === "create" ? "At least 12 characters" : "Your vault passphrase"} validation={errors.passphrase ? "error" : undefined} disabled={busy} />,
+              mode === "create" ? "Store it in a password manager. It can't be recovered." : "Enter the same passphrase you used on your other Mac.")}
+            {mode === "create" && (
+              <>
+                <div className="sc-s-item sc-s-sync-strength" role="status" aria-label={`Passphrase strength: ${strength.label}`}>
+                  <span className="sc-s-sync-strength__meter" data-score={strength.score} aria-hidden="true">{[1, 2, 3].map(segment => <span key={segment} data-filled={segment <= strength.score} />)}</span>
+                  <span className="sc-s-description">{strength.label}. Use four or more random words. If your token leaks, this passphrase is the only protection left.</span>
+                </div>
+                {field("confirmPassphrase", "Confirm Passphrase", <TextField size="small" type="password" value={form.confirmPassphrase} onChange={(confirmPassphrase) => update({ confirmPassphrase })} placeholder="Repeat passphrase" validation={errors.confirmPassphrase ? "error" : undefined} disabled={busy} />)}
+              </>
+            )}
+            {field("deviceName", "Device Name", <TextField size="small" value={form.deviceName} onChange={(deviceName) => update({ deviceName })} placeholder="MacBook Pro" disabled={busy} />, "Visible to the server and your other Macs.")}
+            <Row title="Also sync AI & MCP keys" description="Provider API keys, secret headers, MCP secrets and web-search keys are encrypted with your passphrase before they leave this Mac.">
+              <Switch checked={syncKeys} onChange={setSyncKeys} label="Also sync AI & MCP keys" disabled={busy} />
+            </Row>
+          </>
+        )}
+        <div className="sc-s-item sc-s-sync-connect">
+          {connectError && <span className="sc-s-missing sc-s-sync-connect__error" role="alert">{connectError}</span>}
+          {probe && <Button size="small" variant="ghost" disabled={busy} onClick={() => { setProbe(null); update({ passphrase: "", confirmPassphrase: "" }); }}>Back</Button>}
+          <Button size="small" onClick={() => void (probe ? connect() : inspect())} disabled={busy}>
+            {busy ? probe ? "Connecting…" : "Checking…" : !probe ? "Continue" : mode === "create" ? "Create Vault & Connect" : "Connect"}
+          </Button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+async function copySecret(text: string) {
+  await native.call("clipboard.write", { content: { kind: "text", text }, concealed: true, transient: true });
+}
+
+function SelfHostingInfo({ onToken }: { onToken: (token: string) => void }) {
+  const [token, setToken] = useState("");
+  const generate = () => {
+    const value = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, "0")).join("");
+    setToken(value);
+    onToken(value);
+  };
+  const copy = async () => {
+    try { await copySecret(token); showToast({ style: "success", title: "Access token copied" }); }
+    catch (error) { showFailureToast("Could not copy token", error); }
+  };
+  return (
+    <Section title="Set up your server" description="Your data is encrypted on this Mac. Your passphrase never leaves it.">
+      <Row title="Deploy Your Worker" description="Use your own Cloudflare account.">
+        <Button size="small" onClick={() => openUrl(LINKS.syncCloudflareDeploy)}>Deploy to Cloudflare</Button>
       </Row>
-      {field(
-        "passphrase",
-        "Encryption Passphrase",
-        <TextField
-          size="small"
-          type="password"
-          value={form.passphrase}
-          onChange={(passphrase) => update({ passphrase })}
-          placeholder={form.createVault ? "At least 12 characters" : "Your vault passphrase"}
-          validation={errors.passphrase ? "error" : undefined}
-        />,
-        form.createVault ? "Encrypts everything before it leaves this Mac. Store it in a password manager — it can't be recovered." : undefined,
-      )}
-      {form.createVault &&
-        field(
-          "confirmPassphrase",
-          "Confirm Passphrase",
-          <TextField
-            size="small"
-            type="password"
-            value={form.confirmPassphrase}
-            onChange={(confirmPassphrase) => update({ confirmPassphrase })}
-            placeholder="Repeat passphrase"
-            validation={errors.confirmPassphrase ? "error" : undefined}
-          />,
-        )}
-      {field(
-        "deviceName",
-        "Device Name",
-        <TextField size="small" value={form.deviceName} onChange={(deviceName) => update({ deviceName })} placeholder="MacBook Pro" />,
-        "Visible to the server and your other Macs.",
-      )}
-      <div className="sc-s-item sc-s-sync-connect">
-        {connectError && (
-          <span className="sc-s-missing sc-s-sync-connect__error" role="alert">
-            {connectError}
-          </span>
-        )}
-        <Button size="small" onClick={() => void connect()} disabled={busy}>
-          {busy ? "Connecting…" : form.createVault ? "Create Vault & Connect" : "Connect"}
-        </Button>
-      </div>
+      <Row title="Create an Access Token" description="Paste this as SYNC_TOKEN when Cloudflare asks. Then paste your Worker URL below.">
+        <Button size="small" onClick={generate}>Generate Access Token</Button>
+      </Row>
+      {token && <Row title="Generated Token"><span className="sc-s-sync-field"><TextField size="small" aria-label="Generated Access Token" value={token} onChange={() => {}} readOnly accessory={<Button size="small" variant="ghost" onClick={() => void copy()}>Copy</Button>} /></span></Row>}
+      <Row title="Prefer the Terminal?">
+        <Button size="small" variant="ghost" onClick={() => openUrl(LINKS.syncDeployGuide)}>Deploy Script Guide</Button>
+      </Row>
     </Section>
   );
 }
 
-function SelfHostingInfo() {
+function AddAnotherMac() {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const getCode = async (copy: boolean) => {
+    setBusy(true);
+    try {
+      const result = await backend.call("sync.setupCode");
+      if (copy) { await copySecret(result.code); showToast({ style: "success", title: "Setup code copied" }); }
+      else setCode(result.code);
+    } catch (error) { showFailureToast("Could not get setup code", error); }
+    finally { setBusy(false); }
+  };
   return (
-    <Section title="How It Works" card={false}>
-      <Callout tone="info" icon="lock-16" title="End-to-end encrypted">
-        OpenCast encrypts your data on this Mac with a key derived from your passphrase. The server stores only ciphertext and can't read your notes, snippets, chats or settings. Your passphrase is
-        never stored or sent.
-      </Callout>
-      <Callout
-        tone="info"
-        icon="cloud-16"
-        title="Your own server"
-        actions={
-          <>
-            <Button size="small" variant="ghost" onClick={() => openUrl(LINKS.syncWorker)}>
-              Worker README
-            </Button>
-            <Button size="small" onClick={() => openUrl(LINKS.syncGuide)}>
-              Setup Guide
-            </Button>
-            <Button size="small" variant="ghost" onClick={() => openUrl(LINKS.syncDeploy)}>Deploy Script</Button>
-          </>
-        }
-      >
-        Sync runs on a Cloudflare Worker with a D1 database in your Cloudflare account. Run <code>./scripts/deploy-sync.sh</code> after <code>wrangler login</code>; it prints the server URL and access
-        token to paste here.
-      </Callout>
+    <Section title="Add Another Mac" description="Send this only to your own Macs, for example with AirDrop or your password manager. It contains your server access token, not your passphrase.">
+      <Row title="Setup Code" description="Paste it in Cloud Sync on your other Mac, then enter your vault passphrase.">
+        <Controls>
+          <Button size="small" variant="ghost" onClick={() => code ? setCode("") : void getCode(false)} disabled={busy}>{code ? "Hide Code" : "Show Code"}</Button>
+          <Button size="small" onClick={() => void getCode(true)} disabled={busy}>Copy Setup Code</Button>
+        </Controls>
+      </Row>
+      {code && <Row title="Your Setup Code"><span className="sc-s-sync-field"><TextField size="small" aria-label="Your Setup Code" value={code} onChange={() => {}} readOnly /></span></Row>}
     </Section>
   );
 }
@@ -206,6 +249,14 @@ function SyncedContent({ status, editable }: { status: SyncStatus; editable: boo
   const disabled = useSetting("sync.disabledCategories");
   const optedIn = useSetting("sync.optInCategories");
   const toggle = async (category: string, enabled: boolean) => {
+    if (category === "ai-keys" && enabled && !optedIn.includes(category)) {
+      const confirmed = await confirmAlert({
+        title: "Sync API keys in your encrypted vault?",
+        message: "Your provider keys, secret headers, MCP secrets and web-search keys will be encrypted with your vault passphrase and stored on your server as ciphertext. Anyone with your passphrase or an unlocked Mac can read them. Extension passwords and sign-ins never sync.",
+        primaryAction: { title: "Sync Keys" },
+      });
+      if (!confirmed) return;
+    }
     try {
       await backend.call("sync.setCategoryEnabled", { category, enabled });
     } catch (error) {
@@ -215,12 +266,12 @@ function SyncedContent({ status, editable }: { status: SyncStatus; editable: boo
   return (
     <Section
       title="Synced Content"
-      description={editable ? "Turning a category off keeps its data on this Mac and stops syncing it." : "Everything below syncs once you connect. You can turn categories off later."}
+      description={editable ? "Turning a category off keeps its data on this Mac and stops syncing it." : "Choose whether to include AI & MCP keys when you connect. You can change categories later."}
     >
       {SYNC_CATEGORIES.map((category) => {
         const count = status.counts[category.id];
         return (
-          <Row key={category.id} title={category.title} anchor={`sync-${category.id}`}>
+          <Row key={category.id} title={category.title} anchor={`sync-${category.id}`} description={category.id === "ai-keys" ? "Turning this off keeps keys on this Mac and stops syncing them. Works best with AI Commands & Presets and MCP Servers on." : undefined}>
             {count !== undefined && <span className="sc-s-value">{count.toLocaleString()}</span>}
             {editable && (
               <Switch
@@ -331,7 +382,7 @@ async function unlock(serverUrl: string | undefined, deviceName: string) {
   });
   if (!values) return;
   try {
-    await backend.call("sync.connect", { serverUrl, token: values.token.trim(), passphrase: values.passphrase, deviceName });
+    await backend.call("sync.connect", { serverUrl, token: values.token.trim(), passphrase: values.passphrase, deviceName, expectVault: "join" });
   } catch (error) {
     showFailureToast("Could not unlock Cloud Sync", error);
   }
@@ -400,6 +451,7 @@ function ConnectedView({ status }: { status: SyncStatus }) {
           Sync is paused until you enter the vault passphrase again.
         </Callout>
       )}
+      {status.phase !== "needs-passphrase" && <AddAnotherMac />}
       <SyncedContent status={status} editable />
       <SyncedDevices />
     </>
@@ -409,7 +461,8 @@ function ConnectedView({ status }: { status: SyncStatus }) {
 /** Settings → Cloud Sync: self-hosted, end-to-end encrypted sync (setup or status). */
 export function CloudSyncPage() {
   const { data: status, error } = useSyncStatus();
-  const connected = status && status.phase !== "disabled";
+  const enabled = useSetting("sync.enabled");
+  const connected = status && enabled && !status.stopReason;
   return (
     <PageFrame title="Cloud Sync">
       <Intro icon={ICON} title="Cloud Sync" description="Sync settings, notes, snippets, quicklinks, AI chats and more across your Macs — end-to-end encrypted, through a server you run yourself." />
@@ -421,8 +474,10 @@ export function CloudSyncPage() {
         <ConnectedView status={status} />
       ) : (
         <>
+          {status.stopReason && <Callout tone="warning" title={status.stopReason === "device-removed" ? "This Mac was removed" : "Your cloud vault changed"}>
+            {status.stopReason === "device-removed" ? "This Mac stopped syncing because it was removed from your server. Enter the vault passphrase to reconnect." : "This Mac stopped syncing because the vault was removed or replaced. Enter the current vault passphrase to reconnect. Your local data is kept."}
+          </Callout>}
           <SetupForm status={status} />
-          <SelfHostingInfo />
           <SyncedContent status={status} editable={false} />
         </>
       )}

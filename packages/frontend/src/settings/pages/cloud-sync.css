@@ -57,3 +57,37 @@
   background: var(--fg-10);
   color: var(--color-text-primary);
 }
+
+.sc-s-sync-strength {
+  padding: var(--space-12);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+}
+.sc-s-sync-strength__meter {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 72px;
+  padding-top: 5px;
+}
+.sc-s-sync-strength__meter > span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fg-10);
+}
+.sc-s-sync-strength__meter > span[data-filled="true"] {
+  background: var(--yellow);
+}
+.sc-s-sync-strength__meter[data-score="3"] > span[data-filled="true"] {
+  background: var(--green);
+}
+
+@media (max-width: 620px) {
+  .sc-s-sync-field {
+    width: min(260px, 100%);
+  }
+  .sc-s-sync-connect {
+    flex-wrap: wrap;
+  }
+}

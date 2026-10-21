@@ -86,11 +86,28 @@ scrypt/key wrapping; tests cover tampering, context substitution and compressed 
 
 ## Client behavior and conflicts
 
-Connect checks server version, creates or unwraps the vault, registers a stable local
-device ID, stores keys in Keychain, marks local content dirty, and pulls from cursor 0
-before publishing. Wrong passphrases return `Wrong passphrase`. Existing local content
+Setup first probes the server and token without creating a vault or registering a device.
+An empty account asks you to create a vault with a confirmed passphrase of at least 12
+characters. An existing account asks for its passphrase. Connect enforces this intent:
+joining an empty account fails without creating a vault, and creating against an existing
+vault asks you to join instead. It then registers a stable local device ID, stores keys
+in Keychain, marks local content dirty, and pulls from cursor 0 before publishing. Wrong passphrases return `Wrong passphrase`. Existing local content
 is merged; it is never deleted merely because it is absent remotely. Each cycle checks
-the vault ID/epoch; a missing/replaced vault stops automatic sync pending reconnection.
+the vault ID/epoch; a missing/replaced vault or removed device stops automatic sync.
+The reason persists across restarts and appears above setup. Reconnect with the current
+server credentials and passphrase. A successful connect or disconnect clears the reason.
+
+On a connected Mac, Add Another Mac copies a setup code containing only the server URL
+and access token. The format is `opencast-sync-v1:` followed by unpadded base64url of
+UTF-8 JSON `{"url":"…","token":"…"}`. Paste it into setup on another Mac, then enter
+the passphrase there. Share it only with your own Macs: it contains an administrative
+server token and has no expiry. OpenCast marks its copies concealed and transient so
+its clipboard history skips them. The code contains neither the passphrase nor vault key.
+
+The setup form defaults Also sync AI & MCP keys to on and saves that category before
+connecting. On an existing connection, enabling the category asks for confirmation.
+Turning it off keeps keys on this Mac and stops syncing them; it does not remove remote
+ciphertext. Extension passwords and sign-ins stay in each Mac's Keychain.
 
 `SYNC_CATEGORIES` and `ALWAYS_SYNCED_COLLECTIONS` define the collection allowlist.
 Settings are filtered individually by `SETTINGS[key].scope` and `.category`. Unknown

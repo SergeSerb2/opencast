@@ -317,7 +317,25 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
   ];
   if (typeof location !== "undefined" && new URLSearchParams(location.search).get("mock.ai.empty") === "1") providers.length = 0;
-  let sync: SyncStatus = { phase: settings["sync.enabled"] ? "online" : "disabled", serverUrl: settings["sync.serverUrl"] ?? undefined, lastSyncedAt: settings["sync.enabled"] ? now : undefined, deviceId: "mock-device", deviceName: settings["sync.deviceName"] ?? "This Mac", pendingChanges: 0, counts: SYNC_COUNTS };
+  const syncParams = new URLSearchParams(typeof location === "undefined" ? "" : location.search);
+  const stopped = syncParams.get("mock.sync.stopReason");
+  const stopReason = stopped === "vault-changed" || stopped === "device-removed" ? stopped : undefined;
+  if (stopReason) {
+    settings["sync.enabled"] = false;
+    settings["sync.serverUrl"] ??= "https://sync.example.workers.dev";
+  }
+  let sync: SyncStatus = { phase: settings["sync.enabled"] ? "online" : "disabled", serverUrl: settings["sync.serverUrl"] ?? undefined, lastSyncedAt: settings["sync.enabled"] ? now : undefined, deviceId: "mock-device", deviceName: settings["sync.deviceName"] ?? "This Mac", pendingChanges: 0, counts: SYNC_COUNTS, stopReason };
+  let syncToken = "mock-sync-token";
+  let mockVault = settings["sync.enabled"] || stopReason || syncParams.get("mock.sync.vault") === "present"
+    ? { passphrase: "correct horse battery staple" } : undefined;
+  let deviceRevoked = stopReason === "device-removed" || syncParams.get("mock.sync.vault") === "unknown";
+  const syncCredentials = (serverUrl: string, token: string) => {
+    let url: URL;
+    try { url = new URL(serverUrl); } catch { return fail("Invalid sync server URL"); }
+    if (url.username || url.password || url.search || url.hash || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) fail("Sync requires HTTPS (HTTP is allowed only for localhost development)");
+    if (!token.length || token.length > 4096 || /[\r\n]/.test(token)) fail("A valid sync server token is required");
+    return { serverUrl: url.toString().replace(/\/+$/, ""), token };
+  };
   let devices = structuredClone(DEVICES);
   let scripts = structuredClone(SCRIPTS);
 
@@ -681,28 +699,67 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
 
     "sync.status": () => sync,
-    "sync.connect": async ({ serverUrl, token, passphrase, deviceName }) => {
-      if (!isHttpUrl(serverUrl)) fail("Server URL must start with https://");
-      if (!token.trim()) fail("Enter the access token printed by the deploy script");
-      if (passphrase.length < 8) fail("Wrong passphrase");
-      emitSync({ ...sync, phase: "connecting", serverUrl });
+    "sync.probe": ({ serverUrl, token }) => {
+      syncCredentials(serverUrl, token);
+      if (token === "incorrect") fail("Invalid sync server token");
+      return { vault: deviceRevoked ? "unknown" : mockVault ? "present" : "absent", deviceRevoked, configured: true };
+    },
+    "sync.setupCode": () => {
+      if (!settings["sync.enabled"] || !sync.serverUrl) return fail("Cloud Sync is disconnected");
+      const bytes = new TextEncoder().encode(JSON.stringify({ url: sync.serverUrl, token: syncToken }));
+      const encoded = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      return { code: "opencast-sync-v1:" + encoded, serverUrl: sync.serverUrl };
+    },
+    "sync.parseSetupCode": ({ code }) => {
+      const prefix = "opencast-sync-v1:";
+      const invalid = "Invalid setup code. Copy it again from your other Mac or the deploy script.";
+      if (!code.trim().startsWith(prefix)) return fail(invalid);
+      const encoded = code.trim().slice(prefix.length);
+      if (encoded.length > Math.ceil(8192 * 4 / 3)) return fail("Setup code exceeds 8 KiB");
+      if (!/^[A-Za-z0-9_-]+$/.test(encoded)) return fail(invalid);
+      let value: unknown;
+      try {
+        const binary = atob(encoded.replace(/-/g, "+").replace(/_/g, "/"));
+        if (binary.length > 8192) return fail("Setup code exceeds 8 KiB");
+        if (btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") !== encoded) return fail(invalid);
+        value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, char => char.charCodeAt(0))));
+      } catch { return fail(invalid); }
+      if (!value || typeof value !== "object" || Array.isArray(value)) return fail(invalid);
+      const payload = value as Record<string, unknown>;
+      if (typeof payload.url !== "string" || typeof payload.token !== "string") return fail(invalid);
+      return syncCredentials(payload.url, payload.token);
+    },
+    "sync.connect": async ({ serverUrl, token, passphrase, deviceName, expectVault }) => {
+      const credentials = syncCredentials(serverUrl, token);
+      if (token === "incorrect") fail("Invalid sync server token");
+      if (expectVault === "create" && mockVault) fail("A vault already exists for that token. Join it instead.");
+      if (expectVault === "join" && !mockVault) fail("No vault exists for that token. Check the server URL and token.");
+      if (!passphrase || passphrase.length > 4096) fail("Passphrase must contain 1–4096 characters");
+      if (!mockVault && passphrase.length < 12) fail("Use at least 12 characters for a new vault passphrase");
+      if (mockVault && passphrase !== mockVault.passphrase) fail("Wrong passphrase");
+      emitSync({ ...sync, phase: "connecting", serverUrl: credentials.serverUrl });
       await new Promise((resolve) => setTimeout(resolve, 700));
-      setSetting("sync.enabled", true);
-      setSetting("sync.serverUrl", serverUrl);
+      mockVault ??= { passphrase };
+      deviceRevoked = false;
+      syncToken = token;
+      setSetting("sync.serverUrl", credentials.serverUrl);
       if (deviceName) setSetting("sync.deviceName", deviceName);
       devices = devices.map((d) => (d.current ? { ...d, name: deviceName || d.name } : d));
-      return emitSync({ ...sync, phase: "online", serverUrl, deviceName: deviceName || sync.deviceName, lastSyncedAt: Date.now(), pendingChanges: 0 });
+      const status = emitSync({ ...sync, phase: "online", serverUrl: credentials.serverUrl, deviceName: deviceName || sync.deviceName, lastSyncedAt: Date.now(), pendingChanges: 0, stopReason: undefined });
+      setSetting("sync.enabled", true);
+      return status;
     },
     "sync.disconnect": () => {
       setSetting("sync.enabled", false);
-      emitSync({ ...sync, phase: "disabled", serverUrl: undefined, lastSyncedAt: undefined });
+      emitSync({ ...sync, phase: "disabled", lastSyncedAt: undefined, stopReason: undefined });
     },
     "sync.now": async () => {
+      if (!settings["sync.enabled"]) return sync;
       emitSync({ ...sync, phase: "initial-sync" });
       await new Promise((resolve) => setTimeout(resolve, 600));
       return emitSync({ ...sync, phase: "online", lastSyncedAt: Date.now(), pendingChanges: 0 });
     },
-    "sync.devices": () => (sync.phase === "disabled" ? [] : devices),
+    "sync.devices": () => (settings["sync.enabled"] ? devices : []),
     "sync.removeDevice": ({ deviceId }) => {
       devices = devices.filter((d) => d.deviceId !== deviceId);
       events.emit("sync.status", sync);
@@ -718,8 +775,9 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
     "sync.wipeRemote": () => {
       setSetting("sync.enabled", false);
+      mockVault = undefined;
       devices = structuredClone(DEVICES);
-      emitSync({ ...sync, phase: "disabled", serverUrl: undefined, lastSyncedAt: undefined });
+      emitSync({ ...sync, phase: "disabled", lastSyncedAt: undefined, stopReason: undefined });
     },
 
     "data.importRayconfig": async ({ path, password, categories }) => {
