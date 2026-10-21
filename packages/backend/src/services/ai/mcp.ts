@@ -273,16 +273,21 @@ export class MCP implements ToolProvider {
       "ai.mcp.upsert": (p) => this.upsert(p),
       "ai.mcp.delete": (p) => this.delete(p.id),
       "ai.mcp.test": async ({ id }) => {
+        let connection: Connection | undefined;
         try {
-          const c = await this.connect(id);
-          await c.client.listTools(undefined, { timeout: 30_000 });
+          connection = await this.connect(id);
+          await connection.client.listTools(undefined, { timeout: 30_000 });
           return {
             ok: true,
             message: "Connected and listed tools",
-            tools: c.tools.map((t) => t.name),
+            tools: connection.tools.map((t) => t.name),
           };
         } catch (e) {
-          return { ok: false, message: safeError(e), tools: [] };
+          return {
+            ok: false,
+            message: redact(safeError(e), connection?.secrets ?? []),
+            tools: [],
+          };
         }
       },
       "ai.mcp.import": async ({ json }) => {
