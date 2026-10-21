@@ -44,6 +44,7 @@ import ApplicationServices
     return Unmanaged.passUnretained(event)
   }
   func stop() {
+    configuration = ""
     if let source { CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes) }
     if let tap { CGEvent.tapEnable(tap: tap, enable: false); CFMachPortInvalidate(tap) }
     source = nil; tap = nil
