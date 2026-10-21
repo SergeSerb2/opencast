@@ -171,10 +171,10 @@ export class MCP implements ToolProvider {
         undefined,
         { signal, timeout: 60_000 },
       );
-      if (result.isError && Array.isArray(result.content))
-        for (const item of result.content)
-          if (item.type === "text" && typeof item.text === "string")
-            item.text = redact(item.text, connection.secrets);
+      if (result.isError)
+        return JSON.parse(JSON.stringify(result, (_key, value: unknown) =>
+          typeof value === "string" ? redact(value, connection.secrets) : value,
+        ));
       return result;
     } catch (error) {
       throw new Error(redact(safeError(error), connection.secrets));
