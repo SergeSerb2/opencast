@@ -5,10 +5,11 @@ import { SYNC_CATEGORIES, SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncSta
   type SyncVault, type SyncPullPage, type SyncPushResult, type SyncPushRecord } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import type { EntityRecord } from "../../db/entities";
-import { createVault, unwrapVault, deriveKeys, decode, encryptRecord, decryptRecord, validateVault, type VaultKeys } from "./crypto";
+import { createVault, unwrapVault, deriveKeys, decode, encryptRecord, decryptRecord, validateVault, recordId, type VaultKeys, type SyncPayload } from "./crypto";
 import { categoryFor, isEnabled, isOptIn } from "./categories";
 import { applyRemote } from "./conflicts";
 import { normalizeServerUrl, SyncHttp, SyncHttpError, SyncNetworkError } from "./http";
+import { SecretSync, SECRET_COLLECTION, isSecretAccount, type SecretRecord } from "./secret-sync";
 
 export const syncMigration = { id: "sync-001-state", up: "CREATE TABLE sync_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)" };
 interface Session {
@@ -18,7 +19,10 @@ interface Session {
   controller: AbortController;
 }
 interface ConnectOptions { serverUrl: string; token: string; passphrase: string; deviceName?: string }
+type PendingRecord = EntityRecord<unknown> | SecretRecord;
+function isSecretRecord(record: PendingRecord): record is SecretRecord { return record.collection === SECRET_COLLECTION; }
 export class SyncEngine {
+  private readonly secretSync: SecretSync;
   private session?: Session;
   private timer?: NodeJS.Timeout;
   private localTimer?: NodeJS.Timeout;
@@ -34,7 +38,7 @@ export class SyncEngine {
   private lastError?: string;
   private unlisten: (() => void)[] = [];
 
-  constructor(private readonly ctx: AppContext) {}
+  constructor(private readonly ctx: AppContext) { this.secretSync = new SecretSync(ctx.db, ctx.entities, ctx.secrets); }
   private getState(key: string): string | undefined { return this.ctx.db.get<{ value: string }>("SELECT value FROM sync_state WHERE key = ?", key)?.value; }
   private setState(key: string, value: string): void { this.ctx.db.run("INSERT INTO sync_state (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", key, value); }
   private deviceId(): string {
@@ -45,29 +49,37 @@ export class SyncEngine {
   private disabled(): string[] { return this.ctx.settings.get("sync.disabledCategories"); }
   private optedIn(): string[] { return this.ctx.settings.get("sync.optInCategories"); }
   private eligible(record: { collection: string; id: string }): boolean { return isEnabled(record.collection, record.id, this.disabled(), this.optedIn()); }
-  private dirty(limit = SYNC_MAX_RECORDS, excluded = new Set<string>()): EntityRecord<unknown>[] {
-    const out: EntityRecord<unknown>[] = [];
+  private dirty(keys: VaultKeys, limit = SYNC_MAX_RECORDS, excluded = new Set<string>()): PendingRecord[] {
+    const out: PendingRecord[] = [];
     // Page over excluded rows too: a disabled category must never starve enabled records.
     for (let offset = 0; out.length < limit; offset += 200) {
       const rows = this.ctx.db.all<{ collection: string; id: string }>("SELECT collection, id FROM entities WHERE sync_dirty = 1 ORDER BY updated_at, collection, id LIMIT 200 OFFSET ?", offset);
       for (const row of rows) {
-        if (!this.eligible(row) || excluded.has(`${row.collection}/${row.id}`)) continue;
+        if (row.collection === SECRET_COLLECTION || !this.eligible(row) || excluded.has(recordId(keys, row.collection, row.id))) continue;
         const record = this.ctx.entities.get(row.collection, row.id, { includeDeleted: true });
         if (record) out.push(record);
         if (out.length === limit) break;
       }
       if (rows.length < 200) break;
     }
-    return out;
+    if (this.eligible({ collection: SECRET_COLLECTION, id: "" }))
+      out.push(...this.secretSync.dirty().filter(record => !excluded.has(recordId(keys, record.collection, record.id))));
+    return out.sort((a, b) => a.updatedAt - b.updatedAt).slice(0, limit);
   }
   status(): SyncStatus {
     const counts: Record<string, number> = Object.fromEntries(SYNC_CATEGORIES.map(c => [c.id, 0]));
     counts.always = 0;
     let pendingChanges = 0;
     for (const row of this.ctx.db.all<{ collection: string; id: string; deleted: number; sync_dirty: number }>("SELECT collection, id, deleted, sync_dirty FROM entities")) {
+      if (row.collection === SECRET_COLLECTION) continue;
       const category = categoryFor(row.collection, row.id);
       if (category && !row.deleted) counts[category] = (counts[category] ?? 0) + 1;
       if (row.sync_dirty && this.eligible(row)) pendingChanges++;
+    }
+    for (const row of this.secretSync.rows()) {
+      if (!isSecretAccount(row.account)) continue;
+      if (!row.deleted) counts["ai-keys"]++;
+      if (row.sync_dirty && this.eligible({ collection: SECRET_COLLECTION, id: row.account })) pendingChanges++;
     }
     const last = Number(this.getState("lastSyncedAt"));
     return { phase: this.phase, serverUrl: this.ctx.settings.get("sync.serverUrl") ?? undefined, deviceId: this.deviceId(),
@@ -83,6 +95,13 @@ export class SyncEngine {
     this.deviceId();
     this.unlisten.push(this.ctx.entities.onChange(change => {
       if (change.source !== "local" || !this.eligible(change) || !this.session) return;
+      this.emit();
+      clearTimeout(this.localTimer);
+      this.localTimer = setTimeout(() => this.trigger(), 2000);
+      this.localTimer.unref();
+    }));
+    this.unlisten.push(this.ctx.secrets.onChange(change => {
+      if (!this.secretSync.changed(change) || !this.session || !this.eligible({ collection: SECRET_COLLECTION, id: change.account })) return;
       this.emit();
       clearTimeout(this.localTimer);
       this.localTimer = setTimeout(() => this.trigger(), 2000);
@@ -157,7 +176,7 @@ export class SyncEngine {
         this.ctx.settings.set("sync.deviceName", deviceName);
         this.ctx.db.transaction(() => {
           this.setState("vaultId", vault.vaultId); this.setState("keyEpoch", String(vault.keyEpoch)); this.setState("cursor", "0");
-          this.ctx.entities.markAllDirty();
+          this.ctx.entities.markAllDirty(); this.secretSync.markAllDirty();
         });
         this.session = { controller, http, vault, keys: deriveKeys(vmk, vault.vaultId) };
         this.ctx.settings.set("sync.enabled", true);
@@ -238,27 +257,34 @@ export class SyncEngine {
     if (remoteVault.vaultId !== session.vault.vaultId || remoteVault.keyEpoch !== session.vault.keyEpoch) throw new SyncHttpError(409, "vault_changed");
     await this.pull(session);
     const rejected = new Set<string>();
+    const skipped = new Set<string>();
     let batchLimit = SYNC_MAX_RECORDS;
     for (let attempt = 0; attempt < 1000; attempt++) {
-      const dirty = this.dirty(batchLimit, rejected);
+      await this.secretSync.collect();
+      this.assertSession(session);
+      const dirty = this.dirty(session.keys, batchLimit, new Set([...rejected, ...skipped]));
       if (!dirty.length) break;
-      const records: SyncPushRecord[] = [], originals: EntityRecord<unknown>[] = [];
+      const records: SyncPushRecord[] = [], originals: PendingRecord[] = [];
       let bytes = 16;
       for (const record of dirty) {
         let encrypted: SyncPushRecord;
         try {
-          encrypted = encryptRecord(session.keys, session.vault, { v: 1, collection: record.collection, id: record.id,
-            createdAt: record.createdAt, updatedAt: record.updatedAt, deleted: record.deleted, data: record.data }, record.syncSeq);
+          const payload = isSecretRecord(record) ? await this.secretSync.payload(record) : { v: 1 as const, collection: record.collection, id: record.id,
+            createdAt: record.createdAt, updatedAt: record.updatedAt, deleted: record.deleted, data: record.data };
+          this.assertSession(session);
+          if (!this.eligible(record)) continue;
+          if (!payload) { skipped.add(recordId(session.keys, record.collection, record.id)); continue; }
+          encrypted = encryptRecord(session.keys, session.vault, payload, record.syncSeq);
         } catch {
           // Leave rejected rows dirty for a later edit/retry, without starving other rows.
-          rejected.add(`${record.collection}/${record.id}`);
+          rejected.add(recordId(session.keys, record.collection, record.id));
           continue;
         }
         const size = Buffer.byteLength(JSON.stringify(encrypted)) + 1;
         if (bytes + size > SYNC_MAX_REQUEST_BYTES) break;
         records.push(encrypted); originals.push(record); bytes += size;
       }
-      if (!records.length) continue;
+      if (!records.length || originals.some(record => !this.eligible(record))) continue;
       let response: { results: SyncPushResult[] };
       try { response = await session.http.request("/v1/push", "POST", { records }, { "If-Match": session.vault.vaultId }); }
       catch (e) {
@@ -268,7 +294,10 @@ export class SyncEngine {
         }
         if (e instanceof SyncHttpError && e.code === "record_missing") {
           this.ctx.db.transaction(() => {
-            for (const record of originals) this.ctx.db.run("UPDATE entities SET sync_seq = NULL WHERE collection = ? AND id = ? AND updated_at = ?", record.collection, record.id, record.updatedAt);
+            for (const record of originals) {
+              if (isSecretRecord(record)) this.secretSync.resetSeq(record);
+              else this.ctx.db.run("UPDATE entities SET sync_seq = NULL WHERE collection = ? AND id = ? AND updated_at = ?", record.collection, record.id, record.updatedAt);
+            }
             this.setState("cursor", "0");
           });
           await this.pull(session); continue;
@@ -277,22 +306,28 @@ export class SyncEngine {
       }
       this.assertSession(session);
       if (!Array.isArray(response.results) || response.results.length !== records.length) throw new Error("Invalid sync push response");
+      const conflicts: { payload: SyncPayload; seq: number }[] = [];
       this.ctx.db.transaction(() => {
         for (let i = 0; i < records.length; i++) {
           const result = response.results[i], original = originals[i];
           if (result.rid !== records[i].rid) throw new Error("Invalid sync push identity");
-          if (result.status === "ok" && Number.isSafeInteger(result.seq) && result.seq > 0) this.ctx.entities.markSynced(original.collection, original.id, result.seq, original.updatedAt);
+          if (result.status === "ok" && Number.isSafeInteger(result.seq) && result.seq > 0) {
+            if (isSecretRecord(original)) this.secretSync.markSynced(original, result.seq);
+            else this.ctx.entities.markSynced(original.collection, original.id, result.seq, original.updatedAt);
+          }
           else if (result.status === "conflict" && result.current?.rid === result.rid) {
             const remote = decryptRecord(session.keys, session.vault, result.current);
-            if (this.eligible(remote)) applyRemote(this.ctx.entities, remote, result.current.seq);
+            conflicts.push({ payload: remote, seq: result.current.seq });
           } else throw new Error("Invalid sync push result");
         }
       });
+      await this.applyRecords(session, conflicts);
       // Re-pull after each batch to catch concurrent edits and advance the durable cursor.
       await this.pull(session);
       if (attempt === 999) this.rerun = true;
     }
     this.ctx.entities.purgeTombstones(Date.now() - 30 * 86400000);
+    this.secretSync.purgeTombstones(Date.now() - 30 * 86400000);
     this.setState("lastSyncedAt", String(Date.now()));
     this.phase = rejected.size ? "error" : "online";
     this.lastError = rejected.size ? `${rejected.size} record(s) could not be serialized or exceeded the encrypted size limit; other changes were synced. Edit these records and retry.` : undefined;
@@ -314,11 +349,21 @@ export class SyncEngine {
         return { payload: decryptRecord(session.keys, session.vault, record), seq: record.seq };
       });
       if ((page.records.length && previous !== page.cursor) || (!page.records.length && (page.cursor !== cursor || page.hasMore))) throw new Error("Invalid sync cursor");
-      this.ctx.db.transaction(() => {
-        for (const record of decoded) if (this.eligible(record.payload)) applyRemote(this.ctx.entities, record.payload, record.seq);
-        this.setState("cursor", String(page.cursor));
-      });
+      await this.applyRecords(session, decoded);
+      this.assertSession(session);
+      if (generation !== this.replayGeneration) continue;
+      this.setState("cursor", String(page.cursor));
       if (!page.hasMore) return;
+    }
+  }
+  private async applyRecords(session: Session, records: { payload: SyncPayload; seq: number }[]): Promise<void> {
+    this.ctx.db.transaction(() => {
+      for (const { payload, seq } of records)
+        if (payload.collection !== SECRET_COLLECTION && this.eligible(payload)) applyRemote(this.ctx.entities, payload, seq);
+    });
+    for (const { payload, seq } of records) {
+      if (payload.collection !== SECRET_COLLECTION) continue;
+      await this.secretSync.apply(payload, seq, () => { this.assertSession(session); return this.eligible(payload); });
     }
   }
   private openSocket(): void {
