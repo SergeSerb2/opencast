@@ -29,6 +29,23 @@ no account or credit checks exist, and no hosted OpenCast/Raycast fallback exist
 - `web.ts`, `tools.ts`, `mcp.ts`: configured web search/read, native system tools,
   lazy MCP stdio/Streamable HTTP connections, status, and Claude Desktop JSON import.
 
+## Provider setup
+
+`ai.providers.testDraft` discovers models with unsaved connection values. An optional
+provider ID reuses its saved API key and `$keychain` header values. The call writes
+no entity or Keychain entry. Model samples in its result are for preview only.
+
+`ai.providers.detectLocal` accepts no URLs. It probes only the fixed `127.0.0.1`
+URLs of local templates, in parallel with 1200 ms deadlines (including body reads).
+Ollama supports both `/v1/models` and `/api/tags`. JSON model arrays count as a
+server; 401/403 responses report `auth-required`. The settings UI calls detection
+on entry or Detect, never at backend startup or on a timer.
+
+Saving changed API keys or headers, or a provider with a model fetch error,
+refreshes its models when automatic loading is enabled. Setup discovery translates
+connection refusal, missing model endpoints, non-JSON responses, and timeouts into
+plain messages while retaining secret redaction. Completion errors keep their detail.
+
 ## Frontend and extension integration
 
 `ai.chats.send` acknowledges with IDs before emitting `ai.stream` events. Ordinary
@@ -47,7 +64,8 @@ Provider API keys use `ai.provider:<id>:apiKey`. Custom header values use
 To retain a masked custom header during editing, pass `$keychain` as its value.
 MCP env/header values similarly use `mcp:<id>:env:<name>` and
 `mcp:<id>:header:<name>`; synced metadata contains `$keychain` markers, never values.
-Keys must be configured separately on each synced device. URL credentials are rejected.
+Provider and MCP lists report missing Keychain values on this Mac. The account names
+stay stable for optional AI & MCP Keys sync. URL credentials are rejected.
 
 The OpenAI template defaults to `api: "openai-responses"`. Other OpenAI-compatible
 templates default to `openai` (Chat Completions); Ollama also offers its existing

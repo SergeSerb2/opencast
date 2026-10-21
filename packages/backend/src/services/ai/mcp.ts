@@ -2,11 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type {
-  MCPServer,
-  AIToolInfo,
-  BackendMethods,
-} from "@opencast/protocol";
+import type { MCPServer, AIToolInfo, BackendMethods } from "@opencast/protocol";
 import type { AppContext, ToolProvider } from "../../context";
 import { httpUrl, providerUrl, redact, safeError } from "./common";
 interface Connection {
@@ -172,25 +168,49 @@ export class MCP implements ToolProvider {
         { signal, timeout: 60_000 },
       );
       if (result.isError)
-        return JSON.parse(JSON.stringify(result, (_key, value: unknown) =>
-          typeof value === "string" ? redact(value, connection.secrets) : value,
-        ));
+        return JSON.parse(
+          JSON.stringify(result, (_key, value: unknown) =>
+            typeof value === "string"
+              ? redact(value, connection.secrets)
+              : value,
+          ),
+        );
       return result;
     } catch (error) {
       throw new Error(redact(safeError(error), connection.secrets));
     }
   }
-  status() {
-    return this.servers().map((s) => ({
-      ...s,
-      status: this.connections.has(s.id)
-        ? ("connected" as const)
-        : this.errors.has(s.id)
-          ? ("error" as const)
-          : ("disconnected" as const),
-      toolCount: this.connections.get(s.id)?.tools.length ?? 0,
-      error: this.errors.get(s.id),
-    }));
+  async status() {
+    return Promise.all(
+      this.servers().map(async (s) => ({
+        ...s,
+        status: this.connections.has(s.id)
+          ? ("connected" as const)
+          : this.errors.has(s.id)
+            ? ("error" as const)
+            : ("disconnected" as const),
+        toolCount: this.connections.get(s.id)?.tools.length ?? 0,
+        error: this.errors.get(s.id),
+        missingSecrets: (
+          await Promise.all(
+            (
+              [
+                ["env", s.env],
+                ["header", s.headers],
+              ] as const
+            ).flatMap(([kind, values]) =>
+              Object.entries(values ?? {})
+                .filter(([, value]) => value === "$keychain")
+                .map(async ([name]) =>
+                  (await this.ctx.secrets.has(`mcp:${s.id}:${kind}:${name}`))
+                    ? []
+                    : [`${kind}:${name}`],
+                ),
+            ),
+          )
+        ).flat(),
+      })),
+    );
   }
   async upsert(
     input: BackendMethods["ai.mcp.upsert"]["params"],

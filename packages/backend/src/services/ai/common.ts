@@ -12,8 +12,9 @@ export class ProviderError extends Error {
     message: string,
     readonly status?: number,
     readonly retryAfter?: string | null,
+    cause?: unknown,
   ) {
-    super(message);
+    super(message, { cause });
   }
 }
 export function httpUrl(value: string): URL {
@@ -140,6 +141,9 @@ export async function checkedFetch(
         `Provider connection failed: ${error instanceof Error ? error.message : String(error)}`,
         secrets,
       ),
+      undefined,
+      undefined,
+      error,
     );
   }
   if (!response.ok) {

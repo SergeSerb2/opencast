@@ -154,11 +154,15 @@ export interface BackendMethods {
   "menus.press": { params: { path: string[] }; result: Void };
 
   // ---- AI: providers & models -------------------------------------------------------------------
-  "ai.providers.list": { params: Void; result: (AIProvider & { hasApiKey: boolean })[] };
+  "ai.providers.list": { params: Void; result: (AIProvider & { hasApiKey: boolean; missingSecretHeaders: string[] })[] };
   "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; supportedApis?: AIProvider["api"][]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
   "ai.providers.upsert": { params: { provider: Partial<AIProvider> & { name: string; template: string; api: AIProvider["api"]; baseUrl: string }; apiKey?: string | null }; result: AIProvider };
   "ai.providers.delete": { params: { id: string }; result: Void };
   "ai.providers.test": { params: { id: string }; result: { ok: boolean; message: string; latencyMs?: number } };
+  /** Read-only model discovery. An existing id allows reuse of saved Keychain values. */
+  "ai.providers.testDraft": { params: { provider: Pick<AIProvider, "api" | "baseUrl"> & Partial<Pick<AIProvider, "id" | "template" | "headers">>; apiKey?: string | null; secretHeaders?: Record<string, string> }; result: { ok: boolean; message: string; latencyMs: number; modelCount: number; sampleModelIds: string[] } };
+  /** Probes only the fixed loopback URLs from local provider templates. */
+  "ai.providers.detectLocal": { params: Void; result: { templateId: string; baseUrl: string; api: AIProvider["api"]; status: "ok" | "auth-required"; modelCount: number; sample: string[]; latencyMs: number }[] };
   "ai.providers.refreshModels": { params: { id: string }; result: AIProvider };
   "ai.models.list": { params: { includeDisabled?: boolean }; result: AIModelOption[] };
 
@@ -201,7 +205,7 @@ export interface BackendMethods {
   "ai.webSearch.hasApiKey": { params: { provider: WebSearchProvider }; result: boolean };
   /** `apiKey: null` (or "") removes the stored key. */
   "ai.webSearch.setApiKey": { params: { provider: WebSearchProvider; apiKey: string | null }; result: Void };
-  "ai.mcp.list": { params: Void; result: (MCPServer & { status: "connected" | "disconnected" | "error"; toolCount: number; error?: string })[] };
+  "ai.mcp.list": { params: Void; result: (MCPServer & { status: "connected" | "disconnected" | "error"; toolCount: number; error?: string; missingSecrets: string[] })[] };
   "ai.mcp.upsert": { params: Partial<MCPServer> & { name: string; transport: MCPServer["transport"] }; result: MCPServer };
   "ai.mcp.delete": { params: { id: string }; result: Void };
   "ai.mcp.import": { params: { json: string }; result: { imported: number } };
