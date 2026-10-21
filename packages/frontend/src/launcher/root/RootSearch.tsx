@@ -79,9 +79,9 @@ export function RootSearch() {
   /** Actions for any row; inline arguments belong to the selected command only. */
   const actionsFor = useCallback(
     (id: string | null) => {
-      if (id === CALCULATOR_ID && data?.calculator) return calculatorActions(data.calculator);
+      if (id === CALCULATOR_ID && data?.calculator) return data.query === query ? calculatorActions(data.calculator) : null;
       const row = id ? rows.get(id) : undefined;
-      if (!row) return null;
+      if (!row || (!row.fallback && data?.query !== query)) return null;
       const ownsArgs = id === selectedId && Boolean(commandArgs);
       return rootActions(row, {
         // Fallbacks always use what is typed now, even while results for it are loading.
@@ -99,7 +99,7 @@ export function RootSearch() {
         },
       });
     },
-    [data?.calculator, rows, selectedId, commandArgs, query, args, favorites],
+    [data?.calculator, data?.query, rows, selectedId, commandArgs, query, args, favorites],
   );
   const actions = useMemo(() => actionsFor(selectedId), [actionsFor, selectedId]);
 
