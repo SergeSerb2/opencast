@@ -226,6 +226,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     ...ai,
     "ai.models.list": aiSettings["ai.models.list"],
     "ai.presets.list": teamB.handlers["ai.presets.list"],
+    "ai.presets.reset": teamB.handlers["ai.presets.reset"],
     "ai.ask": (params) => (isTranslationPrompt(params) ? teamB.handlers["ai.ask"]! : ai["ai.ask"]!)(params),
     "ai.stop": (params) => {
       void teamB.handlers["ai.stop"]?.(params);
