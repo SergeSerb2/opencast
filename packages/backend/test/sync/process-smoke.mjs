@@ -52,7 +52,8 @@ async function start(name, keys = new Map()) {
     app.pending.set(id, { resolve: resolveResult, reject, timer });
     app.socket.send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
   });
-  app.db = new DatabaseSync(join(dir, "opencast.db"));
+  // The backend may hold a write lock (for example during its first sync); wait instead of failing.
+  app.db = new DatabaseSync(join(dir, "opencast.db"), { timeout: 5000 });
   return app;
 }
 async function close(app) {
