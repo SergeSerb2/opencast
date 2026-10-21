@@ -238,7 +238,7 @@ function ConnectionSection({
   );
 }
 
-function TestConnection({ draft, autoTest = false, validate }: { draft: ProviderDraft; autoTest?: boolean; validate: () => boolean }) {
+function TestConnection({ draft, autoTest = false, validate, savedId }: { draft: ProviderDraft; autoTest?: boolean; validate: () => boolean; savedId?: string }) {
   const [state, setState] = useState<{ request: string; testing?: boolean; result?: BackendResult<"ai.providers.testDraft"> }>({ request: "" });
   const request = JSON.stringify(draftToTest(draft));
   const latestRequest = useRef(request);
@@ -250,6 +250,16 @@ function TestConnection({ draft, autoTest = false, validate }: { draft: Provider
     try {
       const result = await backend.call("ai.providers.testDraft", draftToTest(draft));
       if (latestRequest.current === request) setState({ request, result });
+    } catch (error) {
+      if (latestRequest.current === request) setState({ request, result: { ok: false, message: errorMessage(error), latencyMs: 0, modelCount: 0, sampleModelIds: [] } });
+    }
+  };
+  const testChat = async () => {
+    if (!savedId) return;
+    setState({ request, testing: true });
+    try {
+      const result = await backend.call("ai.providers.test", { id: savedId, deep: true });
+      if (latestRequest.current === request) setState({ request, result: { ...result, latencyMs: result.latencyMs ?? 0, modelCount: 0, sampleModelIds: [] } });
     } catch (error) {
       if (latestRequest.current === request) setState({ request, result: { ok: false, message: errorMessage(error), latencyMs: 0, modelCount: 0, sampleModelIds: [] } });
     }
@@ -267,12 +277,13 @@ function TestConnection({ draft, autoTest = false, validate }: { draft: Provider
         {result.message}{result.ok ? ` · ${result.latencyMs} ms` : ""}
         {result.sampleModelIds.length > 0 && <span className="sc-s-test-models">{result.sampleModelIds.join(", ")}</span>}
       </span>
-    ) : "Fetch the model list with these values. Nothing is saved."}>
+    ) : savedId ? "Test fetches models. Test Chat also sends a one-token request." : "Fetch the model list with these values. Nothing is saved."}>
       <Controls>
         <Button size="small" onClick={() => void test()} disabled={current?.testing}>
           {current?.testing ? <Spinner size={12} /> : null}
           {current?.testing ? "Testing…" : "Test"}
         </Button>
+        {savedId && <Button size="small" variant="ghost" onClick={() => void testChat()} disabled={current?.testing}>Test Chat</Button>}
       </Controls>
     </Row>
   );
@@ -620,7 +631,7 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
         <ConnectionSection draft={draft} setDraft={setDraft} errors={errors} template={template} hasSavedKey={provider?.hasApiKey ?? false} isNew={isNew} version={provider?.updatedAt} />
       </fieldset>
       <Section anchor="test">
-        <TestConnection draft={draft} autoTest={Boolean(detected)} validate={() => {
+        <TestConnection draft={draft} autoTest={Boolean(detected)} savedId={provider && !dirty ? provider.id : undefined} validate={() => {
           const problems = validateProviderDraft(draft, template, provider?.hasApiKey ?? false);
           setErrors(problems);
           return !hasErrors(problems);

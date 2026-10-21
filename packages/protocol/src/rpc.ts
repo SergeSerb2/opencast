@@ -158,7 +158,7 @@ export interface BackendMethods {
   "ai.providers.templates": { params: Void; result: { id: string; name: string; api: AIProvider["api"]; supportedApis?: AIProvider["api"][]; baseUrl: string; needsApiKey: boolean; docsUrl?: string; keyUrl?: string }[] };
   "ai.providers.upsert": { params: { provider: Partial<AIProvider> & { name: string; template: string; api: AIProvider["api"]; baseUrl: string }; apiKey?: string | null }; result: AIProvider };
   "ai.providers.delete": { params: { id: string }; result: Void };
-  "ai.providers.test": { params: { id: string }; result: { ok: boolean; message: string; latencyMs?: number } };
+  "ai.providers.test": { params: { id: string; deep?: boolean }; result: { ok: boolean; message: string; latencyMs?: number } };
   /** Read-only model discovery. An existing id allows reuse of saved Keychain values. */
   "ai.providers.testDraft": { params: { provider: Pick<AIProvider, "api" | "baseUrl"> & Partial<Pick<AIProvider, "id" | "template" | "headers">>; apiKey?: string | null; secretHeaders?: Record<string, string> }; result: { ok: boolean; message: string; latencyMs: number; modelCount: number; sampleModelIds: string[] } };
   /** Probes only the fixed loopback URLs from local provider templates. */

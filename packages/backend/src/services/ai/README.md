@@ -35,6 +35,10 @@ no account or credit checks exist, and no hosted OpenCast/Raycast fallback exist
 provider ID reuses its saved API key and `$keychain` header values. The call writes
 no entity or Keychain entry. Model samples in its result are for preview only.
 
+Saved providers can also use `ai.providers.test` with `deep: true`: model discovery
+then a one-token `ping` completion through the configured adapter and first enabled
+model. The response reports both stages. This sends no tools and stores no chat.
+
 `ai.providers.detectLocal` accepts no URLs. It probes only the fixed `127.0.0.1`
 URLs of local templates, in parallel with 1200 ms deadlines (including body reads).
 Ollama supports both `/v1/models` and `/api/tags`. JSON model arrays count as a

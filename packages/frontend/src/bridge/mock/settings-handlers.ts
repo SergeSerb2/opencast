@@ -427,13 +427,13 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       if (index !== -1) providers.splice(index, 1);
       providerChanged();
     },
-    "ai.providers.test": async ({ id }) => {
+    "ai.providers.test": async ({ id, deep }) => {
       const p = provider(id);
       await new Promise((resolve) => setTimeout(resolve, 600));
       if (p.modelFetchError) return { ok: false, message: p.modelFetchError };
       const template = PROVIDER_TEMPLATES.find((t) => t.id === p.template);
       if (template?.needsApiKey && !p.hasApiKey) return { ok: false, message: "401 Unauthorized — add an API key" };
-      return { ok: true, message: `Connected · ${p.models.length} models`, latencyMs: 180 + Math.round(Math.random() * 200) };
+      return { ok: true, message: deep ? `Models: OK (${p.models.length}). Chat: OK.` : `Connected · ${p.models.length} models`, latencyMs: 180 + Math.round(Math.random() * 200) };
     },
     "ai.providers.refreshModels": async ({ id }) => {
       const p = provider(id);

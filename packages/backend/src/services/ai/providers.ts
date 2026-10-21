@@ -254,7 +254,7 @@ export class Providers {
       const models = await this.fetchModels(provider, auth);
       return {
         ok: true,
-        message: `Connected and fetched ${models.length} models`,
+        message: `Connected and fetched ${models.length} model${models.length === 1 ? "" : "s"}`,
         latencyMs: Date.now() - start,
         modelCount: models.length,
         sampleModelIds: models.slice(0, 5).map((m) => m.id),
@@ -588,19 +588,47 @@ export class Providers {
       "ai.providers.upsert": (p) => this.upsert(p),
       "ai.providers.delete": (p) => this.delete(p.id),
       "ai.providers.refreshModels": (p) => this.refresh(p.id),
-      "ai.providers.test": async ({ id }) => {
+      "ai.providers.test": async ({ id, deep }) => {
         const start = Date.now();
+        let modelsStage: string | undefined;
+        let secrets: string[] = [];
         try {
-          await this.refresh(id);
+          const provider = await this.refresh(id);
+          if (deep) {
+            modelsStage = `Models: OK (${provider.models.length}).`;
+            const model = provider.models.find((m) => m.enabled);
+            if (!provider.enabled || !model)
+              throw new Error(
+                "Enable this provider and a model before testing chat",
+              );
+            secrets = (await this.credentials(provider)).secrets;
+            await ctx.ai.complete({
+              model: `${provider.id}/${model.id}`,
+              system: "Reply briefly.",
+              messages: [{ role: "user", content: "ping" }],
+              tools: [],
+              maxOutputTokens: 1,
+              signal: AbortSignal.timeout(30_000),
+            });
+          }
           return {
             ok: true,
-            message: "Connected and fetched models",
+            message: modelsStage
+              ? `${modelsStage} Chat: OK.`
+              : "Connected and fetched models",
             latencyMs: Date.now() - start,
           };
         } catch (e) {
           return {
             ok: false,
-            message: safeError(e),
+            message: redact(
+              modelsStage
+                ? `${modelsStage} Chat: failed — ${safeError(e)}`
+                : deep
+                  ? `Models: failed — ${safeError(e)} Chat: not tested.`
+                  : safeError(e),
+              secrets,
+            ),
             latencyMs: Date.now() - start,
           };
         }
