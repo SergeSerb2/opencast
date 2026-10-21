@@ -48,15 +48,37 @@ controls, and a bit of confetti. The launcher is the best way to explore it.
 
 ## Make it yours
 
-For AI, open **Settings → AI → Models & Providers**. Add your provider and choose
-the models you want to use. API keys stay in your Mac’s Keychain and can optionally sync end-to-end encrypted. OpenAI,
-Anthropic, Gemini, OpenRouter, and local tools such as Ollama and LM Studio are
-supported. An OpenAI-compatible proxy such as
-[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) works too.
+### Bring your own AI
 
-For sync, follow the [Cloud Sync guide](docs/SYNC.md). You deploy the Worker to
-your Cloudflare account, then connect each Mac with the server URL, token, and
-the same encryption passphrase.
+Open **Settings → AI → Models & Providers** and click **Add Provider**. If Ollama,
+LM Studio, or another local server is running, it shows up at the top under
+**Detected on This Mac**. For a cloud provider, paste your API key and click
+**Test** before you save. OpenAI, Anthropic, Gemini, OpenRouter, and any
+OpenAI-compatible proxy such as
+[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) work.
+
+API keys stay in your Mac’s Keychain. With Cloud Sync, you can let them follow you
+to your other Macs, end-to-end encrypted.
+
+### Sync your Macs
+
+Sync runs on a small server in your own Cloudflare account. The free plan is
+plenty for one person.
+
+1. **Deploy the server.** Click
+   [**Deploy to Cloudflare**](https://deploy.workers.cloudflare.com/?url=https://github.com/SergeSerb2/opencast/tree/main/packages/sync-worker).
+   When it asks for `SYNC_TOKEN`, paste a token from **Settings → Cloud Sync →
+   Generate Access Token**. Prefer the terminal? Run `./scripts/deploy-sync.sh`;
+   it prints a setup code for you.
+2. **Connect your first Mac.** In **Settings → Cloud Sync**, paste the Worker URL and
+   token (or the setup code), then choose a vault passphrase. Keep the passphrase in
+   your password manager. Nobody can recover it for you.
+3. **Add your other Macs.** On a connected Mac, click **Copy Setup Code**. Paste it
+   on the new Mac and type the same passphrase. That’s it.
+
+Turn on **AI & MCP Keys** to bring your provider keys along. The server only ever
+sees encrypted data. The [Cloud Sync guide](docs/SYNC.md) explains how it works and
+what the server can and can’t see.
 
 ## Build it yourself
 
@@ -92,9 +114,11 @@ packages/protocol      Shared contracts
 
 ## Help shape it
 
-If something breaks, [open an issue](https://github.com/SergeSerb2/opencast/issues/new)
+If something breaks, [open an issue](https://github.com/SergeSerb2/opencast/issues/new/choose)
 with your macOS version, what you tried, and what you expected to happen. Small,
-focused pull requests are welcome too.
+focused pull requests are welcome too; [CONTRIBUTING.md](CONTRIBUTING.md) explains
+how to build and check a change. Please report security problems privately, as
+described in [SECURITY.md](SECURITY.md).
 
 Useful reading: [architecture](docs/ARCHITECTURE.md),
 [extensions](docs/EXTENSIONS.md), [extension UI](docs/EXTENSION-UI.md), and
