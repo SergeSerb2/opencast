@@ -72,7 +72,10 @@ function SetupForm({ status }: { status: SyncStatus }) {
   const [form, setForm] = useState<SyncSetup>({ serverUrl: savedUrl ?? status.serverUrl ?? "", token: "", passphrase: "", confirmPassphrase: "", deviceName: status.deviceName });
   const [setupCode, setSetupCode] = useState("");
   const [probe, setProbe] = useState<BackendResult<"sync.probe"> | null>(null);
-  const [syncKeys, setSyncKeys] = useState(true);
+  const optedIn = useSetting("sync.optInCategories");
+  // A Mac that connected before keeps its choice; a first setup starts with keys on.
+  const [syncKeysChoice, setSyncKeys] = useState<boolean | null>(null);
+  const syncKeys = syncKeysChoice ?? (savedUrl ? optedIn.includes("ai-keys") : true);
   const [errors, setErrors] = useState<Partial<Record<keyof SyncSetup, string>>>({});
   const [connectError, setConnectError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -123,12 +126,15 @@ function SetupForm({ status }: { status: SyncStatus }) {
     if (Object.keys(problems).length || busy) return;
     setBusy(true);
     setConnectError(null);
+    const previous = optedIn.includes("ai-keys");
     try {
+      // Before connecting, so the first sync already includes keys.
       await backend.call("sync.setCategoryEnabled", { category: "ai-keys", enabled: syncKeys });
       await backend.call("sync.connect", { serverUrl: form.serverUrl.trim(), token: form.token.trim(), passphrase: form.passphrase, deviceName: form.deviceName.trim() || undefined, expectVault: mode });
       showToast({ style: "success", title: "Cloud Sync is on" });
     } catch (error) {
       setConnectError(errorMessage(error));
+      if (previous !== syncKeys) await backend.call("sync.setCategoryEnabled", { category: "ai-keys", enabled: previous }).catch(() => {});
     } finally {
       setBusy(false);
     }
