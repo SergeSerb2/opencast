@@ -38,6 +38,7 @@ const COLLECTIONS = new Set([
   "aiChats",
   "aiMessages",
   "aiProviders",
+  "mcpServers",
   "themes",
   "windowLayouts",
   "commandPrefs",
@@ -406,6 +407,22 @@ function validateOwnRecord(
     nonempty(data.baseUrl, "Provider base URL");
     if (!Array.isArray(data.models))
       throw RpcError.invalidParams("Provider models must be an array");
+  }
+  if (collection === "mcpServers") {
+    nonempty(data.name, "MCP server name");
+    nonempty(data.mentionName, "MCP mention name");
+    if (data.transport === "stdio") nonempty(data.command, "MCP command");
+    else if (data.transport === "http") {
+      const url = new URL(nonempty(data.url, "MCP URL"));
+      if (!["http:", "https:"].includes(url.protocol))
+        throw RpcError.invalidParams("MCP URL must use HTTP or HTTPS");
+    } else throw RpcError.invalidParams("Invalid MCP transport");
+    if (typeof data.enabled !== "boolean" ||
+        (data.args !== undefined && (!Array.isArray(data.args) || data.args.some((arg) => typeof arg !== "string"))))
+      throw RpcError.invalidParams("Invalid MCP server configuration");
+    for (const field of ["env", "headers"])
+      if (data[field] !== undefined && Object.values(obj(data[field])).some((value) => value !== "$keychain"))
+        throw RpcError.invalidParams("MCP secrets must be configured in Keychain");
   }
   if (["aiCommands", "aiPresets", "windowLayouts"].includes(collection))
     nonempty(data.name, "Name");
