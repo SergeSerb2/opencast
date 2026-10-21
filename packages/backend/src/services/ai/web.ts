@@ -78,7 +78,7 @@ for (const [address, prefix] of [
 for (const [address, prefix] of [
   ["::", 96], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8],
 ] as const) nonPublic.addSubnet(address, prefix, "ipv6");
-async function publicPageAgent(url: string, signal: AbortSignal): Promise<Agent> {
+export async function publicPageAgent(url: string, signal: AbortSignal): Promise<Agent> {
   const hostname = httpUrl(url).hostname.replace(/^\[|\]$/g, "");
   const family = isIP(hostname);
   const addresses = family
