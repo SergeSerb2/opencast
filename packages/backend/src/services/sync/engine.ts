@@ -259,9 +259,12 @@ export class SyncEngine {
     const rejected = new Set<string>();
     const skipped = new Set<string>();
     let batchLimit = SYNC_MAX_RECORDS;
-    for (let attempt = 0; attempt < 1000; attempt++) {
+    // After the pull, so a newer key from another Mac lands before local values are compared.
+    if (this.eligible({ collection: SECRET_COLLECTION, id: "" })) {
       await this.secretSync.collect();
       this.assertSession(session);
+    }
+    for (let attempt = 0; attempt < 1000; attempt++) {
       const dirty = this.dirty(session.keys, batchLimit, new Set([...rejected, ...skipped]));
       if (!dirty.length) break;
       const records: SyncPushRecord[] = [], originals: PendingRecord[] = [];

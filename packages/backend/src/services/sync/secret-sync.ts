@@ -8,6 +8,8 @@ import type { SyncPayload } from "./crypto";
 export const SECRET_COLLECTION = "syncedSecrets";
 const webProviders = ["tavily", "brave", "exa", "searxng", "jina"];
 const controls = /[\u0000-\u001f\u007f-\u009f]/;
+// Values may span lines (for example a PEM key in an MCP environment variable).
+const valueControls = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/;
 const header = "[!#$%&'*+.^_`|~0-9A-Za-z-]+";
 const providerAccount = new RegExp(`^ai\\.provider:[^:]+:(?:apiKey|header:${header})$`);
 const mcpAccount = new RegExp(`^mcp:[^:]+:(?:env:[A-Za-z_][A-Za-z0-9_]*|header:${header})$`);
@@ -17,7 +19,7 @@ export function isSecretAccount(account: string): boolean {
     webProviders.some(provider => account === `ai.websearch:${provider}:apiKey`));
 }
 function isSecretValue(value: unknown): value is string {
-  return typeof value === "string" && Buffer.byteLength(value) <= 64 * 1024 && !controls.test(value);
+  return typeof value === "string" && Buffer.byteLength(value) <= 64 * 1024 && !valueControls.test(value);
 }
 interface Row {
   account: string;
