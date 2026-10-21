@@ -213,8 +213,15 @@ record, usually after tombstone retention. Clients reset the cursor and retry di
 versions against null bases after re-pulling. `vault_changed` (409) means the vault epoch
 or pinned identity changed, or authorization changed during a transaction.
 
-PUT supports replacing the passphrase wrapper for the **same VMK/vault ID/epoch**, without
-rewriting records. The current client RPC/UI does not expose passphrase change or key
+Change Passphrase rewraps the Keychain VMK with `wrapVault` under the **same VMK/vault
+ID/epoch**, then sends PUT with `replace: true` and `If-Match: <vaultId>`. It does not
+rewrite records. Other connected Macs keep working; only future joins need the new
+passphrase. It does not remove anyone who holds the server token.
+
+After changing the token on your Worker, use Update Access Token on each connected Mac.
+The client probes the new credentials and checks the vault ID/epoch before saving the
+token in Keychain and restarting its session. A token for a different or empty vault is
+rejected. New setup codes use the updated token. The client does not expose vault key
 rotation. Changing VMK/epoch requires an explicit export/new-vault/re-enrollment workflow;
 old-epoch records are not automatically re-encrypted or readable with a new key.
 

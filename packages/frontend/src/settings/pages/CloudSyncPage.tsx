@@ -388,7 +388,42 @@ async function unlock(serverUrl: string | undefined, deviceName: string) {
   }
 }
 
+async function updateToken() {
+  const values = await promptForm({
+    title: "Update Access Token",
+    message: "Set the new token on your Worker first. This Mac checks that it opens the same vault before saving it. Update the token on each Mac.",
+    fields: [{ id: "token", label: "Access Token", type: "password", required: true }],
+    primaryTitle: "Update Token",
+    validate: ({ token }) => token.length > 4096 || /[\r\n]/.test(token) ? { token: "Use at most 4096 characters, without line breaks" } : null,
+  });
+  if (!values) return false;
+  try {
+    await backend.call("sync.updateToken", { token: values.token.trim() });
+    showToast({ style: "success", title: "Access token updated" });
+    return true;
+  } catch (error) { showFailureToast("Could not update access token", error); return false; }
+}
+
+async function changePassphrase() {
+  const values = await promptForm({
+    title: "Change Passphrase",
+    message: "Your other Macs keep working. Only future joins need the new passphrase. This does not remove anyone who has your server access token.",
+    fields: [
+      { id: "passphrase", label: "New Passphrase", type: "password", placeholder: "At least 12 characters", required: true },
+      { id: "confirm", label: "Confirm Passphrase", type: "password", required: true },
+    ],
+    primaryTitle: "Change Passphrase",
+    validate: ({ passphrase, confirm }): Record<string, string> | null => passphrase.length < 12 || passphrase.length > 4096 ? { passphrase: "Use 12–4096 characters" } : confirm !== passphrase ? { confirm: "Passphrases don't match" } : null,
+  });
+  if (!values) return;
+  try {
+    await backend.call("sync.changePassphrase", { newPassphrase: values.passphrase });
+    showToast({ style: "success", title: "Vault passphrase changed" });
+  } catch (error) { showFailureToast("Could not change passphrase", error); }
+}
+
 function ConnectedView({ status }: { status: SyncStatus }) {
+  const [credentialVersion, setCredentialVersion] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const syncNow = async () => {
     setSyncing(true);
@@ -451,7 +486,17 @@ function ConnectedView({ status }: { status: SyncStatus }) {
           Sync is paused until you enter the vault passphrase again.
         </Callout>
       )}
-      {status.phase !== "needs-passphrase" && <AddAnotherMac />}
+      {status.phase !== "needs-passphrase" && <>
+        <AddAnotherMac key={credentialVersion} />
+        <Section title="Vault Access">
+          <Row title="Access Token" description="Update this Mac after changing the token on your Worker.">
+            <Button size="small" onClick={() => void updateToken().then(changed => { if (changed) setCredentialVersion(version => version + 1); })}>Update Access Token…</Button>
+          </Row>
+          <Row title="Vault Passphrase" description="Change the passphrase used to join this vault.">
+            <Button size="small" onClick={() => void changePassphrase()}>Change Passphrase…</Button>
+          </Row>
+        </Section>
+      </>}
       <SyncedContent status={status} editable />
       <SyncedDevices />
     </>

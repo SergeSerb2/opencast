@@ -5,7 +5,7 @@ import { SYNC_CATEGORIES, SYNC_MAX_RECORDS, SYNC_MAX_REQUEST_BYTES, type SyncSta
   type SyncVault, type SyncPullPage, type SyncPushResult, type SyncPushRecord, type BackendResult } from "@opencast/protocol";
 import type { AppContext } from "../../context";
 import type { EntityRecord } from "../../db/entities";
-import { createVault, unwrapVault, deriveKeys, decode, encryptRecord, decryptRecord, validateVault, recordId, type VaultKeys, type SyncPayload } from "./crypto";
+import { createVault, wrapVault, unwrapVault, deriveKeys, decode, encryptRecord, decryptRecord, validateVault, recordId, type VaultKeys, type SyncPayload } from "./crypto";
 import { categoryFor, isEnabled, isOptIn } from "./categories";
 import { applyRemote } from "./conflicts";
 import { normalizeServerUrl, SyncHttp, SyncHttpError, SyncNetworkError, SYNC_CONNECTION_MESSAGES } from "./http";
@@ -248,6 +248,55 @@ export class SyncEngine {
         this.emit();
         throw new Error(this.lastError);
       } finally { vmk?.fill(0); }
+    });
+  }
+  updateToken(token: string): Promise<SyncStatus> {
+    return this.exclusive(async () => {
+      const current = this.requireSession();
+      const result = await this.probe({ serverUrl: current.http.serverUrl, token });
+      if (result.deviceRevoked) throw new SyncHttpError(403, "device_revoked");
+      if (result.vault !== "present") throw new Error(SYNC_CONNECTION_MESSAGES.joinMissing);
+      const controller = new AbortController();
+      const http = new SyncHttp(current.http.serverUrl, token, this.deviceId(), controller.signal);
+      let keys: VaultKeys | undefined;
+      try {
+        const vault = await this.readVault(http);
+        if (vault.vaultId !== current.vault.vaultId || vault.keyEpoch !== current.vault.keyEpoch) throw new Error("This token belongs to a different vault. Reconnect with that vault's passphrase instead.");
+        const stored = await this.ctx.secrets.get("sync:vmk");
+        if (!stored) throw new Error("Stored vault key is unavailable; reconnect with the passphrase");
+        const vmk = decode(stored, 32);
+        try { keys = deriveKeys(vmk, vault.vaultId); } finally { vmk.fill(0); }
+        this.assertSession(current);
+        await this.ctx.secrets.set("sync:token", token);
+        this.assertSession(current);
+        await this.stop();
+        this.session = { controller, http, vault, keys }; keys = undefined;
+        this.ctx.settings.set("sync.enabled", true);
+        this.phase = "connecting"; this.lastError = undefined; this.emit();
+        const status = await this.now();
+        this.openSocket();
+        return status;
+      } finally {
+        if (this.session?.controller !== controller) controller.abort();
+        keys?.encKey.fill(0); keys?.ridKey.fill(0);
+      }
+    });
+  }
+  changePassphrase(newPassphrase: string): Promise<void> {
+    return this.exclusive(async () => {
+      const session = this.requireSession();
+      if (typeof newPassphrase !== "string" || newPassphrase.length > 4096) throw new Error("Passphrase must contain 12–4096 characters");
+      if (newPassphrase.length < 12) throw new Error(SYNC_CONNECTION_MESSAGES.shortPassphrase);
+      const remote = await this.readVault(session.http);
+      if (remote.vaultId !== session.vault.vaultId || remote.keyEpoch !== session.vault.keyEpoch) throw new SyncHttpError(409, "vault_changed");
+      const stored = await this.ctx.secrets.get("sync:vmk");
+      if (!stored) throw new Error("Stored vault key is unavailable; reconnect with the passphrase");
+      const vmk = decode(stored, 32);
+      try {
+        const vault = await wrapVault(newPassphrase, vmk, session.vault.vaultId, session.vault.keyEpoch);
+        this.assertSession(session);
+        await session.http.request("/v1/vault", "PUT", { ...vault, replace: true }, { "If-Match": session.vault.vaultId });
+      } finally { vmk.fill(0); }
     });
   }
   private async stop(): Promise<void> {

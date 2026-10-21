@@ -749,6 +749,18 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
       setSetting("sync.enabled", true);
       return status;
     },
+    "sync.updateToken": ({ token }) => {
+      if (!settings["sync.enabled"] || !sync.serverUrl) return fail("Cloud Sync is disconnected");
+      syncCredentials(sync.serverUrl, token);
+      if (token === "incorrect") return fail("Invalid sync server token");
+      syncToken = token;
+      return sync;
+    },
+    "sync.changePassphrase": ({ newPassphrase }) => {
+      if (!settings["sync.enabled"] || !mockVault) return fail("Cloud Sync is disconnected");
+      if (newPassphrase.length < 12 || newPassphrase.length > 4096) return fail("Passphrase must contain 12–4096 characters");
+      mockVault.passphrase = newPassphrase;
+    },
     "sync.disconnect": () => {
       setSetting("sync.enabled", false);
       emitSync({ ...sync, phase: "disabled", lastSyncedAt: undefined, stopReason: undefined });

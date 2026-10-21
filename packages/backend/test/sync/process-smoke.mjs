@@ -81,6 +81,7 @@ try {
   const passphrase = "process smoke passphrase";
   assert.deepEqual(await a.rpc("sync.probe", credentials), { vault: "absent", deviceRevoked: false, configured: true });
   await assert.rejects(b.rpc("sync.probe", { ...credentials, token: "incorrect" }), /Invalid sync server token/);
+  await assert.rejects(a.rpc("sync.probe", { ...credentials, serverUrl: url + "/not-sync" }), /not an OpenCast sync server/);
   await assert.rejects(a.rpc("sync.connect", { ...credentials, passphrase: "short", expectVault: "create" }), /at least 12/);
   const created = await a.rpc("sync.connect", { ...credentials, passphrase, deviceName: "A", expectVault: "create" });
   assert.equal(created.phase, "online", created.lastError);
@@ -111,11 +112,30 @@ try {
     assert.equal(app.keys.size, 2);
     for (const value of app.keys.values()) assert.ok(!app.stderr.includes(value), "Secret appeared in backend logs");
   }
+  const previousVault = await (await fetch(url + "/v1/vault", { headers: { Authorization: `Bearer ${token}`, "X-OpenCast-Device": "process-test" } })).json();
+  await assert.rejects(a.rpc("sync.changePassphrase", { newPassphrase: "short" }), /at least 12/);
+  const newPassphrase = "new process smoke passphrase";
+  await a.rpc("sync.changePassphrase", { newPassphrase });
+  const rewrapped = await (await fetch(url + "/v1/vault", { headers: { Authorization: `Bearer ${token}`, "X-OpenCast-Device": "process-test" } })).json();
+  assert.equal(rewrapped.vaultId, previousVault.vaultId); assert.equal(rewrapped.keyEpoch, previousVault.keyEpoch);
+  assert.notDeepEqual(rewrapped.wrapped, previousVault.wrapped);
+  await now(a); await now(b);
+  await b.rpc("sync.disconnect");
+  await assert.rejects(b.rpc("sync.connect", { ...parsed, passphrase, expectVault: "join" }), /Wrong passphrase/);
+  assert.equal((await b.rpc("sync.connect", { ...parsed, passphrase: newPassphrase, expectVault: "join" })).phase, "online");
+  await assert.rejects(a.rpc("sync.updateToken", { token: "incorrect" }), /Invalid sync server token/);
+  assert.equal(a.keys.get("sync:token"), token);
+  const rotatedToken = process.env.SYNC_TEST_ROTATED_TOKEN ?? token;
+  assert.equal((await a.rpc("sync.updateToken", { token: rotatedToken })).phase, "online");
+  const refreshed = await b.rpc("sync.parseSetupCode", { code: (await a.rpc("sync.setupCode")).code });
+  assert.equal(refreshed.token, rotatedToken);
+  await now(a); await now(b);
+  await a.rpc("sync.updateToken", { token });
   const bStatus = await b.rpc("sync.status");
   await a.rpc("sync.removeDevice", { deviceId: bStatus.deviceId });
   assert.deepEqual(await b.rpc("sync.probe", parsed), { vault: "unknown", deviceRevoked: true, configured: true });
   const removed = await b.rpc("sync.now"); assert.equal(removed.stopReason, "device-removed");
-  assert.equal((await b.rpc("sync.connect", { ...parsed, passphrase, expectVault: "join" })).stopReason, undefined);
+  assert.equal((await b.rpc("sync.connect", { ...parsed, passphrase: newPassphrase, expectVault: "join" })).stopReason, undefined);
   await wipe();
   const stopped = await b.rpc("sync.now"); assert.equal(stopped.stopReason, "vault-changed");
   await assert.rejects(b.rpc("sync.connect", { ...parsed, passphrase, expectVault: "join" }), /No vault exists for that token/);
@@ -127,7 +147,10 @@ try {
   const resumed = await restarted.rpc("sync.status");
   assert.equal(resumed.phase, "disabled"); assert.equal(resumed.stopReason, "vault-changed"); assert.equal(resumed.serverUrl, url);
   await restarted.rpc("sync.disconnect"); assert.equal((await restarted.rpc("sync.status")).stopReason, undefined);
-  console.log("Bundled backend processes: probe, setup-code handoff, explicit create/join, wrong passphrase, absent-vault guard, revocation, stop reasons, Keychain isolation, encrypted conflicts and tombstones passed");
+  for (const app of apps) {
+    for (const secret of [...app.keys.values(), token, rotatedToken, passphrase, newPassphrase]) assert.ok(!app.stderr.includes(secret), "Secret appeared in backend logs");
+  }
+  console.log("Bundled backend processes: probe, setup-code handoff, explicit create/join, wrong passphrase, absent-vault guard, revocation, stop reasons, passphrase rewrap, token update, Keychain isolation, encrypted conflicts and tombstones passed");
 } finally {
   for (const app of apps) await close(app);
   await wipe(); rmSync(root, { recursive: true, force: true });

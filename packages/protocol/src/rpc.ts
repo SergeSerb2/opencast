@@ -255,6 +255,8 @@ export interface BackendMethods {
   "sync.parseSetupCode": { params: { code: string }; result: { serverUrl: string; token: string } };
   /** The expected vault state guards against creating a vault while trying to join. */
   "sync.connect": { params: { serverUrl: string; token: string; passphrase: string; deviceName?: string; expectVault?: "create" | "join" }; result: SyncStatus };
+  "sync.updateToken": { params: { token: string }; result: SyncStatus };
+  "sync.changePassphrase": { params: { newPassphrase: string }; result: Void };
   "sync.disconnect": { params: { forgetKeys?: boolean }; result: Void };
   "sync.now": { params: Void; result: SyncStatus };
   "sync.devices": { params: Void; result: SyncDevice[] };
