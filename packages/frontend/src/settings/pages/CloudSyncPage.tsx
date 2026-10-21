@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from "react";
+import { cloneElement, useEffect, useState, type ReactElement } from "react";
 import { SYNC_CATEGORIES, type SyncDevice, type SyncStatus } from "@opencast/protocol";
 import { backend } from "../../bridge/backend";
 import { errorMessage } from "../../bridge/errors";
@@ -95,11 +95,15 @@ function SetupForm({ status }: { status: SyncStatus }) {
     }
   };
 
-  const field = (key: keyof SyncSetup, title: string, input: ReactElement, description?: string) => (
-    <Row title={title} description={errors[key] ? <span className="sc-s-missing">{errors[key]}</span> : description} align="center">
-      <span className="sc-s-sync-field">{input}</span>
-    </Row>
-  );
+  const field = (key: keyof SyncSetup, title: string, input: ReactElement<{ "aria-label"?: string; "aria-invalid"?: boolean; "aria-describedby"?: string }>, description?: string) => {
+    const detail = errors[key] || description;
+    const descriptionId = `sync-${key}-description`;
+    return (
+      <Row title={title} description={detail ? <span id={descriptionId} className={errors[key] ? "sc-s-missing" : undefined} role={errors[key] ? "alert" : undefined}>{detail}</span> : undefined} align="center">
+        <span className="sc-s-sync-field">{cloneElement(input, { "aria-label": title, "aria-invalid": Boolean(errors[key]), "aria-describedby": detail ? descriptionId : undefined })}</span>
+      </Row>
+    );
+  };
 
   return (
     <Section title="Connect to Your Server" description="Use the URL and access token printed by the deploy script.">
