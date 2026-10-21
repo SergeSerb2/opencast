@@ -49,6 +49,8 @@ export class RpcRegistry<Methods extends { [K in keyof Methods]: MethodSpec }> {
   async invoke(method: string, params: unknown, ctx: CallContext): Promise<unknown> {
     const handler = this.handlers.get(method);
     if (!handler) throw new RpcError(RpcErrorCode.MethodNotFound, `Method not found: ${method}`);
+    if (params !== undefined && params !== null && (typeof params !== "object" || Array.isArray(params)))
+      throw RpcError.invalidParams("Expected named parameters");
     return handler(params ?? {}, ctx);
   }
 }
