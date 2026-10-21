@@ -173,9 +173,20 @@ export async function streamAdapter(
         };
     }
   }
-  if (!ended && !finishReason)
+  if ((provider.api === "anthropic" && !ended) || (!ended && !finishReason))
     throw new ProviderError(
       "Provider stream ended before a completion marker. Retry the request.",
+    );
+  if (
+    calls.size &&
+    (provider.api === "anthropic"
+      ? finishReason !== "tool_use"
+      : provider.api === "google"
+        ? finishReason !== "STOP"
+        : finishReason !== "tool_calls")
+  )
+    throw new ProviderError(
+      "Provider response was incomplete; its tool calls were not executed",
     );
   const toolCalls: AIToolCall[] = [];
   for (const [index, pending] of calls) {
