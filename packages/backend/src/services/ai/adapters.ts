@@ -177,13 +177,15 @@ export async function streamAdapter(
     throw new ProviderError(
       "Provider stream ended before a completion marker. Retry the request.",
     );
+  // OpenAI-compatible servers (Ollama, proxies) may report "stop" or nothing with tool
+  // calls, so only a truncated or filtered response blocks them.
   if (
     calls.size &&
     (provider.api === "anthropic"
       ? finishReason !== "tool_use"
       : provider.api === "google"
         ? finishReason !== "STOP"
-        : finishReason !== "tool_calls")
+        : finishReason === "length" || finishReason === "content_filter")
   )
     throw new ProviderError(
       "Provider response was incomplete; its tool calls were not executed",
