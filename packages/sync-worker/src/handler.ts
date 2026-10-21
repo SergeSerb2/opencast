@@ -104,6 +104,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const records = data.records.map(pushRecord);
     if (new Set(records.map(r => r.rid)).size !== records.length) invalid("Duplicate rid in batch");
     const results: SyncPushResult[] = [];
+    let responseBytes = 16 + records.length * 512;
     let changed = 0;
     for (const r of records) {
       // Sequence allocation, CAS, and conflict read are one D1 transaction. No pre-read races.
@@ -126,6 +127,9 @@ async function route(request: Request, env: Env): Promise<Response> {
       else {
         const current = batch[2].results[0] as unknown as Row | undefined;
         if (!current) throw new HttpError(409, "record_missing", "Record was removed by retention; pull from cursor 0 and retry with a null baseSeq");
+        // Small stale writes can conflict with large ciphertexts. Bound the response too.
+        responseBytes += current.ct.length;
+        if (responseBytes > SYNC_MAX_REQUEST_BYTES) throw new HttpError(413, "too_large", "Push conflicts exceed 4 MiB; pull and retry with fewer records");
         results.push({ rid: r.rid, status: "conflict", current: wire(current) });
       }
     }

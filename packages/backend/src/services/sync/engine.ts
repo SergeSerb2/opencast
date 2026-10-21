@@ -229,8 +229,9 @@ export class SyncEngine {
     if (remoteVault.vaultId !== session.vault.vaultId || remoteVault.keyEpoch !== session.vault.keyEpoch) throw new SyncHttpError(409, "vault_changed");
     await this.pull(session);
     const rejected = new Set<string>();
+    let batchLimit = SYNC_MAX_RECORDS;
     for (let attempt = 0; attempt < 1000; attempt++) {
-      const dirty = this.dirty(SYNC_MAX_RECORDS, rejected);
+      const dirty = this.dirty(batchLimit, rejected);
       if (!dirty.length) break;
       const records: SyncPushRecord[] = [], originals: EntityRecord<unknown>[] = [];
       let bytes = 16;
@@ -252,6 +253,10 @@ export class SyncEngine {
       let response: { results: SyncPushResult[] };
       try { response = await session.http.request("/v1/push", "POST", { records }, { "If-Match": session.vault.vaultId }); }
       catch (e) {
+        if (e instanceof SyncHttpError && e.status === 413 && originals.length > 1) {
+          batchLimit = Math.max(1, Math.floor(originals.length / 2));
+          await this.pull(session); continue;
+        }
         if (e instanceof SyncHttpError && e.code === "record_missing") {
           this.ctx.db.transaction(() => {
             for (const record of originals) this.ctx.db.run("UPDATE entities SET sync_seq = NULL WHERE collection = ? AND id = ? AND updated_at = ?", record.collection, record.id, record.updatedAt);
