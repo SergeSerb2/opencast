@@ -45,7 +45,7 @@ export function shortcutLabel(shortcut: KeyboardShortcut): string {
 
 const CODE_TO_KEY: Record<string, string> = {
   Enter: "return",
-  NumpadEnter: "enter",
+  NumpadEnter: "return",
   Tab: "tab",
   Escape: "escape",
   Backspace: "delete",
