@@ -1,111 +1,131 @@
 # OpenCast macOS releases
 
-Download the DMG from [the latest GitHub release](https://github.com/SergeSerb2/opencast/releases/latest).
-These builds target Apple silicon and macOS 14 or later. Node is included. Drag
-OpenCast.app to Applications, then open it from Applications.
+## Download, verify, and install
 
-The app is ad-hoc signed and is not notarized. The build Mac currently has no
-Developer ID certificate. If macOS blocks the app, follow
-[Apple's Open Anyway instructions](https://support.apple.com/guide/mac-help/mh40616/mac).
+Download the DMG and its matching `.dmg.sha256` file from
+[the latest release](https://github.com/SergeSerb2/opencast/releases/latest).
+Releases support **Apple silicon (arm64), macOS 14 or later**. Node is included;
+you do not need development tools to run the app.
 
-## Release after a merge
-
-After a merge to `main`, the existing `CI` workflow runs. A successful CI run from
-a push to `main` starts `Release OpenCast DMG` for that exact commit. Each commit
-has its own concurrency group, so a later merge does not cancel an earlier build.
-PR checks run in disposable local macOS VMs with the `opencast-ci` label. Each
-VM starts from a clean base image and is discarded after one job. No host files,
-Docker socket, clipboard, signing keys, or release credentials are shared with
-these VMs. The release build runs after merging.
-
-The release build also runs in a disposable local macOS VM, with labels
-`self-hosted`, `macOS`, `ARM64`, and `opencast-release`. The local controller at
-`~/.local/share/local-ci/controller.py` creates a fresh VM for each queued job.
-It runs as the `com.serge.local-ci` user launchd service. The former native
-`opencast-local-mac-arm64` runner is disabled and unregistered. Runner labels
-select VM roles; they do not grant access to the host or its credentials.
-The Mac must be awake and online with the user session available. Jobs queue
-while it is unavailable. GitHub cancels jobs that exceed its queue timeout;
-rerun failed CI or use the manual release action when the Mac is available again.
-
-The workflow has a manual **Run workflow** action on `main`. It uses full Git
-history and the package version to assign `v<version>-build.<commit-count>` tags.
-The app's build number uses the same count, and `OpenCastSourceRevision` records
-the source commit in its bundle. Releases use drafts until all assets are uploaded.
-Re-running the publishing job checks the tag, downloads all published assets,
-and compares them with the original verified workflow artifact. It rejects a
-different tag target or changed bytes instead of replacing a published release.
-A new rebuild can produce different DMG bytes, so retry only the failed
-publishing job to reuse its original artifact. Older queued commits do not
-replace a newer commit as the Latest release.
-
-The build VM builds and verifies the DMG with read-only repository permission. A
-separate disposable local VM with the `opencast-publish` label downloads those
-files and checks their checksum and source manifest before publishing. Only the publishing step receives the
-short-lived write token. It runs no dependency installs or build tools. Release
-actions are pinned to full commit SHAs. All Node and pnpm build commands use the
-same checksum-pinned standalone Node runtime that is bundled in the app. The
-pnpm 10.18.0 bootstrap also uses a committed checksum and matches packageManager.
-Release typechecks also verify committed SHA-256 digests for the tsc-rs launcher
-and its native package before extraction. They run through pnpm from a temporary
-directory without installing dependencies or running package install scripts.
-Tag and draft checks run again before publication. Release lookups use GitHub's
-paginated release list, which includes drafts for repository writers. Any list
-error or duplicate tag match stops the release. Only explicit tag-ref 404
-responses allow tag creation. Draft retries
-compare existing files and upload only missing files without overwriting assets.
-New drafts keep the release ID returned by creation. Subsequent checks use its
-direct API endpoint. Upload and publication requests use the same ID, so a delay
-in list or tag lookup visibility cannot block publication.
-There is no personal access token or signing secret in the repository. The host controller obtains only a short-lived runner registration token for each
-VM. The GitHub CLI credential on the host never enters the guest. Other
-repositories' runners on this Mac are independent of the OpenCast runner.
-
-## Build and verify locally
-
-Requirements: macOS, Xcode/Swift, Node 22.13+, pnpm 10, and Git history that is not
-shallow. Publishing also needs the GitHub CLI signed in with repository write
-access. Use a clean checkout of a commit on the repository's default branch.
-
-```sh
-pnpm install --frozen-lockfile
-./scripts/build-dmg.sh
-./scripts/verify-dmg.sh build/releases/<tag>/OpenCast-<version>-build.<number>-arm64.dmg
-./scripts/release-macos.sh
-```
-
-`build-dmg.sh` compiles the full app, bundles Node, stamps version/build/source
-metadata, creates an Applications link in the DMG, and mounts the finished image
-read-only for verification. Verification checks the app signature, architecture,
-page/backend/runtime files, and the bundled Node SQLite runtime. Packaging uses
-a pinned official Node download with a fixed SHA-256 checksum. Both the source
-runtime and the mounted copy must link only to macOS system libraries; a
-Homebrew-dependent executable is rejected. `OPENCAST_NODE` can select another
-standalone runtime that passes these checks.
-
-`release-macos.sh` publishes existing release files. Run `build-dmg.sh` first;
-publishing never builds or installs dependencies. It checks the artifact's
-checksum and source manifest before creating or uploading a release.
-
-Each release contains the DMG, its `.dmg.sha256` checksum, and a JSON source
-manifest. To check a downloaded image, put its checksum file beside it and run:
+Put both downloaded files in the same folder. In Terminal, change to that folder
+and check the checksum, using the actual downloaded filename:
 
 ```sh
 shasum -a 256 -c OpenCast-<version>-build.<number>-arm64.dmg.sha256
 ```
 
-The build scripts use ad-hoc signatures. Developer ID signing and notarization
-need a separate certificate and Apple notarization credentials before they can
-replace this release method.
+Continue only if the result is `OK`. Open the DMG, drag `OpenCast.app` to
+Applications, then open it from Applications.
 
-## Inspect the local workers on the build Mac
+The app is **ad-hoc signed and is not notarized**. If macOS blocks it:
+
+1. Try to open OpenCast once, then dismiss the alert.
+2. Open **System Settings → Privacy & Security**.
+3. Find the message about OpenCast and select **Open Anyway**.
+4. Confirm with **Open** and authenticate if macOS asks.
+
+See [Apple's instructions](https://support.apple.com/en-us/102445). Developer ID
+signing and notarization need an Apple Developer certificate and notarization
+credentials. They are not set up yet.
+
+## How releases are built and published
+
+A successful `CI` workflow from a push to `main` starts
+[Release OpenCast DMG](../.github/workflows/release-macos.yml) for that exact
+commit. Maintainers can also use its **Run workflow** action on `main`. Each
+commit has its own concurrency group, so later merges do not cancel earlier
+release builds. Releases are Apple silicon only; packaging fails early on Intel.
+
+For a public repository, both release jobs use fresh GitHub-hosted `macos-15`
+runners. The private repository uses separate self-hosted build and publish roles.
+All actions are pinned to full commit SHAs. Repository permission is
+`contents: read` by default; only the publish job has `contents: write`.
+
+The build job installs dependencies with the frozen lockfile, checks TypeScript,
+builds the Swift host and all three web packages, then packages and verifies the
+DMG. Any package build failure, missing required output, or missing dependency
+license text stops the build. Build tools and the bundled Node use the same
+official checksum-pinned Node distribution. The pnpm bootstrap and release
+TypeScript compiler also have committed checksums. No owner-specific tools,
+paths, or cached builds are required.
+
+Tags use `v<package-version>-build.<commit-count>`, based on full Git history.
+The app records the same version/build number and its exact source revision.
+Each release includes:
+
+- The Apple silicon DMG, with an Applications link.
+- A `.dmg.sha256` checksum file.
+- A JSON source manifest with the revision, version, build, architecture, and
+  signing status.
+
+The mounted app's `Contents/Resources/licenses/` contains OpenCast's MIT license,
+the full Node license from its verified archive, and generated notices for the
+production dependency closure of frontend, backend, and raycast-api. These
+include font OFL texts, Lucide's ISC and Feather MIT notices, and each bundled
+npm package's name, version, license identifier, and full license/notice text.
+See [license sources](../licenses/README.md). The DMG verifier checks these files
+and their recorded hashes as well as signatures, architecture, required app
+resources, and the bundled Node SQLite runtime. It does not launch the app.
+
+The publish job downloads the verified workflow artifact and checks its checksum
+and source manifest. It runs no dependency installs or builds. It uses the
+short-lived workflow token; no personal access token or signing secret is needed.
+Release notes list up to 40 non-merge commit subjects since the nearest published
+ancestor release, with a full comparison link. The first release lists history.
+
+### Safe retries
+
+Publication starts with a draft. The script retains the release ID from draft
+creation and uses that ID for uploads and publication, even while GitHub's list
+views lag. It checks the tag target and draft state again before publication.
+Only an explicit tag-ref 404 permits tag creation; release-list failures or
+ambiguous matches stop publication.
+
+A retry compares files already in a draft and uploads only missing assets. It
+never overwrites existing assets. For an already published release, it downloads
+all assets and requires an exact match with the original verified artifact.
+A different tag target or changed bytes cause failure. An older queued commit
+cannot replace a newer commit as the Latest release.
+
+Retry **only the failed publish job** to reuse its original artifact. Rebuilding
+can produce different DMG bytes. A missing or expired artifact requires a
+maintainer to resolve the release state before proceeding.
+
+## Build and verify locally
+
+Requirements: an Apple silicon Mac, Xcode/Swift, Node 22.13 or later, pnpm 10.18.0,
+and full Git history. Use the repository's pinned Node version for release builds:
 
 ```sh
-launchctl print "gui/$(id -u)/com.serge.local-ci"
-tail -n 30 ~/.local/share/local-ci/controller.log
-~/.local/share/local-ci/tools/tart.app/Contents/MacOS/tart list
+node_path="$(./scripts/prepare-release-node.sh)"
+export OPENCAST_NODE="$node_path"
+export PATH="$(dirname "$node_path"):$PATH"
+pnpm install --frozen-lockfile
+./scripts/typecheck-release.sh
+./scripts/build-dmg.sh
+./scripts/verify-dmg.sh build/releases/<tag>/OpenCast-<version>-build.<number>-arm64.dmg
 ```
 
-To pause OpenCast automation, disable its CI and release workflows in GitHub.
-The controller also serves other repositories, so stopping the shared service
-affects their jobs. Do not restart the retired native runner for PR checks.
+`build-dmg.sh` bundles Node and creates the checksum and source manifest after
+mounted-image verification. Both the source Node and the mounted copy must link
+only to macOS system libraries. `OPENCAST_NODE` must select a runtime prepared by
+`prepare-release-node.sh`, with its adjacent license and provenance file intact.
+
+`scripts/release-macos.sh` is the workflow's publisher. It consumes existing
+verified files, requires a clean checkout of a commit on the default branch, and
+uses the GitHub CLI with repository write access. It does not build the app.
+
+## Private self-hosted runners (maintainer only)
+
+Private jobs use disposable macOS VMs with `self-hosted`, `macOS`, `ARM64`, and
+role labels: `opencast-ci`, `opencast-release`, or `opencast-publish`. A local
+launchd controller creates a clean VM for each job and discards it afterward.
+It keeps its state, logs, and Tart tools in a maintainer-configured data directory.
+Inspect that launchd service and its controller log, and use `tart list` to inspect
+VMs. No host files, clipboard, signing keys, or host GitHub credentials enter the
+guests; the controller provides only short-lived runner registration tokens.
+
+The host must be awake, online, and have its user session available. Jobs queue
+while it is unavailable; rerun timed-out jobs once it returns. Disable this
+repository's workflows to pause its automation. Stopping a shared controller can
+affect other repositories. Do not restore a retired native runner for PR checks.

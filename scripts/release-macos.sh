@@ -142,10 +142,55 @@ NOTES="$OUT/notes.md"
 cat > "$NOTES" <<EOF
 OpenCast $VERSION, build $BUILD_NUMBER, for Apple silicon Macs running macOS 14 or later.
 
-Built on the dedicated local Mac from [$REVISION](https://github.com/$REPO/commit/$REVISION). Node is bundled. Download the DMG and drag OpenCast.app to Applications. The SHA-256 checksum and source manifest are included as separate assets.
+Built on macOS from [$REVISION](https://github.com/$REPO/commit/$REVISION). Node is bundled. Download the DMG and drag OpenCast.app to Applications. The SHA-256 checksum and source manifest are included as separate assets.
 
 This build is ad-hoc signed and is not notarized. If macOS blocks the app, follow [Apple's Open Anyway instructions](https://support.apple.com/guide/mac-help/mh40616/mac).
 EOF
+node --input-type=module - "$TEMP/releases.json" "$REPO" "$TAG" "$REVISION" >> "$NOTES" <<'JS'
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+const [list, repo, tag, revision] = process.argv.slice(2);
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+const candidates = [];
+for (const release of JSON.parse(readFileSync(list, 'utf8')).flat()) {
+  if (release.draft || release.tag_name === tag) continue;
+  const ref = spawnSync('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${release.tag_name}^{commit}`], { encoding: 'utf8' });
+  let commit = ref.stdout.trim();
+  if (ref.status !== 0) {
+    // An older queued release can publish after checkout fetched its tags.
+    // Resolve that ref through the API without changing the local checkout.
+    let endpoint = `repos/${repo}/git/ref/tags/${release.tag_name}`;
+    for (let depth = 0; depth < 10; depth++) {
+      const object = JSON.parse(execFileSync('gh', ['api', endpoint, '--jq', '.object'], { encoding: 'utf8' }));
+      assert(/^[0-9a-f]{40}$/.test(object.sha), 'Invalid release tag target');
+      if (object.type === 'commit') { commit = object.sha; break; }
+      assert.equal(object.type, 'tag', 'Unexpected release tag type');
+      endpoint = `repos/${repo}/git/tags/${object.sha}`;
+    }
+    assert(commit, 'Could not resolve previous release tag');
+  }
+  const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', commit, revision]);
+  assert(ancestor.status === 0 || ancestor.status === 1, `Cannot check release ancestry: ${release.tag_name}`);
+  if (ancestor.status === 0 && commit !== revision) {
+    candidates.push({ tag: release.tag_name, commit, distance: Number(git('rev-list', '--count', `${commit}..${revision}`)) });
+  }
+}
+// Use the nearest published ancestor, not a draft, an unpublished tag, or a
+// newer release from a different queued commit. The initial release uses history.
+candidates.sort((a, b) => a.distance - b.distance || a.tag.localeCompare(b.tag, 'en'));
+const previous = candidates[0];
+const range = previous ? `${previous.commit}..${revision}` : revision;
+const subjects = git('log', '--no-merges', '--format=%s', '-n', '41', range).split('\n').filter(Boolean);
+const escape = text => text.replace(/[\\`*_{}\[\]<>]/g, '\\$&');
+console.log('\n## Changes\n');
+if (previous) console.log(`Since [${escape(previous.tag)}](https://github.com/${repo}/releases/tag/${encodeURIComponent(previous.tag)}):\n`);
+for (const subject of subjects.slice(0, 40)) console.log(`- ${escape(subject)}`);
+if (!subjects.length) console.log('- No non-merge commits.');
+if (subjects.length > 40) console.log('\nShowing the first 40 commit subjects.');
+const url = previous ? `compare/${encodeURIComponent(previous.tag)}...${revision}` : `commits/${revision}`;
+console.log(`\n[${previous ? 'Full comparison' : 'Full commit history'}](https://github.com/${repo}/${url})`);
+JS
 if [ -z "$TAG_TARGET" ]; then
     # Atomic ref creation fails if another writer creates the tag first.
     gh api "repos/$REPO/git/refs" --method POST -f "ref=refs/tags/$TAG" -f "sha=$REVISION" >/dev/null
