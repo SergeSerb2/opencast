@@ -29,7 +29,7 @@ function licenseFiles(directory, prefix = '') {
     const name = join(prefix, entry.name);
     if (entry.isDirectory() && entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
       files.push(...licenseFiles(directory, name));
-    } else if (entry.isFile() && /^(licen[sc]e|copying|copyright|notice)([._-]|$)/i.test(entry.name)) {
+    } else if (entry.isFile() && /^(licen[sc]e|copying|copyright|notice)(?:[-_][a-z0-9._-]+)?(?:\.(?:txt|md|markdown|rst|html?))?$/i.test(entry.name)) {
       files.push({ source: name, text: read(join(directory, name)) });
     }
   }
