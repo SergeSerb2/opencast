@@ -127,7 +127,11 @@ export async function prepareTurns(
             mimeType = match[1]; data = match[2];
           } else {
             const requestSignal = abortSignal(signal, 30_000);
-            const dispatcher = await publicPageAgent(attachment.url, requestSignal);
+            const dispatcher = await publicPageAgent(attachment.url, requestSignal).catch((error: unknown) => {
+              if (error instanceof Error && error.message === "Web reads require a public address")
+                throw new Error("Image links must use a public address. To use an image from this Mac or your network, attach the file instead.");
+              throw error;
+            });
             try {
               const response = await fetch(attachment.url, {
                 dispatcher: dispatcher as unknown as RequestInit["dispatcher"],
