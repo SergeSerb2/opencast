@@ -81,3 +81,21 @@ export function ModelPicker({ value, onChange, label, automaticTitle = "Automati
     />
   );
 }
+
+export function useKeySyncState() {
+  const { data } = useBackend("settings.getAll", undefined, [], { refetchOn: [{ topic: "settings.changed", when: ({ key }) => key === "sync.enabled" || key === "sync.optInCategories" }] });
+  return { enabled: data?.["sync.enabled"] ?? false, keysEnabled: data?.["sync.optInCategories"]?.includes("ai-keys") ?? false };
+}
+
+export function missingKeyStatus(names: string[], waiting: boolean) {
+  return {
+    label: waiting ? "Waiting for Key from Another Mac" : "Needs Key on This Mac",
+    description: `Missing: ${names.join(", ")}.${waiting ? " The key will arrive with the next sync if another Mac has it." : " Add the key on this Mac."}`,
+  };
+}
+
+export function MissingKeyBadge({ names, waiting }: { names: string[]; waiting: boolean }) {
+  if (!names.length) return null;
+  const status = missingKeyStatus(names, waiting);
+  return <span className="sc-s-badge" data-tone="warning" title={status.description}>{status.label}</span>;
+}

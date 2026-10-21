@@ -11,7 +11,7 @@ import { CommitTextField, SettingSelect, SettingSwitch, useSettingState } from "
 import { Controls, NavRow, Row, Section } from "../../ui/layout";
 import { MenuButton } from "../../ui/MenuButton";
 import { BuiltinPage } from "../BuiltinPage";
-import { OnboardingCard } from "./onboarding";
+import { OnboardingCard, useLocalDetection } from "./onboarding";
 import { ModelPicker, useEnabledModels } from "./shared";
 import { validateBaseUrl } from "./provider-form";
 import "./ai.css";
@@ -256,6 +256,8 @@ function Navigation() {
 
 /** Settings → AI: navigation to subpages, default models, chat, personalization, tools. */
 export function AIPage() {
+  const local = useLocalDetection();
+  const { data: providers } = useBackend("ai.providers.list", undefined);
   const { data: models, isLoading } = useEnabledModels();
   const [quickAiModel, setQuickAiModel] = useSettingState("ai.quickAiModel");
   const [chatModel, setChatModel] = useSettingState("ai.chatModel");
@@ -263,7 +265,7 @@ export function AIPage() {
   const [titleModel, setTitleModel] = useSettingState("ai.titleModel");
   return (
     <BuiltinPage id="ai">
-      {!isLoading && !models?.length && <OnboardingCard />}
+      {!isLoading && !models?.length && <OnboardingCard local={local} showDetection={providers?.length === 0} />}
       <Navigation />
       <Section title="Default Models" description="Automatic uses the first enabled model.">
         <Row title="Quick AI Model">

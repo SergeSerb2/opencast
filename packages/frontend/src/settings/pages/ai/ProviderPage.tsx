@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AIModel, AIProvider } from "@opencast/protocol";
+import type { AIModel, BackendResult } from "@opencast/protocol";
 import { backend } from "../../../bridge/backend";
 import { errorMessage } from "../../../bridge/errors";
 import { useBackend } from "../../../bridge/hooks";
@@ -24,6 +24,7 @@ import {
   draftFromProvider,
   draftFromTemplate,
   draftToUpsert,
+  draftToTest,
   hasErrors,
   supportedApis,
   validateProviderDraft,
@@ -32,10 +33,11 @@ import {
   type ProviderDraftErrors,
   type ProviderTemplate,
 } from "./provider-form";
-import { CAPABILITIES, formatContext, providerIcon } from "./shared";
+import { clearDetectedSetup, detectedSetup } from "./onboarding";
+import { CAPABILITIES, formatContext, providerIcon, useKeySyncState, missingKeyStatus } from "./shared";
 import "./ai.css";
 
-type ProviderRow = AIProvider & { hasApiKey: boolean };
+type ProviderRow = BackendResult<"ai.providers.list">[number];
 
 const API_HELP: Partial<Record<string, string>> = {
   "openai-responses": "Responses supports reasoning summaries and native PDFs. Chat Completions works with every OpenAI-compatible server.",
@@ -71,7 +73,7 @@ function ApiKeyRow({
   const description = error ? (
     <span className="sc-s-missing">{error}</span>
   ) : template?.needsApiKey ? (
-    "Stored in your Keychain on this Mac. It never syncs and is never shown again."
+    "Stored in your Keychain on this Mac. AI & MCP Keys in Cloud Sync can bring it to your other Macs."
   ) : (
     "Optional — only if your server requires one. Stored in your Keychain."
   );
@@ -236,34 +238,42 @@ function ConnectionSection({
   );
 }
 
-function TestConnection({ provider, dirty }: { provider: ProviderRow; dirty: boolean }) {
-  const [state, setState] = useState<{ kind: "idle" } | { kind: "testing" } | { kind: "done"; ok: boolean; message: string; latencyMs?: number }>({ kind: "idle" });
+function TestConnection({ draft, autoTest = false, validate }: { draft: ProviderDraft; autoTest?: boolean; validate: () => boolean }) {
+  const [state, setState] = useState<{ request: string; testing?: boolean; result?: BackendResult<"ai.providers.testDraft"> }>({ request: "" });
+  const request = JSON.stringify(draftToTest(draft));
+  const latestRequest = useRef(request);
+  latestRequest.current = request;
+  const started = useRef(false);
   const test = async () => {
-    setState({ kind: "testing" });
+    if (!validate()) return;
+    setState({ request, testing: true });
     try {
-      const result = await backend.call("ai.providers.test", { id: provider.id });
-      setState({ kind: "done", ...result });
+      const result = await backend.call("ai.providers.testDraft", draftToTest(draft));
+      if (latestRequest.current === request) setState({ request, result });
     } catch (error) {
-      setState({ kind: "done", ok: false, message: errorMessage(error) });
+      if (latestRequest.current === request) setState({ request, result: { ok: false, message: errorMessage(error), latencyMs: 0, modelCount: 0, sampleModelIds: [] } });
     }
   };
-  const description =
-    state.kind === "done" ? (
-      <span className={state.ok ? "sc-s-ok" : "sc-s-missing"}>
-        {state.message}
-        {state.ok && state.latencyMs !== undefined ? ` · ${state.latencyMs} ms` : ""}
-      </span>
-    ) : dirty ? (
-      "Save your changes first — the test uses the saved settings."
-    ) : (
-      "Send a small request with the saved settings."
-    );
+  useEffect(() => {
+    if (autoTest && !started.current) { started.current = true; void test(); }
+    // Auto-test only the initial detected draft. Later edits require Test.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoTest]);
+  const current = state.request === request ? state : undefined;
+  const result = current?.result;
   return (
-    <Row title="Test Connection" description={description}>
-      <Button size="small" onClick={() => void test()} disabled={dirty || state.kind === "testing"}>
-        {state.kind === "testing" ? <Spinner size={12} /> : null}
-        {state.kind === "testing" ? "Testing…" : "Test"}
-      </Button>
+    <Row title="Test Connection" description={result ? (
+      <span className={result.ok ? "sc-s-ok" : "sc-s-missing"}>
+        {result.message}{result.ok ? ` · ${result.latencyMs} ms` : ""}
+        {result.sampleModelIds.length > 0 && <span className="sc-s-test-models">{result.sampleModelIds.join(", ")}</span>}
+      </span>
+    ) : "Fetch the model list with these values. Nothing is saved."}>
+      <Controls>
+        <Button size="small" onClick={() => void test()} disabled={current?.testing}>
+          {current?.testing ? <Spinner size={12} /> : null}
+          {current?.testing ? "Testing…" : "Test"}
+        </Button>
+      </Controls>
     </Row>
   );
 }
@@ -498,7 +508,10 @@ async function deleteProvider(provider: ProviderRow) {
 
 /** Add (route `ai/providers/new/<template>`) or edit (`ai/providers/<id>`) one AI provider. */
 export function ProviderPage({ id, templateId }: { id?: string; templateId?: string }) {
-  const { data: providers, isLoading: providersLoading, error: providersError } = useBackend("ai.providers.list", undefined);
+  const sync = useKeySyncState();
+  const [detected] = useState(() => id ? undefined : detectedSetup(templateId));
+  useEffect(() => { clearDetectedSetup(); }, []);
+  const { data: providers, isLoading: providersLoading, error: providersError } = useBackend("ai.providers.list", undefined, [], { refetchOn: [{ topic: "ai.providers.changed" }, { topic: "sync.status" }] });
   const { data: templates, isLoading: templatesLoading, error: templatesError } = useBackend("ai.providers.templates", undefined);
   const isLoading = providersLoading || templatesLoading;
   const loadError = providersError ?? templatesError;
@@ -511,7 +524,7 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
   const isNew = !id;
   const previousBaseline = useRef<ProviderDraft | null>(null);
 
-  const baseline = useMemo(() => (provider ? draftFromProvider(provider) : template ? draftFromTemplate(template) : null), [provider, template]);
+  const baseline = useMemo(() => (provider ? draftFromProvider(provider) : template ? { ...draftFromTemplate(template), ...(detected ? { api: detected.api, baseUrl: detected.baseUrl } : {}) } : null), [provider, template, detected]);
   useEffect(() => {
     if (!baseline) return;
     const previous = previousBaseline.current;
@@ -579,6 +592,8 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
       </Controls>
     ) : undefined;
   const hint = TEMPLATE_HINTS[draft.template];
+  const missing = provider ? [...(template?.needsApiKey && !provider.hasApiKey ? ["API key"] : []), ...(provider.missingSecretHeaders ?? [])] : [];
+  const keyStatus = missingKeyStatus(missing, sync.enabled && sync.keysEnabled);
 
   return (
     <PageFrame title={isNew ? `Add ${template?.name ?? "Provider"}` : (provider?.name ?? "Provider")} titleMode="always" actions={headerActions}>
@@ -589,6 +604,8 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
           <div className="sc-s-provider-head__subtitle">{template ? `${template.name} · ${API_LABELS[draft.api]}` : API_LABELS[draft.api]}</div>
         </div>
       </div>
+      {missing.length > 0 && <Callout tone="info" title={keyStatus.label}>{keyStatus.description}</Callout>}
+      {sync.enabled && !sync.keysEnabled && <p className="sc-s-navrow__description">Turn on <button type="button" className="sc-s-link" onClick={() => navigate("cloud-sync")}>AI & MCP Keys in Cloud Sync</button> to bring keys from your other Macs.</p>}
       {saveError && (
         <Callout tone="error" title={isNew ? "Couldn't add the provider" : "Couldn't save the provider"}>
           {saveError}
@@ -602,11 +619,15 @@ export function ProviderPage({ id, templateId }: { id?: string; templateId?: str
       <fieldset disabled={saving} className="sc-s-provider-fields">
         <ConnectionSection draft={draft} setDraft={setDraft} errors={errors} template={template} hasSavedKey={provider?.hasApiKey ?? false} isNew={isNew} version={provider?.updatedAt} />
       </fieldset>
+      <Section anchor="test">
+        <TestConnection draft={draft} autoTest={Boolean(detected)} validate={() => {
+          const problems = validateProviderDraft(draft, template, provider?.hasApiKey ?? false);
+          setErrors(problems);
+          return !hasErrors(problems);
+        }} />
+      </Section>
       {provider && (
         <>
-          <Section anchor="test">
-            <TestConnection provider={provider} dirty={dirty} />
-          </Section>
           <ModelsSection provider={provider} />
           <Section title="Danger Zone">
             <Row title="Delete Provider" description="Remove this provider, its models and its API key.">

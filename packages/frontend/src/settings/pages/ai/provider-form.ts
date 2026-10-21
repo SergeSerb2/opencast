@@ -173,3 +173,13 @@ export function draftToUpsert(draft: ProviderDraft, models?: AIProvider["models"
   if (draft.removeApiKey) return { provider, apiKey: null };
   return { provider };
 }
+
+/** Draft tests reuse saved credentials by id, without writing the form. */
+export function draftToTest(draft: ProviderDraft): BackendParams<"ai.providers.testDraft"> {
+  const { provider, apiKey } = draftToUpsert(draft);
+  return {
+    provider: { id: provider.id, api: provider.api, baseUrl: provider.baseUrl, template: provider.template, headers: {} },
+    apiKey,
+    secretHeaders: provider.headers,
+  };
+}

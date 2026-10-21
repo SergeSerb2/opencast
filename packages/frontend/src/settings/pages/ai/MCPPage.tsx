@@ -17,6 +17,7 @@ import { MenuButton } from "../../ui/MenuButton";
 import { promptForm } from "../../ui/prompt";
 import { BuiltinPage } from "../BuiltinPage";
 import { buildMcpServer, draftFromServer, mentionNameFor, validateClaudeImport, type McpDraft, type McpErrors } from "./mcp-form";
+import { MissingKeyBadge, missingKeyStatus, useKeySyncState } from "./shared";
 import "./ai.css";
 
 type ServerRow = BackendResult<"ai.mcp.list">[number];
@@ -56,6 +57,7 @@ function ServerEditor({ server, onClose }: { server: ServerRow | null; onClose: 
       setBusy(false);
     }
   };
+  const sync = useKeySyncState();
   const secretHint = server ? "Values saved earlier show as $keychain and stay in your Keychain; type a new value to replace one." : "Values are stored in your Keychain, not in synced settings.";
   return (
     <Dialog
@@ -74,6 +76,7 @@ function ServerEditor({ server, onClose }: { server: ServerRow | null; onClose: 
         </>
       }
     >
+      {server?.missingSecrets?.length ? <p className="sc-s-missing">{missingKeyStatus(server.missingSecrets, sync.enabled && sync.keysEnabled).description}</p> : null}
       <div className="sc-s-editor-grid">
         <DialogField label="Name" error={errors.name}>
           <TextField
@@ -138,7 +141,7 @@ function StatusDot({ status }: { status: ServerRow["status"] }) {
   return <span className="sc-s-status-dot" data-status={status} title={status === "connected" ? "Connected" : status === "error" ? "Error" : "Not connected"} />;
 }
 
-function ServerRowView({ server, onEdit }: { server: ServerRow; onEdit: () => void }) {
+function ServerRowView({ server, onEdit, waiting }: { server: ServerRow; onEdit: () => void; waiting: boolean }) {
   const [testing, setTesting] = useState(false);
   const toggle = async (enabled: boolean) => {
     try {
@@ -184,6 +187,7 @@ function ServerRowView({ server, onEdit }: { server: ServerRow; onEdit: () => vo
       <button type="button" className="sc-s-mcp-row__main" onClick={onEdit}>
         <span className="sc-s-row__title">
           {server.name}
+          <MissingKeyBadge waiting={waiting} names={server.missingSecrets ?? []} />
           <span className="sc-s-mcp-row__mention">@{server.mentionName}</span>
         </span>
         <span className="sc-s-navrow__description sc-truncate">{detail}</span>
@@ -240,7 +244,8 @@ async function importClaudeDesktop() {
 
 /** Settings → MCP: Model Context Protocol servers that give AI extra tools. */
 export function MCPPage() {
-  const { data: servers, isLoading, error, refetch } = useBackend("ai.mcp.list", undefined);
+  const sync = useKeySyncState();
+  const { data: servers, isLoading, error, refetch } = useBackend("ai.mcp.list", undefined, [], { refetchOn: [{ topic: "ai.mcp.changed" }, { topic: "sync.status" }] });
   const [editing, setEditing] = useState<ServerRow | null | "new">(null);
   return (
     <BuiltinPage id="mcp">
@@ -259,7 +264,7 @@ export function MCPPage() {
         }
       >
         {servers?.length ? (
-          servers.map((server) => <ServerRowView key={server.id} server={server} onEdit={() => setEditing(server)} />)
+          servers.map((server) => <ServerRowView key={server.id} server={server} waiting={sync.enabled && sync.keysEnabled} onEdit={() => setEditing(server)} />)
         ) : (
           <CardEmpty
             title={error ? "Couldn't Load MCP Servers" : isLoading ? "Loading…" : "No MCP Servers"}
@@ -270,7 +275,7 @@ export function MCPPage() {
       </Section>
       <div className="sc-s-mcp-note">
         <Icon name="info-01-16" size={14} />
-        Tool permissions are set in AI → Tools. Servers sync between your Macs; their secrets don't.
+        Tool permissions are set in AI → Tools. To sync keys, enable AI & MCP Keys in Cloud Sync.
       </div>
       {editing && <ServerEditor server={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
     </BuiltinPage>

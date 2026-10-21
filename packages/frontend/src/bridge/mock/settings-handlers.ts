@@ -93,6 +93,7 @@ const PROVIDER_TEMPLATES: BackendResult<"ai.providers.templates"> = [
 
 /** Models a provider "discovers" on refresh, keyed by template. */
 const DISCOVERABLE: Record<string, AIProvider["models"]> = {
+  ollama: [{ id: "llama3.2:latest", name: "Llama 3.2", enabled: true, capabilities: { tools: true } }],
   openai: [{ id: "gpt-5.1-nano", name: "GPT-5.1 nano", contextWindow: 400_000, capabilities: { vision: true, tools: true }, enabled: false }],
   cliproxyapi: [
     { id: "claude-sonnet-5-5", name: "claude-sonnet-5-5", capabilities: { vision: true, tools: true, reasoning: true }, enabled: true },
@@ -339,6 +340,12 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
   let devices = structuredClone(DEVICES);
   let scripts = structuredClone(SCRIPTS);
 
+  // AI secret presence is device-local in the mock, just as it is in Keychain.
+  const providerHeaderKeys = new Set(providers.flatMap((p) => (p.secretHeaders ?? Object.keys(p.headers ?? {})).map((name) => `${p.id}:${name}`)));
+  const mcpKeys = new Set(mcp.flatMap((s) => ([ ["env", s.env], ["header", s.headers] ] as const).flatMap(([kind, values]) => Object.keys(values ?? {}).map((name) => `${s.id}:${kind}:${name}`))));
+  const missingProviderHeaders = (p: ProviderRow) => (p.secretHeaders ?? []).filter((name) => !providerHeaderKeys.has(`${p.id}:${name}`));
+  const missingMcpSecrets = (s: MCPServer) => ([ ["env", s.env], ["header", s.headers] ] as const).flatMap(([kind, values]) => Object.entries(values ?? {}).filter(([name, value]) => value === "$keychain" && !mcpKeys.has(`${s.id}:${kind}:${name}`)).map(([name]) => `${kind}:${name}`));
+
   const providerChanged = () => events.emit("ai.providers.changed", {});
   const entitiesChanged = (collection: string, ids: string[]) => events.emit("entities.changed", { collection, ids, source: "local" });
   const setSetting = <K extends keyof SettingsValues>(key: K, value: SettingsValues[K]) => {
@@ -370,7 +377,25 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
 
     "ai.providers.templates": () => PROVIDER_TEMPLATES,
-    "ai.providers.list": () => structuredClone(providers),
+    "ai.providers.list": () => structuredClone(providers.map((p) => ({ ...p, missingSecretHeaders: missingProviderHeaders(p) }))),
+    "ai.providers.detectLocal": async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      if (new URLSearchParams(location.search).get("mock.ai.detect") === "none") return [];
+      return [
+        { templateId: "ollama", baseUrl: "http://127.0.0.1:11434/v1", api: "openai", status: "ok", modelCount: DISCOVERABLE.ollama?.length ?? 0, sample: (DISCOVERABLE.ollama ?? []).slice(0, 5).map((m) => m.id), latencyMs: 24 },
+        { templateId: "cliproxyapi", baseUrl: "http://127.0.0.1:8317/v1", api: "openai", status: "auth-required", modelCount: 0, sample: [], latencyMs: 18 },
+      ];
+    },
+    "ai.providers.testDraft": async ({ provider: draft, apiKey, secretHeaders }) => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const saved = draft.id ? provider(draft.id) : undefined;
+      const template = PROVIDER_TEMPLATES.find((t) => t.id === draft.template);
+      const keyPresent = apiKey === undefined ? saved?.hasApiKey : Boolean(apiKey);
+      const missing = Object.entries(secretHeaders ?? {}).find(([name, value]) => value === "$keychain" && !providerHeaderKeys.has(`${draft.id}:${name}`));
+      const message = !isHttpUrl(draft.baseUrl) ? "Enter a valid http:// or https:// URL" : draft.baseUrl.includes("/bad") ? "The server answered but has no model list there. Check that the URL ends with /v1." : missing ? `Configure the ${missing[0]} header on this Mac` : apiKey === "invalid" || ((template?.needsApiKey || draft.template === "cliproxyapi") && !keyPresent) ? "Provider HTTP 401: Check the API key." : undefined;
+      const models = message ? [] : DISCOVERABLE[draft.template ?? "custom"] ?? [{ id: "default-model" }];
+      return { ok: !message, message: message ?? `Connected and fetched ${models.length} model${models.length === 1 ? "" : "s"}`, latencyMs: 180, modelCount: models.length, sampleModelIds: models.slice(0, 5).map((m) => m.id) };
+    },
     "ai.providers.upsert": ({ provider: input, apiKey }) => {
       if (!input.name.trim()) fail("Provider needs a name");
       if (!isHttpUrl(input.baseUrl)) fail("Base URL must be an http(s) URL without credentials");
@@ -386,7 +411,9 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
         models: input.models ?? existing?.models ?? [],
         updatedAt: Date.now(),
       } as ProviderRow;
-      if (!existing && next.autoFetchModels) {
+      for (const [name, value] of Object.entries(input.headers ?? {})) if (value !== "$keychain") providerHeaderKeys.add(`${next.id}:${name}`);
+      next.secretHeaders = input.secretHeaders ?? (input.headers ? Object.keys(input.headers) : existing?.secretHeaders);
+      if (next.enabled && next.autoFetchModels && (!next.models.length || apiKey !== undefined || input.headers !== undefined || existing?.modelFetchError || existing?.api !== next.api || existing?.baseUrl !== next.baseUrl)) {
         next.models = structuredClone(DISCOVERABLE[next.template] ?? [{ id: "default-model", name: "default-model", capabilities: { tools: true }, enabled: true }]);
         next.modelFetchError = undefined;
       }
@@ -433,7 +460,7 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     },
     "ai.tools.list": () => TOOLS,
 
-    "ai.mcp.list": () => structuredClone(mcp),
+    "ai.mcp.list": () => structuredClone(mcp.map((s) => ({ ...s, missingSecrets: missingMcpSecrets(s) }))),
     "ai.mcp.upsert": (input) => {
       const existing = input.id ? mcp.find((s) => s.id === input.id) : undefined;
       const server = {
@@ -444,6 +471,8 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
         mentionName: input.mentionName ?? input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         updatedAt: Date.now(),
       };
+      for (const [kind, values] of [ ["env", input.env], ["header", input.headers] ] as const)
+        for (const [name, value] of Object.entries(values ?? {})) if (value !== "$keychain") mcpKeys.add(`${server.id}:${kind}:${name}`);
       if (existing) Object.assign(existing, server);
       else mcp.push(server);
       events.emit("ai.mcp.changed", {});
@@ -457,6 +486,8 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
     "ai.mcp.test": async ({ id }) => {
       const server = mcp.find((s) => s.id === id) ?? fail(`Server ${id} not found`, RpcErrorCode.NotFound);
       await new Promise((resolve) => setTimeout(resolve, 500));
+      const missing = missingMcpSecrets(server);
+      if (missing.length) return { ok: false, message: `Configure ${missing.join(", ")} on this Mac`, tools: [] };
       if (server.status === "error") return { ok: false, message: server.error ?? "Connection failed", tools: [] };
       server.status = "connected";
       server.toolCount = Math.max(server.toolCount, 3);
@@ -490,6 +521,11 @@ export function settingsMockHandlers({ settings, commands, events }: SettingsMoc
           status: "disconnected",
           toolCount: 0,
         });
+      }
+      for (const server of mcp.slice(-entries.length)) {
+        const config = parsed.mcpServers?.[server.name];
+        for (const [kind, values] of [ ["env", config?.env], ["header", config?.headers] ] as const)
+          for (const [name, value] of Object.entries(values ?? {})) if (value !== "$keychain") mcpKeys.add(`${server.id}:${kind}:${name}`);
       }
       events.emit("ai.mcp.changed", {});
       return { imported: entries.length };

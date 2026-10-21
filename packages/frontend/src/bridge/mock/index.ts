@@ -82,6 +82,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
   const notes: Note[] = NOTES.map((n) => ({ ...n }));
   const aiCommands = () => teamB.handlers["ai.commands.list"]!({} as never) as AICommand[];
   const ai = createAiMockHandlers(events, settings, aiCommands);
+  const aiSettings = settingsMockHandlers({ settings, commands, events });
   let noteCounter = 0;
   const changedNote = (id: string, deleted?: boolean) => {
     events.emit("notes.changed", { id, ...(deleted ? { deleted } : {}) });
@@ -184,7 +185,7 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
 
     "calc.evaluate": ({ expression }) => mockCalculate(expression) ?? null,
 
-    "ai.providers.list": () => PROVIDERS,
+    "ai.providers.list": () => PROVIDERS.map((p) => ({ ...p, missingSecretHeaders: [] })),
 
     "extensions.list": () => EXTENSIONS,
     "extensions.getPreferences": ({ name, command }) => {
@@ -217,12 +218,13 @@ export function createMockBackend(events: Emitter<BackendEvents>): BackendClient
     "sync.status": () => ({ phase: "disabled", deviceId: "mock-device", deviceName: "This Mac", pendingChanges: 0, counts: {} }),
     "hud.show": () => undefined,
     // Settings-only areas (providers, sync, MCP); the feature mocks below own shared methods.
-    ...settingsMockHandlers({ settings, commands, events }),
+    ...aiSettings,
     ...createLibraryHandlers(events),
     ...teamB.handlers,
     // AI Chat owns chats, streaming and tools; Team B keeps the AI Commands/Presets store and
     // answers translation prompts.
     ...ai,
+    "ai.models.list": aiSettings["ai.models.list"],
     "ai.presets.list": teamB.handlers["ai.presets.list"],
     "ai.ask": (params) => (isTranslationPrompt(params) ? teamB.handlers["ai.ask"]! : ai["ai.ask"]!)(params),
     "ai.stop": (params) => {
