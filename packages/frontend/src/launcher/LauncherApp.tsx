@@ -55,6 +55,7 @@ function StackEntry({ entry, depth, active }: { entry: NavEntry; depth: number; 
         else api.pop();
       },
       pop: () => {
+        if (!store.getState().stack.some((item) => item.key === entry.key)) return;
         if (entry.kind === "extension") {
           backend
             .call("ext.session.pop", { sessionId: entry.sessionId })
