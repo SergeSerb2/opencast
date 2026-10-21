@@ -25,6 +25,41 @@ export const settingsMigration: Migration = {
   up: "CREATE TABLE device_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
 };
 
+export function validSetting(key: SettingsKey, value: unknown): boolean {
+  if (key === "advanced.backupAutoDelete") return value === "never" || [1, 5, 10].includes(value as number);
+  if (key === "ai.chatFolders") return Array.isArray(value) && value.every(folder => {
+    if (!folder || typeof folder !== "object") return false;
+    const { id, name, createdAt } = folder as { id?: unknown; name?: unknown; createdAt?: unknown };
+    return typeof id === "string" && !!id && typeof name === "string" && !!name.trim() && typeof createdAt === "number" && Number.isFinite(createdAt);
+  }) && new Set(value.map(folder => folder.id)).size === value.length;
+  const defaultValue = SETTINGS[key].default;
+  const options: Partial<Record<SettingsKey, string[]>> = {
+    "advanced.backupFrequency": ["never", "daily", "weekly", "monthly"],
+    "general.appearance": ["system", "light", "dark"],
+    "general.windowMode": ["expanded", "compact"],
+    "launcher.rootSearchSensitivity": ["low", "medium", "high"],
+    "advanced.faviconProvider": ["google", "duckduckgo", "none"],
+    "keyboard.navigationBindings": ["macos", "emacs", "vim"],
+    "keyboard.pageNavigationKeys": ["square-brackets", "page-keys"],
+  };
+  if (options[key]) return typeof value === "string" && options[key]!.includes(value);
+  if (Array.isArray(defaultValue))
+    return Array.isArray(value) && value.every((v) => typeof v === "string");
+  if (defaultValue === null) return value === null || typeof value === "string";
+  if (typeof defaultValue === "number")
+    return typeof value === "number" && Number.isFinite(value);
+  if (typeof defaultValue === "object") {
+    if (!value || typeof value !== "object" || Array.isArray(value))
+      return false;
+    const hotkey = value as { key?: unknown; modifiers?: unknown };
+    return (
+      typeof hotkey.key === "string" &&
+      Array.isArray(hotkey.modifiers) &&
+      hotkey.modifiers.every((m) => ["cmd", "ctrl", "opt", "shift"].includes(m))
+    );
+  }
+  return typeof value === typeof defaultValue;
+}
 export class SettingsService {
   private readonly listeners = new Set<(key: SettingsKey, value: unknown) => void>();
 
@@ -67,7 +102,7 @@ export class SettingsService {
 
   set<K extends SettingsKey>(key: K, value: SettingValue<K>): void {
     if (!isSettingsKey(key)) throw RpcError.invalidParams(`Unknown setting ${String(key)}`);
-    if (value === undefined) throw RpcError.invalidParams(`Setting ${key} needs a value`);
+    if (!validSetting(key, value)) throw RpcError.invalidParams(`Invalid setting ${key}`);
     if (SETTINGS[key].scope === "device") {
       this.db.run(
         "INSERT INTO device_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
@@ -81,6 +116,7 @@ export class SettingsService {
   }
 
   reset(key: SettingsKey): void {
+    if (!isSettingsKey(key)) throw RpcError.invalidParams(`Unknown setting ${String(key)}`);
     if (key === "developer.openOpenCastInDevelopmentMode")
       this.db.run("DELETE FROM device_settings WHERE key = ?", "developer.openSurgecastInDevelopmentMode");
     if (SETTINGS[key].scope === "device") this.db.run("DELETE FROM device_settings WHERE key = ?", key);

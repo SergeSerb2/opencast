@@ -10,7 +10,6 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import {
   isSettingsKey,
-  SETTINGS,
   type AICommand,
   type AIPreset,
   type Note,
@@ -25,6 +24,7 @@ import { noteTitle } from "./notes";
 import { validateTheme } from "./themes";
 import { templateArguments } from "./placeholders";
 import { ScheduledBackup } from "./backup";
+import { validSetting } from "../settings";
 import { RpcError } from "../../util/errors";
 import { currentSettingKey, currentSettingValue } from "../../util/legacy-branding";
 
@@ -373,40 +373,6 @@ export function importRaycastPayload(
     return count;
   });
   return results;
-}
-function validSetting(key: keyof typeof SETTINGS, value: unknown): boolean {
-  if (key === "advanced.backupAutoDelete") return value === "never" || [1, 5, 10].includes(value as number);
-  if (key === "ai.chatFolders") return Array.isArray(value) && value.every(folder => {
-    if (!folder || typeof folder !== "object") return false;
-    const { id, name, createdAt } = folder as { id?: unknown; name?: unknown; createdAt?: unknown };
-    return typeof id === "string" && !!id && typeof name === "string" && !!name.trim() && typeof createdAt === "number" && Number.isFinite(createdAt);
-  }) && new Set(value.map(folder => folder.id)).size === value.length;
-  const defaultValue = SETTINGS[key].default;
-  const options: Partial<Record<keyof typeof SETTINGS, string[]>> = {
-    "general.appearance": ["system", "light", "dark"],
-    "general.windowMode": ["expanded", "compact"],
-    "launcher.rootSearchSensitivity": ["low", "medium", "high"],
-    "advanced.faviconProvider": ["google", "duckduckgo", "none"],
-    "keyboard.navigationBindings": ["macos", "emacs", "vim"],
-    "keyboard.pageNavigationKeys": ["square-brackets", "page-keys"],
-  };
-  if (options[key]) return options[key]!.includes(String(value));
-  if (Array.isArray(defaultValue))
-    return Array.isArray(value) && value.every((v) => typeof v === "string");
-  if (defaultValue === null) return value === null || typeof value === "string";
-  if (typeof defaultValue === "number")
-    return typeof value === "number" && Number.isFinite(value);
-  if (typeof defaultValue === "object") {
-    if (!value || typeof value !== "object" || Array.isArray(value))
-      return false;
-    const hotkey = value as { key?: unknown; modifiers?: unknown };
-    return (
-      typeof hotkey.key === "string" &&
-      Array.isArray(hotkey.modifiers) &&
-      hotkey.modifiers.every((m) => ["cmd", "ctrl", "opt", "shift"].includes(m))
-    );
-  }
-  return typeof value === typeof defaultValue;
 }
 function validateOwnRecord(
   collection: string,
