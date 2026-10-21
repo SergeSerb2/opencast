@@ -143,7 +143,7 @@ export async function checkedFetch(
     );
   }
   if (!response.ok) {
-    const body = (await response.text()).slice(0, 2000);
+    const body = await response.text();
     let detail = body;
     try {
       const json = JSON.parse(body);
@@ -160,7 +160,7 @@ export async function checkedFetch(
             ? " Provider rate limit or quota reached."
             : "";
     throw new ProviderError(
-      redact(`Provider HTTP ${response.status}: ${detail}${hint}`, secrets),
+      `Provider HTTP ${response.status}: ${redact(String(detail), secrets).slice(0, 2000)}${hint}`,
       response.status,
       response.headers.get("retry-after"),
     );
