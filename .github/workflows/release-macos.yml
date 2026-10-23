@@ -64,6 +64,9 @@ jobs:
   publish:
     name: Publish the verified DMG
     needs: build
+    concurrency:
+      group: opencast-macos-publish
+      cancel-in-progress: false
     runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted","macOS","ARM64","opencast-publish"]') || 'macos-15' }}
     permissions:
       contents: write
@@ -83,3 +86,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: ./scripts/release-macos.sh
+      - name: Publish the signed updater to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.OPENCAST_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.OPENCAST_R2_SECRET_ACCESS_KEY }}
+        run: node scripts/publish-cloudflare-update.mjs

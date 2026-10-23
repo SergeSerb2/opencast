@@ -115,10 +115,12 @@ function fixture(t, options = {}) {
   writeFileSync(join(repo, 'scripts/verify-macos-update.mjs'), verifier);
   writeFileSync(join(repo, 'package.json'), '{"version":"0.1.0"}\n');
   writeFileSync(join(repo, '.gitignore'), 'build/\n');
+  mkdirSync(join(repo, 'releases'));
+  writeFileSync(join(repo, 'releases/macos.json'), JSON.stringify({ baseURL: 'https://updates.example.com/' }));
   const { publicKey, privateKey } = generateKeyPairSync('ed25519');
   mkdirSync(join(repo, 'apps/macos/Resources'), { recursive: true });
   writeFileSync(join(repo, 'apps/macos/Resources/Info.plist'),
-    `<plist><dict><key>SUPublicEDKey</key><string>${publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('base64')}</string></dict></plist>`);
+    `<plist><dict><key>SUFeedURL</key><string>https://updates.example.com/appcast.xml</string><key>SUPublicEDKey</key><string>${publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('base64')}</string></dict></plist>`);
   const git = (...args) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim();
   git('init', '-q', '-b', 'main');
   git('add', '.');
@@ -138,7 +140,7 @@ function fixture(t, options = {}) {
       revision: source, architecture: 'arm64', asset: assets[0], signing: 'ad-hoc',
       notarized: false, builtOn: 'macOS' }, null, 2) + '\n');
     const signature = sign(null, Buffer.from(bytes), privateKey).toString('base64');
-    const feed = Buffer.from(`<?xml version="1.0"?><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><item><sparkle:version>1</sparkle:version><sparkle:shortVersionString>0.1.0</sparkle:shortVersionString><enclosure url="https://github.com/test/opencast/releases/download/v0.1.0-build.1/${name}.dmg" length="${Buffer.byteLength(bytes)}" sparkle:edSignature="${signature}" /></item></channel></rss>\n`);
+    const feed = Buffer.from(`<?xml version="1.0"?><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><item><sparkle:version>1</sparkle:version><sparkle:shortVersionString>0.1.0</sparkle:shortVersionString><enclosure url="https://updates.example.com/v0.1.0-build.1/${name}.dmg" length="${Buffer.byteLength(bytes)}" sparkle:edSignature="${signature}" /></item></channel></rss>\n`);
     writeFileSync(join(dest, 'appcast.xml'), Buffer.concat([feed, Buffer.from(
       `<!-- sparkle-signatures:\nedSignature: ${sign(null, feed, privateKey).toString('base64')}\nlength: ${feed.length}\n-->\n`)]));
   };

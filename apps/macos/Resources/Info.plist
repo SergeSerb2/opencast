@@ -30,7 +30,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://github.com/SergeSerb2/opencast/releases/latest/download/appcast.xml</string>
+	<string>https://opencast-updates.sergeserbinenko.com/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>AB/iYHtER4h0Oie+3AgNdMIpn1lKXXsCCw4mhu2/YaA=</string>
 	<key>SUEnableAutomaticChecks</key>

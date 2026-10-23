@@ -100,7 +100,7 @@ check_draft() {
 }
 # Publishing consumes verified files; it never installs dependencies or builds.
 verify_assets() {
-    node scripts/verify-macos-update.mjs "$1" "$NAME" "$VERSION" "$BUILD_NUMBER" "$REVISION" "$REPO"
+    node scripts/verify-macos-update.mjs "$1" "$NAME" "$VERSION" "$BUILD_NUMBER" "$REVISION"
 }
 verify_assets "$OUT"
 load_release

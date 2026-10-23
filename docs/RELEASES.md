@@ -38,9 +38,11 @@ for automatic downloads. These choices persist across launches.
 
 Updates and the appcast are signed with Ed25519. The app verifies the feed and
 verifies each DMG before extraction. The public key is in `Info.plist`.
-The feed is the latest GitHub release's `appcast.xml` asset; its download URL
-points to that release's exact DMG. Build numbers increase with Git history, so
-updates work even when the displayed app version stays the same.
+The live feed is [opencast-updates.sergeserbinenko.com/appcast.xml](https://opencast-updates.sergeserbinenko.com/appcast.xml).
+The feed and versioned downloads are served by the `opencast-releases` Cloudflare
+R2 bucket, on the maintainer's domain. Public hosting settings are in
+[`releases/macos.json`](../releases/macos.json). Build numbers increase with Git
+history, so updates work even when the displayed app version stays the same.
 
 The Actions build job needs the repository secret `SPARKLE_PRIVATE_KEY`, exported
 with Sparkle's `generate_keys -x` tool. The matching key is kept in the maintainer's
@@ -49,6 +51,15 @@ when the secret environment variable is absent. Keep a secure backup of this key
 do not generate a replacement for an already distributed public key. Forks must
 generate their own key, set their own public key and feed URL, and configure their
 own Actions secret before publishing. Never put the private key in source or logs.
+
+The publish job also needs `OPENCAST_R2_ACCESS_KEY_ID` and
+`OPENCAST_R2_SECRET_ACCESS_KEY`, from an R2 object read/write token restricted to
+`opencast-releases`. They are supplied as `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` only for the R2 upload step. Local R2 publication uses the
+same environment variables and `node scripts/publish-cloudflare-update.mjs` from a
+clean checkout with its verified release artifacts present. Run only one publisher
+at a time; Actions serializes publish jobs. Forks must also change the public R2
+configuration and app feed URL before deploying.
 
 Versions shipped before Sparkle was added need one manual DMG installation to
 gain automatic updates. Developer ID signing and notarization remain separate
@@ -100,6 +111,13 @@ and source manifest. It runs no dependency installs or builds. It uses the
 short-lived workflow token. The signing secret is available only to the build
 job's signing step. Before publication, Node verifies both Ed25519 signatures
 against the source public key, along with the feed's version, download URL and size.
+After GitHub publication, the R2 uploader compares existing versioned objects and
+uploads only missing files. It verifies each upload by reading it back, then
+updates `appcast.xml` with `Cache-Control: no-store`. Versioned files have immutable
+cache headers. It checks the public feed bytes too. A queued older build cannot
+replace a newer signed feed. The uploader uses the system curl SigV4 support
+against the S3-compatible R2 endpoint. Credentials pass through stdin, never
+process arguments. No dependency install is needed in the publish job.
 Release notes list up to 40 non-merge commit subjects since the nearest published
 ancestor release, with a full comparison link. The first release lists history.
 
