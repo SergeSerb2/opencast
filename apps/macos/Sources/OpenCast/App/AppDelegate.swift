@@ -6,6 +6,7 @@ import Carbon
   private var router: NativeRouter!
   private var windows: HostWindows!
   private var factory: WebViewFactory!
+  private var updates: AppUpdates!
   private let hub = EventHub()
   private var status: NSStatusItem?
   private var observers: [NSObjectProtocol] = []
@@ -48,6 +49,7 @@ import Carbon
     windows = HostWindows(factory: factory, hub: hub)
     router.attach(windows)
     router.setMenuBar = { [weak self] visible in self?.setStatusVisible(visible) }
+    updates = AppUpdates()
     installMenu()
     setStatusVisible(true)
     backend = BackendProcess(hub: hub)
@@ -164,6 +166,7 @@ import Carbon
     menu.addItem(menuItem("AI Chat", #selector(showAI)))
     menu.addItem(menuItem("Notes", #selector(showNotes)))
     menu.addItem(menuItem("Settings…", #selector(showSettings), ","))
+    updates.addMenuItems(to: menu)
     menu.addItem(.separator())
     menu.addItem(menuItem("Quit OpenCast", #selector(quit), "q"))
     item.menu = menu
@@ -183,6 +186,7 @@ import Carbon
     let appMenu = NSMenu(title: "OpenCast")
     appMenu.addItem(menuItem("About OpenCast", #selector(about)))
     appMenu.addItem(menuItem("Settings…", #selector(showSettings), ","))
+    updates.addMenuItems(to: appMenu)
     appMenu.addItem(.separator())
     appMenu.addItem(menuItem("Quit OpenCast", #selector(quit), "q"))
     let appItem = NSMenuItem()

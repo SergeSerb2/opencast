@@ -19,6 +19,9 @@ welcome.
 
 **[Download the latest OpenCast DMG](https://github.com/SergeSerb2/opencast/releases/latest)**
 
+OpenCast uses Sparkle for signed automatic updates. Use **Check for Updates…** in
+the OpenCast menu to check now, or change automatic checks in the same menu.
+
 The download is for **Apple silicon Macs running macOS 14 or later**. Open the
 DMG, drag **OpenCast.app** to **Applications**, then launch it. Node is bundled;
 you don’t need developer tools to use the app.

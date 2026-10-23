@@ -41,6 +41,13 @@ jobs:
         run: ./scripts/typecheck-release.sh
       - name: Build and verify the DMG
         run: ./scripts/build-dmg.sh
+      - name: Sign the Sparkle update and appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          test -n "$SPARKLE_PRIVATE_KEY" || { echo 'SPARKLE_PRIVATE_KEY is required for updates' >&2; exit 1; }
+          ./scripts/sign-macos-update.sh
       - name: Upload verified release files
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -49,6 +56,7 @@ jobs:
             build/releases/**/*.dmg
             build/releases/**/*.dmg.sha256
             build/releases/**/*.json
+            build/releases/**/appcast.xml
           if-no-files-found: error
           compression-level: 0
           retention-days: 7

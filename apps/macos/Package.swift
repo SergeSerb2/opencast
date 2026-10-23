@@ -7,8 +7,14 @@ let package = Package(
     .executable(name: "OpenCast", targets: ["OpenCast"]),
     .executable(name: "OpenCastSelfTest", targets: ["OpenCastSelfTest"]),
   ],
+  dependencies: [
+    .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
+  ],
   targets: [
     .target(name: "OpenCastCore"),
-    .executableTarget(name: "OpenCast", dependencies: ["OpenCastCore"]),
+    .executableTarget(
+      name: "OpenCast",
+      dependencies: ["OpenCastCore", .product(name: "Sparkle", package: "Sparkle")],
+      linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
     .executableTarget(name: "OpenCastSelfTest", dependencies: ["OpenCastCore"]),
   ], swiftLanguageModes: [.v5])

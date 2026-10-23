@@ -89,6 +89,7 @@ function write(name, text) {
   written[name] = hash(text);
 }
 write('OpenCast-LICENSE.txt', read(join(root, 'LICENSE')));
+write('Sparkle-LICENSE.txt', read(join(root, 'apps/macos/.build/artifacts/sparkle/Sparkle/LICENSE')));
 const records = [...packages.values()].sort((a, b) => `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`, 'en'));
 write('THIRD-PARTY-NOTICES.txt', [
   'OpenCast third-party notices',

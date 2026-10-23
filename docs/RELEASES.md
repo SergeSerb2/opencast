@@ -28,6 +28,32 @@ See [Apple's instructions](https://support.apple.com/en-us/102445). Developer ID
 signing and notarization need an Apple Developer certificate and notarization
 credentials. They are not set up yet.
 
+## Automatic updates
+
+Sparkle 2 checks for updates daily, downloads them in the background, and installs
+them when OpenCast quits. Use **Check for Updates…** in the OpenCast app menu or
+menu bar icon menu to check now. Turn **Automatically Check for Updates** off in
+either menu to stop scheduled checks. Sparkle's update alert also has a control
+for automatic downloads. These choices persist across launches.
+
+Updates and the appcast are signed with Ed25519. The app verifies the feed and
+verifies each DMG before extraction. The public key is in `Info.plist`.
+The feed is the latest GitHub release's `appcast.xml` asset; its download URL
+points to that release's exact DMG. Build numbers increase with Git history, so
+updates work even when the displayed app version stays the same.
+
+The Actions build job needs the repository secret `SPARKLE_PRIVATE_KEY`, exported
+with Sparkle's `generate_keys -x` tool. The matching key is kept in the maintainer's
+login Keychain under Sparkle account `opencast`. Local signing uses that account
+when the secret environment variable is absent. Keep a secure backup of this key;
+do not generate a replacement for an already distributed public key. Forks must
+generate their own key, set their own public key and feed URL, and configure their
+own Actions secret before publishing. Never put the private key in source or logs.
+
+Versions shipped before Sparkle was added need one manual DMG installation to
+gain automatic updates. Developer ID signing and notarization remain separate
+from Sparkle's update signatures.
+
 ## How releases are built and published
 
 A successful `CI` workflow from a push to `main` starts
@@ -57,19 +83,23 @@ Each release includes:
 - A `.dmg.sha256` checksum file.
 - A JSON source manifest with the revision, version, build, architecture, and
   signing status.
+- A signed `appcast.xml` with the signed DMG's URL and size.
 
 The mounted app's `Contents/Resources/licenses/` contains OpenCast's MIT license,
 the full Node license from its verified archive, and generated notices for the
 production dependency closure of frontend, backend, and raycast-api. These
 include font OFL texts, Lucide's ISC and Feather MIT notices, and each bundled
 npm package's name, version, license identifier, and full license/notice text.
+Sparkle's full license, including its bundled third-party notices, is included too.
 See [license sources](../licenses/README.md). The DMG verifier checks these files
 and their recorded hashes as well as signatures, architecture, required app
 resources, and the bundled Node SQLite runtime. It does not launch the app.
 
 The publish job downloads the verified workflow artifact and checks its checksum
 and source manifest. It runs no dependency installs or builds. It uses the
-short-lived workflow token; no personal access token or signing secret is needed.
+short-lived workflow token. The signing secret is available only to the build
+job's signing step. Before publication, Node verifies both Ed25519 signatures
+against the source public key, along with the feed's version, download URL and size.
 Release notes list up to 40 non-merge commit subjects since the nearest published
 ancestor release, with a full comparison link. The first release lists history.
 
@@ -103,6 +133,7 @@ export PATH="$(dirname "$node_path"):$PATH"
 pnpm install --frozen-lockfile
 ./scripts/typecheck-release.sh
 ./scripts/build-dmg.sh
+./scripts/sign-macos-update.sh
 ./scripts/verify-dmg.sh build/releases/<tag>/OpenCast-<version>-build.<number>-arm64.dmg
 ```
 

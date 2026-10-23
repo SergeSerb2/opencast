@@ -1,8 +1,9 @@
 # OpenCast native macOS host
 
-Swift Package Manager executable, macOS 14+, Swift 5 language mode, system frameworks
-only. The host owns AppKit windows and macOS services; Node owns application data and
-extension execution. Both stdio and WKWebView calls use `Bridge/NativeRouter.swift`.
+Swift Package Manager executable, macOS 14+, Swift 5 language mode, with Sparkle 2
+for signed automatic updates. The host owns AppKit windows and macOS services;
+Node owns application data and extension execution. Both stdio and WKWebView calls
+use `Bridge/NativeRouter.swift`.
 
 ## Structure
 
@@ -55,6 +56,15 @@ when setting environment overrides. Option-Space toggles the launcher. The statu
 menu opens AI Chat, Notes and Settings. Standard Edit shortcuts work in the web views.
 Notes can be pinned via `window.setFloating`. The app stays running when windows close.
 Launching another instance asks the existing process to show the launcher and exits.
+
+Both the app menu and status menu include **Check for Updates…** and
+**Automatically Check for Updates**. Sparkle checks daily and downloads signed
+updates for installation when the app quits. Its update alert also lets users
+change automatic downloads. Update preferences persist across launches.
+Hosts with development URL, backend, resource, or data-directory overrides do not
+start the production updater. See [release setup](../../docs/RELEASES.md#automatic-updates)
+for signing keys and feed publication. App assembly preserves Sparkle's framework
+symlinks and upstream helper signatures in `Contents/Frameworks`.
 
 ## Development stub
 
