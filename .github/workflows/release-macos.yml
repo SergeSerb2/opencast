@@ -66,6 +66,7 @@ jobs:
     needs: build
     concurrency:
       group: opencast-macos-publish
+      queue: max
       cancel-in-progress: false
     runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted","macOS","ARM64","opencast-publish"]') || 'macos-15' }}
     permissions:

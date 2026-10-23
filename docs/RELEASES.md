@@ -58,7 +58,8 @@ The publish job also needs `OPENCAST_R2_ACCESS_KEY_ID` and
 `AWS_SECRET_ACCESS_KEY` only for the R2 upload step. Local R2 publication uses the
 same environment variables and `node scripts/publish-cloudflare-update.mjs` from a
 clean checkout with its verified release artifacts present. Run only one publisher
-at a time; Actions serializes publish jobs. Forks must also change the public R2
+at a time; Actions serializes publish jobs and queues up to 100 waiting jobs.
+Forks must also change the public R2
 configuration and app feed URL before deploying.
 
 Versions shipped before Sparkle was added need one manual DMG installation to
