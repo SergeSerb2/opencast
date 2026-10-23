@@ -16,6 +16,16 @@ MOUNTED=1
 APP="$MOUNT/OpenCast.app"
 PLIST="$APP/Contents/Info.plist"
 codesign --verify --deep --strict "$APP"
+FRAMEWORK="$APP/Contents/Frameworks/Sparkle.framework"
+for path in Sparkle Autoupdate Updater.app/Contents/MacOS/Updater; do
+    test -x "$FRAMEWORK/$path"
+done
+otool -L "$APP/Contents/MacOS/OpenCast" | grep -Fq '@rpath/Sparkle.framework/'
+otool -l "$APP/Contents/MacOS/OpenCast" | grep -Fq '@executable_path/../Frameworks'
+for key in SUFeedURL SUPublicEDKey SUEnableAutomaticChecks SUAutomaticallyUpdate SUVerifyUpdateBeforeExtraction SURequireSignedFeed; do
+    test "$(/usr/libexec/PlistBuddy -c "Print :$key" "$PLIST")" = \
+        "$(/usr/libexec/PlistBuddy -c "Print :$key" "$ROOT/apps/macos/Resources/Info.plist")"
+done
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST")" = OpenCast
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleName' "$PLIST")" = OpenCast
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$PLIST")" = OpenCast
@@ -37,7 +47,8 @@ done
 for path in backend/index.mjs frontend/main.html frontend/ai-chat.html frontend/notes.html \
     frontend/settings.html raycast-api/runtime.cjs raycast-api/worker.cjs \
     licenses/OpenCast-LICENSE.txt licenses/THIRD-PARTY-NOTICES.txt licenses/Node-LICENSE.txt \
-    licenses/Inter-OFL.txt licenses/JetBrainsMono-OFL.txt licenses/Lucide-LICENSE.txt licenses/inventory.json; do
+    licenses/Inter-OFL.txt licenses/JetBrainsMono-OFL.txt licenses/Lucide-LICENSE.txt \
+    licenses/Sparkle-LICENSE.txt licenses/inventory.json; do
     if [ ! -s "$APP/Contents/Resources/$path" ]; then
         echo "Missing release resource: $path" >&2; exit 1
     fi

@@ -48,6 +48,9 @@ STAGE="$(mktemp -d "$ROOT/build/.OpenCast.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources"
 cp "$BIN_DIR/OpenCast" "$STAGE/Contents/MacOS/OpenCast"
+mkdir -p "$STAGE/Contents/Frameworks"
+ditto "$BIN_DIR/Sparkle.framework" "$STAGE/Contents/Frameworks/Sparkle.framework"
+codesign --verify --deep --strict "$STAGE/Contents/Frameworks/Sparkle.framework"
 cp apps/macos/Resources/Info.plist "$STAGE/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "$STAGE/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$STAGE/Contents/Info.plist"
@@ -68,7 +71,8 @@ if [ "$BUNDLE_NODE" = 1 ]; then
     codesign --force -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE/Contents/Resources/node/bin/node"
 fi
 node scripts/collect-licenses.mjs "$STAGE/Contents/Resources/licenses" "$NODE"
-codesign --force --deep -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE"
+# Nested Node is signed above; preserve Sparkle's upstream helper signatures.
+codesign --force -s - --entitlements apps/macos/OpenCast.entitlements "$STAGE"
 codesign --verify --deep --strict "$STAGE"
 rm -rf "$APP"
 mv "$STAGE" "$APP"

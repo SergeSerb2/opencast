@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, chmodSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
+import { createHash, generateKeyPairSync, sign } from 'node:crypto';
 import { spawnSync, execFileSync } from 'node:child_process';
 
 const publisher = readFileSync(new URL('./release-macos.sh', import.meta.url));
+const verifier = readFileSync(new URL('./verify-macos-update.mjs', import.meta.url));
 const mockGitHub = `#!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
@@ -111,8 +112,15 @@ function fixture(t, options = {}) {
   const repo = join(dir, 'repo');
   mkdirSync(join(repo, 'scripts'), { recursive: true });
   writeFileSync(join(repo, 'scripts/release-macos.sh'), publisher, { mode: 0o755 });
+  writeFileSync(join(repo, 'scripts/verify-macos-update.mjs'), verifier);
   writeFileSync(join(repo, 'package.json'), '{"version":"0.1.0"}\n');
   writeFileSync(join(repo, '.gitignore'), 'build/\n');
+  mkdirSync(join(repo, 'releases'));
+  writeFileSync(join(repo, 'releases/macos.json'), JSON.stringify({ baseURL: 'https://updates.example.com/' }));
+  const { publicKey, privateKey } = generateKeyPairSync('ed25519');
+  mkdirSync(join(repo, 'apps/macos/Resources'), { recursive: true });
+  writeFileSync(join(repo, 'apps/macos/Resources/Info.plist'),
+    `<plist><dict><key>SUFeedURL</key><string>https://updates.example.com/appcast.xml</string><key>SUPublicEDKey</key><string>${publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('base64')}</string></dict></plist>`);
   const git = (...args) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim();
   git('init', '-q', '-b', 'main');
   git('add', '.');
@@ -123,7 +131,7 @@ function fixture(t, options = {}) {
   const remote = join(dir, 'remote');
   mkdirSync(local, { recursive: true });
   mkdirSync(remote);
-  const assets = [name + '.dmg', name + '.dmg.sha256', name + '.json'];
+  const assets = [name + '.dmg', name + '.dmg.sha256', name + '.json', 'appcast.xml'];
   const writeAssets = (dest, bytes, source = revision) => {
     writeFileSync(join(dest, assets[0]), bytes);
     const hash = createHash('sha256').update(bytes).digest('hex');
@@ -131,6 +139,10 @@ function fixture(t, options = {}) {
     writeFileSync(join(dest, assets[2]), JSON.stringify({ version: '0.1.0', build: 1,
       revision: source, architecture: 'arm64', asset: assets[0], signing: 'ad-hoc',
       notarized: false, builtOn: 'macOS' }, null, 2) + '\n');
+    const signature = sign(null, Buffer.from(bytes), privateKey).toString('base64');
+    const feed = Buffer.from(`<?xml version="1.0"?><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><item><sparkle:version>1</sparkle:version><sparkle:shortVersionString>0.1.0</sparkle:shortVersionString><enclosure url="https://updates.example.com/v0.1.0-build.1/${name}.dmg" length="${Buffer.byteLength(bytes)}" sparkle:edSignature="${signature}" /></item></channel></rss>\n`);
+    writeFileSync(join(dest, 'appcast.xml'), Buffer.concat([feed, Buffer.from(
+      `<!-- sparkle-signatures:\nedSignature: ${sign(null, feed, privateKey).toString('base64')}\nlength: ${feed.length}\n-->\n`)]));
   };
   writeAssets(local, 'verified image');
   writeAssets(remote, 'verified image');
@@ -155,7 +167,7 @@ test('creates an exact tag and publishes a draft only after validation', t => {
   const result = f.run();
   assert.equal(result.status, 0, result.stderr);
   const writes = f.writes();
-  assert.deepEqual(writes.map(a => a[0] === 'api' ? (a[1].endsWith('/git/refs') ? 'tag' : a[1].includes('/assets?') ? 'upload' : a.includes('PATCH') ? 'edit' : 'create') : a[1]), ['tag', 'create', 'upload', 'upload', 'upload', 'edit']);
+  assert.deepEqual(writes.map(a => a[0] === 'api' ? (a[1].endsWith('/git/refs') ? 'tag' : a[1].includes('/assets?') ? 'upload' : a.includes('PATCH') ? 'edit' : 'create') : a[1]), ['tag', 'create', 'upload', 'upload', 'upload', 'upload', 'edit']);
   assert.ok(writes[0].includes('sha=' + f.revision));
 });
 test('rejects an unrelated existing tag without a release', t => {
@@ -228,7 +240,7 @@ test('resumes a partial draft by comparing present files and uploading missing o
   const result = f.run();
   assert.equal(result.status, 0, result.stderr);
   const uploads = f.calls().filter(a => a[0] === 'api' && a[1].includes('/assets?') && a.includes('POST'));
-  assert.equal(uploads.length, 2);
+  assert.equal(uploads.length, 3);
   assert.ok(!uploads.some(a => a.includes('--clobber')));
 });
 test('finds an existing draft through the paginated release list', t => {

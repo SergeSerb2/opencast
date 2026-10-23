@@ -31,7 +31,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Check release script syntax
         run: |
-          for script in scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh scripts/make-icon.sh scripts/prepare-release-node.sh scripts/verify-node.sh scripts/typecheck-release.sh scripts/deploy-sync.sh; do
+          for script in scripts/build-app.sh scripts/build-dmg.sh scripts/verify-dmg.sh scripts/release-macos.sh scripts/sign-macos-update.sh scripts/make-icon.sh scripts/prepare-release-node.sh scripts/verify-node.sh scripts/typecheck-release.sh scripts/deploy-sync.sh; do
             bash -n "$script"
           done
       - name: Check release provenance and retries

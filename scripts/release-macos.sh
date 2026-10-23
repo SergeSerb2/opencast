@@ -100,17 +100,7 @@ check_draft() {
 }
 # Publishing consumes verified files; it never installs dependencies or builds.
 verify_assets() {
-    node --input-type=module - "$1" "$NAME" "$VERSION" "$BUILD_NUMBER" "$REVISION" <<'JS'
-import { readFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
-import assert from 'node:assert/strict';
-const [dir, name, version, build, revision] = process.argv.slice(2);
-const manifest = JSON.parse(readFileSync(`${dir}/${name}.json`, 'utf8'));
-assert.deepEqual(manifest, { version, build: Number(build), revision, architecture: 'arm64',
-  asset: `${name}.dmg`, signing: 'ad-hoc', notarized: false, builtOn: 'macOS' });
-const hash = createHash('sha256').update(readFileSync(`${dir}/${name}.dmg`)).digest('hex');
-assert.equal(readFileSync(`${dir}/${name}.dmg.sha256`, 'utf8'), `${hash}  ${name}.dmg\n`);
-JS
+    node scripts/verify-macos-update.mjs "$1" "$NAME" "$VERSION" "$BUILD_NUMBER" "$REVISION"
 }
 verify_assets "$OUT"
 load_release
@@ -120,16 +110,16 @@ if [ "$RELEASE_EXISTS" = 1 ]; then
     fi
     if [ "$TARGET" != "$REVISION" ]; then echo 'Release tag belongs to a different commit' >&2; exit 1; fi
     if [ "$DRAFT" = false ]; then
-        for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
+        for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json" appcast.xml; do
             if ! printf '%s\n' "$ASSETS" | grep -Fxq "$asset"; then
                 echo "Published release is missing $asset; repair it explicitly" >&2; exit 1
             fi
         done
         mkdir "$TEMP/published"
         gh release download "$TAG" --repo "$REPO" --dir "$TEMP/published" \
-            --pattern "$NAME.dmg" --pattern "$NAME.dmg.sha256" --pattern "$NAME.json"
+            --pattern "$NAME.dmg" --pattern "$NAME.dmg.sha256" --pattern "$NAME.json" --pattern appcast.xml
         verify_assets "$TEMP/published"
-        for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
+        for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json" appcast.xml; do
             if ! cmp -s "$OUT/$asset" "$TEMP/published/$asset"; then
                 echo "Published $asset differs from the verified artifact; repair it explicitly" >&2; exit 1
             fi
@@ -143,6 +133,8 @@ cat > "$NOTES" <<EOF
 OpenCast $VERSION, build $BUILD_NUMBER, for Apple silicon Macs running macOS 14 or later.
 
 Built on macOS from [$REVISION](https://github.com/$REPO/commit/$REVISION). Node is bundled. Download the DMG and drag OpenCast.app to Applications. The SHA-256 checksum and source manifest are included as separate assets.
+
+Sparkle checks for updates daily and downloads signed updates for installation when OpenCast quits. Use Check for Updates… in the OpenCast menu for a manual check. You can turn off automatic checks in the same menu.
 
 This build is ad-hoc signed and is not notarized. If macOS blocks the app, follow [Apple's Open Anyway instructions](https://support.apple.com/guide/mac-help/mh40616/mac).
 EOF
@@ -205,7 +197,7 @@ fi
 EXPECTED_RELEASE_ID="$RELEASE_ID"
 check_draft
 mkdir "$TEMP/draft"
-for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json"; do
+for asset in "$NAME.dmg" "$NAME.dmg.sha256" "$NAME.json" appcast.xml; do
     if printf '%s\n' "$ASSETS" | grep -Fxq "$asset"; then
         gh release download "$TAG" --repo "$REPO" --dir "$TEMP/draft" --pattern "$asset"
         if ! cmp -s "$OUT/$asset" "$TEMP/draft/$asset"; then
