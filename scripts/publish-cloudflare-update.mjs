@@ -31,7 +31,7 @@ const quote = value => {
 async function request(object, method = 'GET', file, contentType, cacheControl, budgetHeld = false) {
   if (method === 'PUT' && !budgetHeld) {
     return withR2Budget({ bucket: distribution.bucket, key: object,
-      bytes: readFileSync(file).length },
+      bytes: readFileSync(file).length, file },
     () => request(object, method, file, contentType, cacheControl, true));
   }
   // curl signs S3 requests with SigV4. Credentials travel through stdin only.
