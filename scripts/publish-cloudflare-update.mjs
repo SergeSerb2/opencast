@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { distribution, verifyAssets, verifyFeed } from './verify-macos-update.mjs';
+import { withR2Budget } from '../r2-storage-budget.mjs';
 
 assert.equal(process.argv.length, 2, 'Usage: node scripts/publish-cloudflare-update.mjs');
 assert(/^[a-f0-9]{32}$/.test(process.env.AWS_ACCESS_KEY_ID ?? ''), 'R2 AWS_ACCESS_KEY_ID is required');
@@ -27,7 +28,12 @@ const quote = value => {
   return JSON.stringify(value);
 };
 
-async function request(object, method = 'GET', file, contentType, cacheControl) {
+async function request(object, method = 'GET', file, contentType, cacheControl, budgetHeld = false) {
+  if (method === 'PUT' && !budgetHeld) {
+    return withR2Budget({ bucket: distribution.bucket, key: object,
+      bytes: readFileSync(file).length },
+    () => request(object, method, file, contentType, cacheControl, true));
+  }
   // curl signs S3 requests with SigV4. Credentials travel through stdin only.
   const config = [
     'silent', 'show-error', 'max-time = 60',
