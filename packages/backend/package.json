@@ -12,13 +12,13 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@opencast/protocol": "workspace:*",
     "ajv": "^8.20.0",
     "cheerio": "^1.2.0",
     "chrono-node": "^2.10.3",
     "emojibase-data": "^17.0.0",
-    "ignore": "^7.0.12",
+    "ignore": "^7.0.14",
     "mathjs": "^15.2.0",
     "undici": "^7.29.1",
     "ws": "^8.22.0",
@@ -29,7 +29,7 @@
     "@types/ws": "^8.18.2",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.5"
   },
   "repository": {
     "type": "git",
