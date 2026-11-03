@@ -54,7 +54,12 @@ using the pinned SVG renderer, sips and iconutil (requires pnpm).
 Run the complete app with `open build/OpenCast.app`, or invoke its executable directly
 when setting environment overrides. Option-Space toggles the launcher. The status
 menu opens AI Chat, Notes and Settings. Standard Edit shortcuts work in the web views.
-Notes can be pinned via `window.setFloating`. The app stays running when windows close.
+Notes stays visible when switching apps. It is pinned above normal windows on all
+Spaces by default, including full-screen Spaces. The pin button, Keep Window on Top
+setting, and Toggle Floating Notes command share the saved `notes.alwaysOnTop`
+preference. `window.setFloating` applies the window level and Space behavior;
+unpinning restores normal window ordering on the current Space.
+The app stays running when windows close.
 Launching another instance asks the existing process to show the launcher and exits.
 
 Both the app menu and status menu include **Check for Updates…** and

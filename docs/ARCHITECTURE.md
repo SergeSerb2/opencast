@@ -138,7 +138,7 @@ Images:
 |---|---|---|---|
 | main (launcher) | borderless non-activating `NSPanel`, floating level, joins all Spaces | 750 × 475 (header 64, footer 44) | Glass/vibrancy background, corner radius 26 on macOS 26, 20 on macOS 27+, 12 before. Previous app keeps focus. Top edge fixed while height changes. Hides on resign key. |
 | ai-chat | titled `NSWindow`, full-size content, transparent title bar | 900 × 640, min 640 × 420 | Frame autosaved. Activates OpenCast. |
-| notes | titled `NSPanel`, full-size content, transparent title bar | 420 × 520 | "Pin" toggles floating level. |
+| notes | titled `NSPanel`, full-size content, transparent title bar | 420 × 520 | Stays visible when OpenCast loses focus. Pinned by default: floats above normal windows across Spaces, including full-screen Spaces. Pin, Settings, and Toggle Floating Notes share `notes.alwaysOnTop`. |
 | settings | titled `NSWindow`, full-size content | 860 × 620 | Single instance. |
 
 ## Feature ownership
