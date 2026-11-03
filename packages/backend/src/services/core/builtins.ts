@@ -176,12 +176,9 @@ export function builtinCatalog(): Builtin[] {
       kind: "notes",
     });
     if (!visible) await ctx.native.call("window.show", { kind: "notes" });
-    const floating = !(
-      ctx.entities.get<{ floating: boolean }>("localState", "notes-floating")
-        ?.data.floating ?? false
-    );
+    const floating = !ctx.settings.get("notes.alwaysOnTop");
     await ctx.native.call("window.setFloating", { kind: "notes", floating });
-    ctx.entities.put("localState", "notes-floating", { floating });
+    ctx.settings.set("notes.alwaysOnTop", floating);
     return done();
   });
   for (const command of WINDOW_COMMANDS)

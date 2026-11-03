@@ -37,8 +37,20 @@ import WebKit
     window.setFrameAutosaveName("Surgecast.\(kind)")
     super.init(window: window)
     window.delegate = self
+    if kind == "notes" {
+      // NSPanel hides on app deactivation by default, even at floating level.
+      window.hidesOnDeactivate = false
+      setFloating(true)
+    }
   }
   required init?(coder: NSCoder) { nil }
+  func setFloating(_ floating: Bool) {
+    guard let window else { return }
+    window.level = floating ? .floating : .normal
+    if kind == "notes" {
+      window.collectionBehavior = floating ? [.canJoinAllSpaces, .fullScreenAuxiliary] : []
+    }
+  }
   func show() {
     let visible = window?.isVisible ?? false
     NSApp.activate(ignoringOtherApps: true)
@@ -127,7 +139,10 @@ import WebKit
       } else {
         w.setContentSize(NSSize(width: width, height: height))
       }
-    case "window.setFloating": w.level = try p.boolean("floating") ? .floating : .normal
+    case "window.setFloating":
+      let floating = try p.boolean("floating")
+      if kind == "main" { launcher.level = floating ? .floating : .normal }
+      else { others[kind]?.setFloating(floating) }
     case "window.isVisible": return w.isVisible
     case "window.startDrag":
       guard let event = NSApp.currentEvent else {
